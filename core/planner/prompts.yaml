@@ -1,5 +1,5 @@
 version: "1.0"
-model: "anthropic.claude-3-5-sonnet-20241022-v2:0"
+model: "us.anthropic.claude-3-5-sonnet-20241022-v2:0"
 
 system_prompt: |
   당신은 코드 분석 전문가이자 최고 수준의 기술자이며, 엄격한 채용 면접관입니다.
