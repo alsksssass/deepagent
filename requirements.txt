@@ -1,0 +1,55 @@
+# Deep Agents Code Analysis - Requirements
+# Generated from pyproject.toml for Python 3.12+
+
+# LangChain Core
+langchain>=0.3.18
+langchain-core>=0.3.28
+langchain-aws>=0.2.11
+langgraph>=0.2.64
+langchain-community>=0.3.17
+
+# AWS Bedrock
+boto3>=1.35.93
+botocore>=1.35.93
+
+# Database & Storage
+neo4j>=5.27.0
+chromadb>=0.5.23
+sentence-transformers>=3.4.1
+
+# Git Analysis
+pydriller>=2.9
+tree-sitter>=0.23.2
+tree-sitter-python>=0.23.6
+# Tree-sitter language parsers
+tree-sitter-javascript>=0.23.0
+tree-sitter-typescript>=0.23.0
+tree-sitter-tsx>=0.23.0
+tree-sitter-java>=0.23.0
+tree-sitter-go>=0.23.0
+tree-sitter-rust>=0.23.0
+tree-sitter-cpp>=0.23.0
+tree-sitter-c>=0.23.0
+tree-sitter-c-sharp>=0.23.0
+tree-sitter-ruby>=0.23.0
+tree-sitter-php>=0.23.0
+tree-sitter-swift>=0.23.0
+tree-sitter-kotlin>=0.23.0
+
+# Static Analysis
+radon>=6.0.1
+pyright>=1.1.396
+
+# Utilities
+python-dotenv>=1.0.1
+pydantic>=2.10.4
+pydantic-settings>=2.7.1
+aiofiles>=25.1.0
+asyncio>=3.4.3
+
+# Development Dependencies (Optional)
+# pytest>=8.3.4
+# pytest-asyncio>=0.25.2
+# black>=25.1.0
+# ruff>=0.9.2
+# mypy>=1.15.0

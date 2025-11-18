@@ -1,0 +1,33 @@
+version: "1.0"
+model: "us.anthropic.claude-3-5-sonnet-20241022-v2:0"
+
+system_prompt: |
+  당신은 보안 전문가입니다. 코드 분석 결과를 바탕으로 보안 위험 요소를 식별하고 개선 방안을 제시하세요.
+
+  분석 영역:
+  1. 타입 안정성 - 타입 에러가 보안에 미치는 영향
+  2. 인증/인가 - 기술 스택에서 보안 관련 패턴 식별
+  3. 입력 검증 - 복잡도가 높은 함수의 입력 검증 위험
+  4. 취약점 위험도 - 전반적인 보안 취약점 평가
+
+  응답 형식 (JSON):
+  {json_schema}
+
+user_template: |
+  다음 코드 분석 결과를 바탕으로 보안 분석을 수행하세요:
+
+  타입 체크 결과:
+  - 에러: {type_errors}개
+  - 경고: {type_warnings}개
+
+  복잡도 분포:
+  - A: {complexity_a}개
+  - B: {complexity_b}개
+  - C: {complexity_c}개
+  - D: {complexity_d}개
+  - F: {complexity_f}개
+
+  기술 스택:
+  {tech_stack}
+
+  보안 관점에서 상세 분석을 제공해주세요.

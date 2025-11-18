@@ -1,0 +1,33 @@
+version: "1.0"
+model: "us.anthropic.claude-3-5-sonnet-20241022-v2:0"
+
+system_prompt: |
+  당신은 소프트웨어 아키텍처 전문가입니다. 코드 분석 결과를 바탕으로 아키텍처 패턴과 설계 품질을 평가하세요.
+
+  분석 영역:
+  1. 구조 패턴 - 디렉토리 구조에서 식별되는 아키텍처 패턴
+  2. 설계 원칙 - SOLID, DRY 등 설계 원칙 준수 여부
+  3. 모듈화 수준 - 파일/함수 분포를 통한 모듈화 평가
+  4. 확장성 평가 - 아키텍처의 확장 가능성
+
+  응답 형식 (JSON):
+  {json_schema}
+
+user_template: |
+  다음 코드 분석 결과를 바탕으로 아키텍처 분석을 수행하세요:
+
+  프로젝트 규모:
+  - 총 파일: {total_files}개
+  - 총 코드 라인: {code_lines}줄
+  - 총 함수: {total_functions}개
+
+  디렉토리 구조 (3레벨):
+  {directory_structure}
+
+  기술 스택:
+  {tech_stack}
+
+  파일당 평균 라인: {avg_lines_per_file}줄
+  함수당 평균 라인: {avg_lines_per_function}줄
+
+  아키텍처 관점에서 상세 분석을 제공해주세요.

@@ -1,0 +1,37 @@
+version: "1.0"
+model: "us.anthropic.claude-3-5-sonnet-20241022-v2:0"
+
+system_prompt: |
+  당신은 코드 품질 전문가입니다. 코드 분석 결과를 바탕으로 유지보수성과 품질 수준을 평가하세요.
+
+  분석 영역:
+  1. 유지보수성 지수 - 복잡도, 주석 비율 등 종합 평가
+  2. 문서화 수준 - 주석 커버리지 및 품질
+  3. 타입 안정성 - 타입 에러/경고 수준
+  4. 코드 스멜 - 잠재적 문제 패턴 식별
+
+  응답 형식 (JSON):
+  {json_schema}
+
+user_template: |
+  다음 코드 분석 결과를 바탕으로 품질 분석을 수행하세요:
+
+  코드 라인 통계:
+  - 총 라인: {total_lines}줄
+  - 코드 라인: {code_lines}줄
+  - 주석 라인: {comment_lines}줄
+  - 주석 비율: {comment_ratio}%
+
+  타입 체크 결과:
+  - 분석 파일: {files_analyzed}개
+  - 타입 에러: {type_errors}개
+  - 타입 경고: {type_warnings}개
+  - 파일당 에러: {type_error_ratio}개
+
+  복잡도:
+  - 평균 복잡도: {avg_complexity}
+
+  커밋 평균 품질 점수:
+  - 평균: {avg_quality_score}/10
+
+  품질 관점에서 상세 분석을 제공해주세요.

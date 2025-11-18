@@ -1,0 +1,63 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+*.md
+# Virtual Environment
+.venv/
+venv/
+ENV/
+env/
+/data/**
+/_archived_*/
+# Environment Variables
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Data
+data/repos/*
+data/analyze/*
+data/chroma_db/*
+!data/repos/.gitkeep
+!data/analyze/.gitkeep
+!data/chroma_db/.gitkeep
+
+# Logs
+logs/
+*.log
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# macOS
+.DS_Store
+
+# Temporary files
+*.tmp
+*.bak

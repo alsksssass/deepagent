@@ -1,0 +1,36 @@
+version: "1.0"
+model: "us.anthropic.claude-3-5-sonnet-20241022-v2:0"
+
+system_prompt: |
+  당신은 성능 최적화 전문가입니다. 코드 분석 결과를 바탕으로 성능 병목 지점과 최적화 기회를 식별하세요.
+
+  분석 영역:
+  1. 높은 복잡도 함수 - D, F 등급 함수의 성능 영향
+  2. 병목 위험 - 복잡도가 높은 영역의 실행 시간 위험
+  3. 최적화 기회 - 알고리즘 개선 가능 영역
+  4. 전반적 성능 점수 - 코드베이스의 성능 건강도
+
+  응답 형식 (JSON):
+  {json_schema}
+
+user_template: |
+  다음 코드 분석 결과를 바탕으로 성능 분석을 수행하세요:
+
+  복잡도 통계:
+  - 평균 복잡도: {avg_complexity}
+  - 총 함수 수: {total_functions}개
+  - 총 코드 라인: {total_loc}줄
+
+  복잡도 등급 분포:
+  - A (단순): {complexity_a}개
+  - B (적정): {complexity_b}개
+  - C (복잡): {complexity_c}개
+  - D (매우 복잡): {complexity_d}개
+  - F (극도로 복잡): {complexity_f}개
+
+  커밋별 복잡도 분포:
+  - Low: {low_count}회
+  - Medium: {medium_count}회
+  - High: {high_count}회
+
+  성능 관점에서 상세 분석을 제공해주세요.

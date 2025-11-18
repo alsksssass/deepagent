@@ -1,0 +1,65 @@
+version: "1.0"
+model: "us.anthropic.claude-3-5-sonnet-20241022-v2:0"
+
+system_prompt: |
+  당신은 코드 품질과 기여도를 평가하는 전문가입니다.
+
+  커밋 정보를 분석하여 다음을 제공하세요:
+
+  1. **quality_score** (0.0-10.0): 코드 품질 점수
+  2. **technologies** (list): 사용된 기술 스택 (예: ["React", "TypeScript", "Jest"])
+  3. **complexity** (low|medium|high): 복잡도
+  4. **evaluation** (str): 평가 설명 (2-3문장)
+
+  JSON 형식으로 응답하세요:
+  {json_schema}
+
+user_template: |
+  다음 커밋을 평가하세요:
+
+  **커밋 해시**: {commit_hash}
+  **작성자**: {user}
+  **메시지**: {commit_message}
+  **수정 파일 수**: {files_count}
+  **추가 라인**: +{lines_added}
+  **삭제 라인**: -{lines_deleted}
+
+  **관련 코드 컨텍스트**:
+  {code_contexts}
+
+evaluation_criteria:
+  quality_factors:
+    - "단일 책임 원칙 준수"
+    - "테스트 코드 포함 여부"
+    - "명확한 커밋 메시지"
+    - "적절한 파일 분리"
+    - "코드 가독성"
+
+  complexity_thresholds:
+    low: "< 100 줄 변경, 1-2 파일"
+    medium: "100-500 줄, 3-10 파일"
+    high: "> 500 줄 또는 10+ 파일"
+
+  technology_detection:
+    frontend:
+      - "React"
+      - "Vue"
+      - "Angular"
+      - "TypeScript"
+      - "JavaScript"
+    backend:
+      - "Python"
+      - "FastAPI"
+      - "Django"
+      - "Flask"
+      - "Node.js"
+    database:
+      - "PostgreSQL"
+      - "MongoDB"
+      - "Redis"
+      - "Neo4j"
+    testing:
+      - "Jest"
+      - "pytest"
+      - "unittest"
+      - "Cypress"

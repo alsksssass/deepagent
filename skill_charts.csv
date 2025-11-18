@@ -1,0 +1,1178 @@
+category,subcategory,skill_name,level,base_score,description,evidence_examples,developer_type
+기본 문법 및 제어 구조,변수 및 데이터 타입,변수 선언 및 할당,Basic,4,기본 변수 선언만 존재,기본 변수 선언만 존재,All
+기본 문법 및 제어 구조,변수 및 데이터 타입,변수 선언 및 할당,Intermediate,18,타입 힌트 사용 + 불변성 고려,타입 힌트 사용 + 불변성 고려,All
+기본 문법 및 제어 구조,변수 및 데이터 타입,변수 선언 및 할당,Advanced,48,Generic 타입 + Protocol 활용,Generic 타입 + Protocol 활용,All
+기본 문법 및 제어 구조,변수 및 데이터 타입,데이터 타입 이해,Basic,4,"int, str, list 등 기본 타입만","int, str, list 등 기본 타입만",All
+기본 문법 및 제어 구조,변수 및 데이터 타입,데이터 타입 이해,Intermediate,20,"Union, Optional, Literal 사용","Union, Optional, Literal 사용",All
+기본 문법 및 제어 구조,변수 및 데이터 타입,데이터 타입 이해,Advanced,60,"TypeVar, Generic 커스텀 타입 구현","TypeVar, Generic 커스텀 타입 구현",All
+기본 문법 및 제어 구조,변수 및 데이터 타입,타입 체킹,Intermediate,25,mypy 기본 설정 + 주요 함수에 타입 힌트,mypy 기본 설정 + 주요 함수에 타입 힌트,All
+기본 문법 및 제어 구조,변수 및 데이터 타입,타입 체킹,Advanced,72,strict 모드 + 복잡한 제네릭 타입 정의,strict 모드 + 복잡한 제네릭 타입 정의,All
+기본 문법 및 제어 구조,조건문 및 반복문,if-else 조건문,Basic,3,단순 if-else만,단순 if-else만,All
+기본 문법 및 제어 구조,조건문 및 반복문,if-else 조건문,Intermediate,15,elif 체인 + 조기 반환 패턴,elif 체인 + 조기 반환 패턴,All
+기본 문법 및 제어 구조,조건문 및 반복문,if-else 조건문,Advanced,48,match-case (3.10+) + 가드 조건,match-case (3.10+) + 가드 조건,All
+기본 문법 및 제어 구조,조건문 및 반복문,for/while 루프,Basic,3,기본 for/while만,기본 for/while만,All
+기본 문법 및 제어 구조,조건문 및 반복문,for/while 루프,Intermediate,18,"enumerate, zip 활용 + break/continue","enumerate, zip 활용 + break/continue",All
+기본 문법 및 제어 구조,조건문 및 반복문,for/while 루프,Advanced,56,itertools 조합 + 제너레이터 체인,itertools 조합 + 제너레이터 체인,All
+기본 문법 및 제어 구조,조건문 및 반복문,리스트 컴프리헨션,Basic,6,단순 변환만 `[x*2 for x in lst]`,단순 변환만 `[x*2 for x in lst]`,All
+기본 문법 및 제어 구조,조건문 및 반복문,리스트 컴프리헨션,Intermediate,25,조건 필터 + 중첩 컴프리헨션,조건 필터 + 중첩 컴프리헨션,All
+기본 문법 및 제어 구조,조건문 및 반복문,리스트 컴프리헨션,Advanced,64,walrus 연산자 + 복잡한 다중 조건,walrus 연산자 + 복잡한 다중 조건,All
+기본 문법 및 제어 구조,조건문 및 반복문,딕셔너리 컴프리헨션,Basic,6,기본 변환만,기본 변환만,All
+기본 문법 및 제어 구조,조건문 및 반복문,딕셔너리 컴프리헨션,Intermediate,25,조건부 딕셔너리 생성,조건부 딕셔너리 생성,All
+기본 문법 및 제어 구조,조건문 및 반복문,딕셔너리 컴프리헨션,Advanced,60,defaultdict와 결합 + 동적 키 생성,defaultdict와 결합 + 동적 키 생성,All
+기본 문법 및 제어 구조,조건문 및 반복문,제너레이터 표현식,Intermediate,30,기본 제너레이터 표현식 사용,기본 제너레이터 표현식 사용,All
+기본 문법 및 제어 구조,조건문 및 반복문,제너레이터 표현식,Advanced,72,제너레이터 파이프라인 + 메모리 최적화,제너레이터 파이프라인 + 메모리 최적화,All
+기본 문법 및 제어 구조,함수 및 람다,함수 정의,Basic,4,기본 함수 정의만,기본 함수 정의만,All
+기본 문법 및 제어 구조,함수 및 람다,함수 정의,Intermediate,20,타입 힌트 + docstring,타입 힌트 + docstring,All
+기본 문법 및 제어 구조,함수 및 람다,함수 정의,Advanced,60,오버로드 + ParamSpec 활용,오버로드 + ParamSpec 활용,All
+기본 문법 및 제어 구조,함수 및 람다,람다 함수,Basic,6,단순 람다만 `lambda x: x*2`,단순 람다만 `lambda x: x*2`,All
+기본 문법 및 제어 구조,함수 및 람다,람다 함수,Intermediate,25,sorted/filter 키 함수로 활용,sorted/filter 키 함수로 활용,All
+기본 문법 및 제어 구조,함수 및 람다,람다 함수,Advanced,64,클로저와 결합 + functools 조합,클로저와 결합 + functools 조합,All
+기본 문법 및 제어 구조,함수 및 람다,"args, **kwargs",Intermediate,25,기본 가변 인자 사용,기본 가변 인자 사용,All
+기본 문법 및 제어 구조,함수 및 람다,"args, **kwargs",Advanced,68,동적 함수 생성 + 데코레이터에서 활용,동적 함수 생성 + 데코레이터에서 활용,All
+기본 문법 및 제어 구조,함수 및 람다,고차 함수,Intermediate,30,"map, filter, reduce 활용","map, filter, reduce 활용",All
+기본 문법 및 제어 구조,함수 및 람다,고차 함수,Advanced,72,커스텀 고차 함수 구현 + 함수 합성,커스텀 고차 함수 구현 + 함수 합성,All
+기본 문법 및 제어 구조,데코레이터 및 컨텍스트 매니저,데코레이터 사용,Basic,8,"`@staticmethod`, `@property` 사용","`@staticmethod`, `@property` 사용",All
+기본 문법 및 제어 구조,데코레이터 및 컨텍스트 매니저,데코레이터 사용,Intermediate,30,커스텀 데코레이터 1-2개 작성,커스텀 데코레이터 1-2개 작성,All
+기본 문법 및 제어 구조,데코레이터 및 컨텍스트 매니저,데코레이터 사용,Advanced,80,파라미터화 데코레이터 + 클래스 데코레이터,파라미터화 데코레이터 + 클래스 데코레이터,All
+기본 문법 및 제어 구조,데코레이터 및 컨텍스트 매니저,컨텍스트 매니저,Basic,6,`with open()` 기본 사용,`with open()` 기본 사용,All
+기본 문법 및 제어 구조,데코레이터 및 컨텍스트 매니저,컨텍스트 매니저,Intermediate,25,contextlib.contextmanager 활용,contextlib.contextmanager 활용,All
+기본 문법 및 제어 구조,데코레이터 및 컨텍스트 매니저,컨텍스트 매니저,Advanced,72,`__enter__/__exit__` 커스텀 구현 + 비동기 컨텍스트,`__enter__/__exit__` 커스텀 구현 + 비동기 컨텍스트,All
+객체지향 프로그래밍 (OOP),클래스 기초,클래스 정의,Basic,8,기본 클래스 정의만,기본 클래스 정의만,All
+객체지향 프로그래밍 (OOP),클래스 기초,클래스 정의,Intermediate,25,`__init__` + 여러 메서드 구현,`__init__` + 여러 메서드 구현,All
+객체지향 프로그래밍 (OOP),클래스 기초,클래스 정의,Advanced,64,`__slots__` + 메모리 최적화,`__slots__` + 메모리 최적화,All
+객체지향 프로그래밍 (OOP),클래스 기초,인스턴스 vs 클래스 변수,Basic,6,변수 선언만,변수 선언만,All
+객체지향 프로그래밍 (OOP),클래스 기초,인스턴스 vs 클래스 변수,Intermediate,28,적절한 변수 분리 + `@classmethod`,적절한 변수 분리 + `@classmethod`,All
+객체지향 프로그래밍 (OOP),클래스 기초,인스턴스 vs 클래스 변수,Advanced,68,디스크립터 + `__set_name__` 활용,디스크립터 + `__set_name__` 활용,All
+객체지향 프로그래밍 (OOP),클래스 기초,메서드 구현,Basic,6,단순 메서드 1-2개,단순 메서드 1-2개,All
+객체지향 프로그래밍 (OOP),클래스 기초,메서드 구현,Intermediate,25,public/private 구분 + 메서드 체이닝,public/private 구분 + 메서드 체이닝,All
+객체지향 프로그래밍 (OOP),클래스 기초,메서드 구현,Advanced,64,"`@staticmethod`, `@classmethod` 적재적소 활용","`@staticmethod`, `@classmethod` 적재적소 활용",All
+객체지향 프로그래밍 (OOP),상속 및 다형성,상속,Basic,9,단순 상속만 `class Child(Parent):`,단순 상속만 `class Child(Parent):`,All
+객체지향 프로그래밍 (OOP),상속 및 다형성,상속,Intermediate,32,`super()` 활용 + 메서드 오버라이딩,`super()` 활용 + 메서드 오버라이딩,All
+객체지향 프로그래밍 (OOP),상속 및 다형성,상속,Advanced,76,MRO 이해 + 다중 상속 설계,MRO 이해 + 다중 상속 설계,All
+객체지향 프로그래밍 (OOP),상속 및 다형성,추상 클래스,Intermediate,35,ABC + `@abstractmethod` 2-3개,ABC + `@abstractmethod` 2-3개,All
+객체지향 프로그래밍 (OOP),상속 및 다형성,추상 클래스,Advanced,80,추상 프로퍼티 + 템플릿 메서드 패턴,추상 프로퍼티 + 템플릿 메서드 패턴,All
+객체지향 프로그래밍 (OOP),상속 및 다형성,프로토콜 (Protocol),Advanced,72,typing.Protocol 정의 + 구조적 서브타이핑,typing.Protocol 정의 + 구조적 서브타이핑,All
+객체지향 프로그래밍 (OOP),고급 OOP,매직 메서드,Basic,8,"`__str__`, `__repr__` 1-2개만","`__str__`, `__repr__` 1-2개만",All
+객체지향 프로그래밍 (OOP),고급 OOP,매직 메서드,Intermediate,35,"`__eq__`, `__hash__`, `__lt__` 구현","`__eq__`, `__hash__`, `__lt__` 구현",All
+객체지향 프로그래밍 (OOP),고급 OOP,매직 메서드,Advanced,80,"`__getattr__`, `__setattr__`, `__call__` 활용","`__getattr__`, `__setattr__`, `__call__` 활용",All
+객체지향 프로그래밍 (OOP),고급 OOP,프로퍼티 (@property),Basic,9,단순 getter만,단순 getter만,All
+객체지향 프로그래밍 (OOP),고급 OOP,프로퍼티 (@property),Intermediate,30,getter + setter + validation,getter + setter + validation,All
+객체지향 프로그래밍 (OOP),고급 OOP,프로퍼티 (@property),Advanced,72,디스크립터 클래스 구현,디스크립터 클래스 구현,All
+객체지향 프로그래밍 (OOP),고급 OOP,메타클래스,Advanced,80,`type()` 상속 + `__new__` 커스터마이징,`type()` 상속 + `__new__` 커스터마이징,All
+객체지향 프로그래밍 (OOP),고급 OOP,데이터클래스,Basic,10,`@dataclass` 기본 사용,`@dataclass` 기본 사용,All
+객체지향 프로그래밍 (OOP),고급 OOP,데이터클래스,Intermediate,32,field() + post_init,field() + post_init,All
+객체지향 프로그래밍 (OOP),고급 OOP,데이터클래스,Advanced,76,frozen=True + slots=True + 커스텀 __eq__,frozen=True + slots=True + 커스텀 __eq__,All
+함수형 프로그래밍 및 고급 기능,함수형 도구,"map, filter, reduce",Basic,8,기본 사용만,기본 사용만,All
+함수형 프로그래밍 및 고급 기능,함수형 도구,"map, filter, reduce",Intermediate,28,체이닝 + lambda 조합,체이닝 + lambda 조합,All
+함수형 프로그래밍 및 고급 기능,함수형 도구,"map, filter, reduce",Advanced,68,operator 모듈 활용 + 복잡한 파이프라인,operator 모듈 활용 + 복잡한 파이프라인,All
+함수형 프로그래밍 및 고급 기능,함수형 도구,functools 모듈,Intermediate,30,"`@lru_cache`, `partial` 사용","`@lru_cache`, `partial` 사용",All
+함수형 프로그래밍 및 고급 기능,함수형 도구,functools 모듈,Advanced,76,"`@singledispatch`, `reduce`, `wraps` 조합","`@singledispatch`, `reduce`, `wraps` 조합",All
+함수형 프로그래밍 및 고급 기능,함수형 도구,itertools 모듈,Intermediate,32,"`chain`, `zip_longest` 등 3개 이상","`chain`, `zip_longest` 등 3개 이상",All
+함수형 프로그래밍 및 고급 기능,함수형 도구,itertools 모듈,Advanced,80,"`groupby`, `accumulate` + 제너레이터 최적화","`groupby`, `accumulate` + 제너레이터 최적화",All
+함수형 프로그래밍 및 고급 기능,제너레이터 및 이터레이터,제너레이터 함수 (yield),Basic,9,단순 yield만,단순 yield만,All
+함수형 프로그래밍 및 고급 기능,제너레이터 및 이터레이터,제너레이터 함수 (yield),Intermediate,35,yield from + 상태 유지,yield from + 상태 유지,All
+함수형 프로그래밍 및 고급 기능,제너레이터 및 이터레이터,제너레이터 함수 (yield),Advanced,80,"양방향 통신 (send, throw)","양방향 통신 (send, throw)",All
+함수형 프로그래밍 및 고급 기능,제너레이터 및 이터레이터,이터레이터 구현,Intermediate,38,"`__iter__`, `__next__` 구현","`__iter__`, `__next__` 구현",All
+함수형 프로그래밍 및 고급 기능,제너레이터 및 이터레이터,이터레이터 구현,Advanced,80,커스텀 이터레이터 + StopIteration 처리,커스텀 이터레이터 + StopIteration 처리,All
+함수형 프로그래밍 및 고급 기능,제너레이터 및 이터레이터,비동기 제너레이터,Advanced,76,`async def` + `async for` + `yield`,`async def` + `async for` + `yield`,All
+자료구조 및 알고리즘,내장 자료구조,리스트/튜플/세트,Basic,4,기본 생성 및 접근만,기본 생성 및 접근만,All
+자료구조 및 알고리즘,내장 자료구조,리스트/튜플/세트,Intermediate,20,슬라이싱 + 언패킹 + 복사,슬라이싱 + 언패킹 + 복사,All
+자료구조 및 알고리즘,내장 자료구조,리스트/튜플/세트,Advanced,60,메모리 효율 고려 + generator 변환,메모리 효율 고려 + generator 변환,All
+자료구조 및 알고리즘,내장 자료구조,딕셔너리,Basic,4,기본 CRUD만,기본 CRUD만,All
+자료구조 및 알고리즘,내장 자료구조,딕셔너리,Intermediate,22,get() + setdefault() + 딕셔너리 병합,get() + setdefault() + 딕셔너리 병합,All
+자료구조 및 알고리즘,내장 자료구조,딕셔너리,Advanced,64,ChainMap + 커스텀 __missing__,ChainMap + 커스텀 __missing__,All
+자료구조 및 알고리즘,내장 자료구조,collections 모듈,Intermediate,30,"deque, Counter, defaultdict 2개 이상","deque, Counter, defaultdict 2개 이상",All
+자료구조 및 알고리즘,내장 자료구조,collections 모듈,Advanced,72,OrderedDict + namedtuple + 커스텀 컬렉션,OrderedDict + namedtuple + 커스텀 컬렉션,All
+자료구조 및 알고리즘,알고리즘 구현,정렬 알고리즘,Basic,6,`sorted()` 기본 사용,`sorted()` 기본 사용,All
+자료구조 및 알고리즘,알고리즘 구현,정렬 알고리즘,Intermediate,28,key 함수 + reverse + 커스텀 비교,key 함수 + reverse + 커스텀 비교,All
+자료구조 및 알고리즘,알고리즘 구현,정렬 알고리즘,Advanced,72,퀵소트/머지소트 직접 구현 + 안정성 고려,퀵소트/머지소트 직접 구현 + 안정성 고려,All
+자료구조 및 알고리즘,알고리즘 구현,검색 알고리즘,Basic,4,in 연산자만,in 연산자만,All
+자료구조 및 알고리즘,알고리즘 구현,검색 알고리즘,Intermediate,25,선형 검색 구현,선형 검색 구현,All
+자료구조 및 알고리즘,알고리즘 구현,검색 알고리즘,Advanced,68,이진 탐색 구현 + bisect 모듈 활용,이진 탐색 구현 + bisect 모듈 활용,All
+자료구조 및 알고리즘,알고리즘 구현,재귀,Intermediate,30,기본 재귀 2-3개 구현,기본 재귀 2-3개 구현,All
+자료구조 및 알고리즘,알고리즘 구현,재귀,Advanced,76,꼬리 재귀 최적화 + 메모이제이션,꼬리 재귀 최적화 + 메모이제이션,All
+자료구조 및 알고리즘,알고리즘 구현,동적 프로그래밍,Advanced,80,DP 테이블 구현 + 최적 부분 구조,DP 테이블 구현 + 최적 부분 구조,All
+자료구조 및 알고리즘,알고리즘 구현,그래프 알고리즘,Advanced,80,DFS/BFS 구현 + 최단 경로 알고리즘,DFS/BFS 구현 + 최단 경로 알고리즘,All
+자료구조 및 알고리즘,복잡도 분석,시간 복잡도,Intermediate,25,Big-O 주석 + 명확한 루프 구조,Big-O 주석 + 명확한 루프 구조,All
+자료구조 및 알고리즘,복잡도 분석,시간 복잡도,Advanced,72,복잡도 최적화 증거 + 벤치마킹,복잡도 최적화 증거 + 벤치마킹,All
+자료구조 및 알고리즘,복잡도 분석,공간 복잡도,Intermediate,28,메모리 사용량 고려 주석,메모리 사용량 고려 주석,All
+자료구조 및 알고리즘,복잡도 분석,공간 복잡도,Advanced,76,제너레이터로 공간 최적화 + 인플레이스 알고리즘,제너레이터로 공간 최적화 + 인플레이스 알고리즘,All
+파일 및 예외 처리,파일 I/O,텍스트 파일,Basic,6,`open()` + read/write만,`open()` + read/write만,All
+파일 및 예외 처리,파일 I/O,텍스트 파일,Intermediate,25,encoding 지정 + with 문,encoding 지정 + with 문,All
+파일 및 예외 처리,파일 I/O,텍스트 파일,Advanced,68,대용량 스트리밍 + mmap 활용,대용량 스트리밍 + mmap 활용,All
+파일 및 예외 처리,파일 I/O,JSON 처리,Basic,8,`json.load/dump` 기본만,`json.load/dump` 기본만,All
+파일 및 예외 처리,파일 I/O,JSON 처리,Intermediate,28,커스텀 encoder + 에러 처리,커스텀 encoder + 에러 처리,All
+파일 및 예외 처리,파일 I/O,JSON 처리,Advanced,72,ijson 스트리밍 + 스키마 검증,ijson 스트리밍 + 스키마 검증,All
+파일 및 예외 처리,파일 I/O,CSV 처리,Basic,8,csv.reader 기본만,csv.reader 기본만,All
+파일 및 예외 처리,파일 I/O,CSV 처리,Intermediate,25,DictReader + 타입 변환,DictReader + 타입 변환,All
+파일 및 예외 처리,파일 I/O,CSV 처리,Advanced,64,pandas 대용량 처리 + chunksize,pandas 대용량 처리 + chunksize,All
+파일 및 예외 처리,파일 I/O,바이너리 파일,Intermediate,30,`rb/wb` 모드 + struct 활용,`rb/wb` 모드 + struct 활용,All
+파일 및 예외 처리,파일 I/O,바이너리 파일,Advanced,76,pickle 프로토콜 선택 + 보안 고려,pickle 프로토콜 선택 + 보안 고려,All
+파일 및 예외 처리,예외 처리,try-except,Basic,6,기본 예외 처리만,기본 예외 처리만,All
+파일 및 예외 처리,예외 처리,try-except,Intermediate,25,특정 예외 타입 + else/finally,특정 예외 타입 + else/finally,All
+파일 및 예외 처리,예외 처리,try-except,Advanced,72,예외 체이닝 + raise from + 컨텍스트 보존,예외 체이닝 + raise from + 컨텍스트 보존,All
+파일 및 예외 처리,예외 처리,커스텀 예외,Intermediate,32,커스텀 예외 클래스 2개 이상,커스텀 예외 클래스 2개 이상,All
+파일 및 예외 처리,예외 처리,커스텀 예외,Advanced,80,예외 계층 구조 + __cause__ 활용,예외 계층 구조 + __cause__ 활용,All
+파일 및 예외 처리,예외 처리,예외 로깅,Intermediate,28,logging + 예외 정보 기록,logging + 예외 정보 기록,All
+파일 및 예외 처리,예외 처리,예외 로깅,Advanced,68,traceback 모듈 + 구조화된 로깅,traceback 모듈 + 구조화된 로깅,All
+웹 프레임워크 - Django,Django 기초,프로젝트 구조,Basic,8,startproject 기본 구조만,startproject 기본 구조만,"Backend,Fullstack"
+웹 프레임워크 - Django,Django 기초,프로젝트 구조,Intermediate,30,앱 분리 + settings 환경별 분리,앱 분리 + settings 환경별 분리,"Backend,Fullstack"
+웹 프레임워크 - Django,Django 기초,프로젝트 구조,Advanced,76,커스텀 앱 구조 + 플러그인 아키텍처,커스텀 앱 구조 + 플러그인 아키텍처,"Backend,Fullstack"
+웹 프레임워크 - Django,Django 기초,URL 라우팅,Basic,6,기본 path() 사용,기본 path() 사용,"Backend,Fullstack"
+웹 프레임워크 - Django,Django 기초,URL 라우팅,Intermediate,25,정규표현식 + 네임스페이스,정규표현식 + 네임스페이스,"Backend,Fullstack"
+웹 프레임워크 - Django,Django 기초,URL 라우팅,Advanced,68,동적 라우팅 + URL 리버스 자동화,동적 라우팅 + URL 리버스 자동화,"Backend,Fullstack"
+웹 프레임워크 - Django,Django 기초,뷰 (Views),Basic,8,함수 기반 뷰 1-2개,함수 기반 뷰 1-2개,"Backend,Fullstack"
+웹 프레임워크 - Django,Django 기초,뷰 (Views),Intermediate,32,CBV 혼합 + 믹스인 사용,CBV 혼합 + 믹스인 사용,"Backend,Fullstack"
+웹 프레임워크 - Django,Django 기초,뷰 (Views),Advanced,80,커스텀 믹스인 + 제네릭 뷰 확장,커스텀 믹스인 + 제네릭 뷰 확장,"Backend,Fullstack"
+웹 프레임워크 - Django,Django ORM,모델 정의,Basic,9,기본 필드 3-5개만,기본 필드 3-5개만,"Backend,Fullstack"
+웹 프레임워크 - Django,Django ORM,모델 정의,Intermediate,32,"ForeignKey, ManyToMany + Meta 옵션","ForeignKey, ManyToMany + Meta 옵션","Backend,Fullstack"
+웹 프레임워크 - Django,Django ORM,모델 정의,Advanced,80,추상 모델 + 커스텀 매니저 + 인덱스 최적화,추상 모델 + 커스텀 매니저 + 인덱스 최적화,"Backend,Fullstack"
+웹 프레임워크 - Django,Django ORM,쿼리 작성,Basic,8,"`.get()`, `.filter()` 기본만","`.get()`, `.filter()` 기본만","Backend,Fullstack"
+웹 프레임워크 - Django,Django ORM,쿼리 작성,Intermediate,35,Q 객체 + annotate/aggregate,Q 객체 + annotate/aggregate,"Backend,Fullstack"
+웹 프레임워크 - Django,Django ORM,쿼리 작성,Advanced,80,"Subquery, Exists, Prefetch 고급 활용","Subquery, Exists, Prefetch 고급 활용","Backend,Fullstack"
+웹 프레임워크 - Django,Django ORM,쿼리 최적화,Intermediate,38,"`select_related`, `prefetch_related`","`select_related`, `prefetch_related`","Backend,Fullstack"
+웹 프레임워크 - Django,Django ORM,쿼리 최적화,Advanced,80,"`only()`, `defer()` + 쿼리 프로파일링","`only()`, `defer()` + 쿼리 프로파일링","Backend,Fullstack"
+웹 프레임워크 - Django,Django 고급,Django Admin,Basic,8,기본 admin.site.register,기본 admin.site.register,"Backend,Fullstack"
+웹 프레임워크 - Django,Django 고급,Django Admin,Intermediate,30,list_display + search_fields,list_display + search_fields,"Backend,Fullstack"
+웹 프레임워크 - Django,Django 고급,Django Admin,Advanced,76,커스텀 액션 + 인라인 + 권한 제어,커스텀 액션 + 인라인 + 권한 제어,"Backend,Fullstack"
+웹 프레임워크 - Django,Django 고급,Form/ModelForm,Basic,9,ModelForm 기본 사용,ModelForm 기본 사용,"Backend,Fullstack"
+웹 프레임워크 - Django,Django 고급,Form/ModelForm,Intermediate,32,커스텀 clean() + 위젯 커스터마이징,커스텀 clean() + 위젯 커스터마이징,"Backend,Fullstack"
+웹 프레임워크 - Django,Django 고급,Form/ModelForm,Advanced,80,Formset + 동적 폼 생성,Formset + 동적 폼 생성,"Backend,Fullstack"
+웹 프레임워크 - Django,Django 고급,미들웨어,Intermediate,35,기존 미들웨어 활성화,기존 미들웨어 활성화,"Backend,Fullstack"
+웹 프레임워크 - Django,Django 고급,미들웨어,Advanced,80,커스텀 미들웨어 구현 + 성능 최적화,커스텀 미들웨어 구현 + 성능 최적화,"Backend,Fullstack"
+웹 프레임워크 - Django,Django 고급,시그널 (Signals),Intermediate,32,"pre_save, post_save 활용","pre_save, post_save 활용","Backend,Fullstack"
+웹 프레임워크 - Django,Django 고급,시그널 (Signals),Advanced,76,커스텀 시그널 정의 + 디커플링 패턴,커스텀 시그널 정의 + 디커플링 패턴,"Backend,Fullstack"
+웹 프레임워크 - Django,Django REST Framework,Serializer,Basic,10,ModelSerializer 기본,ModelSerializer 기본,"Backend,Fullstack"
+웹 프레임워크 - Django,Django REST Framework,Serializer,Intermediate,38,SerializerMethodField + validation,SerializerMethodField + validation,"Backend,Fullstack"
+웹 프레임워크 - Django,Django REST Framework,Serializer,Advanced,80,중첩 Serializer + write() 커스터마이징,중첩 Serializer + write() 커스터마이징,"Backend,Fullstack"
+웹 프레임워크 - Django,Django REST Framework,ViewSet,Basic,9,ModelViewSet 기본,ModelViewSet 기본,"Backend,Fullstack"
+웹 프레임워크 - Django,Django REST Framework,ViewSet,Intermediate,35,커스텀 액션 + 권한 클래스,커스텀 액션 + 권한 클래스,"Backend,Fullstack"
+웹 프레임워크 - Django,Django REST Framework,ViewSet,Advanced,80,GenericViewSet + 믹스인 조합,GenericViewSet + 믹스인 조합,"Backend,Fullstack"
+웹 프레임워크 - Django,Django REST Framework,인증/권한,Basic,8,TokenAuthentication 기본,TokenAuthentication 기본,"Backend,Fullstack"
+웹 프레임워크 - Django,Django REST Framework,인증/권한,Intermediate,32,JWT + 커스텀 권한 클래스,JWT + 커스텀 권한 클래스,"Backend,Fullstack"
+웹 프레임워크 - Django,Django REST Framework,인증/권한,Advanced,80,OAuth2 + 세밀한 권한 제어,OAuth2 + 세밀한 권한 제어,"Backend,Fullstack"
+웹 프레임워크 - Django,Django REST Framework,필터링/페이지네이션,Intermediate,30,django-filter + PageNumberPagination,django-filter + PageNumberPagination,"Backend,Fullstack"
+웹 프레임워크 - Django,Django REST Framework,필터링/페이지네이션,Advanced,76,커스텀 필터 + 동적 페이지네이션,커스텀 필터 + 동적 페이지네이션,"Backend,Fullstack"
+웹 프레임워크 - FastAPI,FastAPI 기초,라우팅,Basic,8,@app.get() 기본만,@app.get() 기본만,"Backend,Fullstack"
+웹 프레임워크 - FastAPI,FastAPI 기초,라우팅,Intermediate,30,APIRouter + 태그/의존성 주입,APIRouter + 태그/의존성 주입,"Backend,Fullstack"
+웹 프레임워크 - FastAPI,FastAPI 기초,라우팅,Advanced,76,동적 라우트 + 라우터 조합 패턴,동적 라우트 + 라우터 조합 패턴,"Backend,Fullstack"
+웹 프레임워크 - FastAPI,FastAPI 기초,Pydantic 모델,Basic,9,BaseModel 기본 필드,BaseModel 기본 필드,"Backend,Fullstack"
+웹 프레임워크 - FastAPI,FastAPI 기초,Pydantic 모델,Intermediate,32,Field() + validator 2-3개,Field() + validator 2-3개,"Backend,Fullstack"
+웹 프레임워크 - FastAPI,FastAPI 기초,Pydantic 모델,Advanced,80,Generic 모델 + 동적 모델 생성,Generic 모델 + 동적 모델 생성,"Backend,Fullstack"
+웹 프레임워크 - FastAPI,FastAPI 기초,요청/응답,Basic,8,Path/Query 파라미터 기본,Path/Query 파라미터 기본,"Backend,Fullstack"
+웹 프레임워크 - FastAPI,FastAPI 기초,요청/응답,Intermediate,28,Request Body + Response 모델,Request Body + Response 모델,"Backend,Fullstack"
+웹 프레임워크 - FastAPI,FastAPI 기초,요청/응답,Advanced,72,스트리밍 응답 + 파일 업로드 처리,스트리밍 응답 + 파일 업로드 처리,"Backend,Fullstack"
+웹 프레임워크 - FastAPI,FastAPI 고급,Dependency Injection,Basic,9,Depends() 기본 사용,Depends() 기본 사용,"Backend,Fullstack"
+웹 프레임워크 - FastAPI,FastAPI 고급,Dependency Injection,Intermediate,35,계층적 의존성 + 캐싱,계층적 의존성 + 캐싱,"Backend,Fullstack"
+웹 프레임워크 - FastAPI,FastAPI 고급,Dependency Injection,Advanced,80,제너레이터 의존성 + 컨텍스트 관리,제너레이터 의존성 + 컨텍스트 관리,"Backend,Fullstack"
+웹 프레임워크 - FastAPI,FastAPI 고급,비동기 처리,Basic,8,async def 기본만,async def 기본만,"Backend,Fullstack"
+웹 프레임워크 - FastAPI,FastAPI 고급,비동기 처리,Intermediate,32,asyncio.gather + 비동기 DB,asyncio.gather + 비동기 DB,"Backend,Fullstack"
+웹 프레임워크 - FastAPI,FastAPI 고급,비동기 처리,Advanced,80,백그라운드 작업 + WebSocket,백그라운드 작업 + WebSocket,"Backend,Fullstack"
+웹 프레임워크 - FastAPI,FastAPI 고급,미들웨어,Intermediate,30,CORS + 기본 미들웨어,CORS + 기본 미들웨어,"Backend,Fullstack"
+웹 프레임워크 - FastAPI,FastAPI 고급,미들웨어,Advanced,76,커스텀 미들웨어 + 요청/응답 인터셉터,커스텀 미들웨어 + 요청/응답 인터셉터,"Backend,Fullstack"
+웹 프레임워크 - FastAPI,FastAPI 고급,인증/보안,Basic,8,HTTPBasic 기본,HTTPBasic 기본,"Backend,Fullstack"
+웹 프레임워크 - FastAPI,FastAPI 고급,인증/보안,Intermediate,35,OAuth2PasswordBearer + JWT,OAuth2PasswordBearer + JWT,"Backend,Fullstack"
+웹 프레임워크 - FastAPI,FastAPI 고급,인증/보안,Advanced,80,커스텀 보안 스킴 + API 키 관리,커스텀 보안 스킴 + API 키 관리,"Backend,Fullstack"
+웹 프레임워크 - FastAPI,FastAPI 최적화,성능 최적화,Intermediate,32,response_model + 캐싱,response_model + 캐싱,"Backend,Fullstack"
+웹 프레임워크 - FastAPI,FastAPI 최적화,성능 최적화,Advanced,80,응답 압축 + 커넥션 풀링,응답 압축 + 커넥션 풀링,"Backend,Fullstack"
+웹 프레임워크 - FastAPI,FastAPI 최적화,OpenAPI 커스터마이징,Basic,8,자동 문서 사용만,자동 문서 사용만,"Backend,Fullstack"
+웹 프레임워크 - FastAPI,FastAPI 최적화,OpenAPI 커스터마이징,Intermediate,30,tags + 설명 추가,tags + 설명 추가,"Backend,Fullstack"
+웹 프레임워크 - FastAPI,FastAPI 최적화,OpenAPI 커스터마이징,Advanced,76,스키마 확장 + 커스텀 UI,스키마 확장 + 커스텀 UI,"Backend,Fullstack"
+웹 프레임워크 - FastAPI,FastAPI 최적화,테스팅,Intermediate,28,TestClient 기본 테스트,TestClient 기본 테스트,"Backend,Fullstack"
+웹 프레임워크 - FastAPI,FastAPI 최적화,테스팅,Advanced,72,pytest-asyncio + 픽스처 활용,pytest-asyncio + 픽스처 활용,"Backend,Fullstack"
+웹 프레임워크 - Flask,Flask 기초,애플리케이션 구조,Basic,6,단일 파일 앱만,단일 파일 앱만,"Backend,Fullstack"
+웹 프레임워크 - Flask,Flask 기초,애플리케이션 구조,Intermediate,28,Blueprint 모듈화,Blueprint 모듈화,"Backend,Fullstack"
+웹 프레임워크 - Flask,Flask 기초,애플리케이션 구조,Advanced,72,Application Factory 패턴,Application Factory 패턴,"Backend,Fullstack"
+웹 프레임워크 - Flask,Flask 기초,라우팅 및 뷰,Basic,6,@app.route() 기본만,@app.route() 기본만,"Backend,Fullstack"
+웹 프레임워크 - Flask,Flask 기초,라우팅 및 뷰,Intermediate,25,URL 변수 + 메서드 제한,URL 변수 + 메서드 제한,"Backend,Fullstack"
+웹 프레임워크 - Flask,Flask 기초,라우팅 및 뷰,Advanced,68,URL 컨버터 + 동적 라우팅,URL 컨버터 + 동적 라우팅,"Backend,Fullstack"
+웹 프레임워크 - Flask,Flask 기초,템플릿 (Jinja2),Basic,8,render_template 기본,render_template 기본,"Backend,Fullstack"
+웹 프레임워크 - Flask,Flask 기초,템플릿 (Jinja2),Intermediate,28,상속 + 매크로,상속 + 매크로,"Backend,Fullstack"
+웹 프레임워크 - Flask,Flask 기초,템플릿 (Jinja2),Advanced,72,커스텀 필터 + 전역 함수,커스텀 필터 + 전역 함수,"Backend,Fullstack"
+웹 프레임워크 - Flask,Flask 확장,Flask-SQLAlchemy,Basic,9,기본 모델 정의,기본 모델 정의,"Backend,Fullstack"
+웹 프레임워크 - Flask,Flask 확장,Flask-SQLAlchemy,Intermediate,32,관계 매핑 + 마이그레이션,관계 매핑 + 마이그레이션,"Backend,Fullstack"
+웹 프레임워크 - Flask,Flask 확장,Flask-SQLAlchemy,Advanced,80,쿼리 최적화 + 커스텀 쿼리 클래스,쿼리 최적화 + 커스텀 쿼리 클래스,"Backend,Fullstack"
+웹 프레임워크 - Flask,Flask 확장,Flask-Login,Basic,8,login_required 데코레이터,login_required 데코레이터,"Backend,Fullstack"
+웹 프레임워크 - Flask,Flask 확장,Flask-Login,Intermediate,30,UserMixin + 커스텀 로더,UserMixin + 커스텀 로더,"Backend,Fullstack"
+웹 프레임워크 - Flask,Flask 확장,Flask-Login,Advanced,76,세션 관리 + remember_me 구현,세션 관리 + remember_me 구현,"Backend,Fullstack"
+웹 프레임워크 - Flask,Flask 확장,Flask-RESTful,Basic,9,Resource 기본 사용,Resource 기본 사용,"Backend,Fullstack"
+웹 프레임워크 - Flask,Flask 확장,Flask-RESTful,Intermediate,32,reqparse + marshal_with,reqparse + marshal_with,"Backend,Fullstack"
+웹 프레임워크 - Flask,Flask 확장,Flask-RESTful,Advanced,80,커스텀 필드 + 에러 핸들러,커스텀 필드 + 에러 핸들러,"Backend,Fullstack"
+웹 프레임워크 - Flask,Flask 확장,Flask-SocketIO,Intermediate,35,기본 이벤트 송수신,기본 이벤트 송수신,"Backend,Fullstack"
+웹 프레임워크 - Flask,Flask 확장,Flask-SocketIO,Advanced,80,룸 관리 + 네임스페이스 + 인증,룸 관리 + 네임스페이스 + 인증,"Backend,Fullstack"
+비동기 프로그래밍 (asyncio),asyncio 기초,async/await,Basic,8,async def 함수 정의만,async def 함수 정의만,Backend
+비동기 프로그래밍 (asyncio),asyncio 기초,async/await,Intermediate,30,await 체이닝 + 에러 처리,await 체이닝 + 에러 처리,Backend
+비동기 프로그래밍 (asyncio),asyncio 기초,async/await,Advanced,76,비동기 컨텍스트 매니저 + 제너레이터,비동기 컨텍스트 매니저 + 제너레이터,Backend
+비동기 프로그래밍 (asyncio),asyncio 기초,Task 생성,Basic,9,asyncio.run() 기본,asyncio.run() 기본,Backend
+비동기 프로그래밍 (asyncio),asyncio 기초,Task 생성,Intermediate,32,create_task() + gather(),create_task() + gather(),Backend
+비동기 프로그래밍 (asyncio),asyncio 기초,Task 생성,Advanced,80,TaskGroup + 타임아웃 제어,TaskGroup + 타임아웃 제어,Backend
+비동기 프로그래밍 (asyncio),asyncio 기초,동시성 제어,Intermediate,35,Semaphore + Lock,Semaphore + Lock,Backend
+비동기 프로그래밍 (asyncio),asyncio 기초,동시성 제어,Advanced,80,Queue + 워커 풀 패턴,Queue + 워커 풀 패턴,Backend
+비동기 프로그래밍 (asyncio),비동기 라이브러리,aiohttp,Basic,9,ClientSession 기본 요청,ClientSession 기본 요청,Backend
+비동기 프로그래밍 (asyncio),비동기 라이브러리,aiohttp,Intermediate,32,타임아웃 + 재시도 로직,타임아웃 + 재시도 로직,Backend
+비동기 프로그래밍 (asyncio),비동기 라이브러리,aiohttp,Advanced,80,연결 풀 최적화 + 스트리밍,연결 풀 최적화 + 스트리밍,Backend
+비동기 프로그래밍 (asyncio),비동기 라이브러리,httpx,Basic,9,AsyncClient 기본 사용,AsyncClient 기본 사용,"Backend,All"
+비동기 프로그래밍 (asyncio),비동기 라이브러리,httpx,Intermediate,30,인터셉터 + 이벤트 훅,인터셉터 + 이벤트 훅,"Backend,All"
+비동기 프로그래밍 (asyncio),비동기 라이브러리,httpx,Advanced,76,HTTP/2 + 커스텀 트랜스포트,HTTP/2 + 커스텀 트랜스포트,"Backend,All"
+비동기 프로그래밍 (asyncio),비동기 라이브러리,aiofiles,Basic,8,기본 파일 읽기/쓰기,기본 파일 읽기/쓰기,Backend
+비동기 프로그래밍 (asyncio),비동기 라이브러리,aiofiles,Intermediate,30,대용량 파일 스트리밍,대용량 파일 스트리밍,Backend
+비동기 프로그래밍 (asyncio),비동기 라이브러리,aiofiles,Advanced,72,비동기 파일 락 + 병렬 I/O,비동기 파일 락 + 병렬 I/O,Backend
+데이터 분석 및 과학 계산,NumPy,배열 연산,Basic,8,배열 생성 + 기본 연산,배열 생성 + 기본 연산,"Data,AI/ML"
+데이터 분석 및 과학 계산,NumPy,배열 연산,Intermediate,30,브로드캐스팅 + 팬시 인덱싱,브로드캐스팅 + 팬시 인덱싱,"Data,AI/ML"
+데이터 분석 및 과학 계산,NumPy,배열 연산,Advanced,76,ufunc 활용 + 메모리 레이아웃 최적화,ufunc 활용 + 메모리 레이아웃 최적화,"Data,AI/ML"
+데이터 분석 및 과학 계산,NumPy,선형 대수,Intermediate,32,np.linalg 기본 함수,np.linalg 기본 함수,"Data,AI/ML"
+데이터 분석 및 과학 계산,NumPy,선형 대수,Advanced,80,고유값 분해 + SVD,고유값 분해 + SVD,"Data,AI/ML"
+데이터 분석 및 과학 계산,Pandas,DataFrame 조작,Basic,9,read_csv + 기본 조회,read_csv + 기본 조회,"Data,AI/ML"
+데이터 분석 및 과학 계산,Pandas,DataFrame 조작,Intermediate,32,groupby + merge/join,groupby + merge/join,"Data,AI/ML"
+데이터 분석 및 과학 계산,Pandas,DataFrame 조작,Advanced,80,pivot_table + 복잡한 변환,pivot_table + 복잡한 변환,"Data,AI/ML"
+데이터 분석 및 과학 계산,Pandas,데이터 정제,Basic,8,dropna() 기본 사용,dropna() 기본 사용,"Data,AI/ML"
+데이터 분석 및 과학 계산,Pandas,데이터 정제,Intermediate,30,fillna() + 타입 변환,fillna() + 타입 변환,"Data,AI/ML"
+데이터 분석 및 과학 계산,Pandas,데이터 정제,Advanced,76,커스텀 결측치 전략 + 이상치 탐지,커스텀 결측치 전략 + 이상치 탐지,"Data,AI/ML"
+데이터 분석 및 과학 계산,Pandas,성능 최적화,Intermediate,35,카테고리 타입 + chunksize,카테고리 타입 + chunksize,"Data,AI/ML"
+데이터 분석 및 과학 계산,Pandas,성능 최적화,Advanced,80,eval/query + 메모리 프로파일링,eval/query + 메모리 프로파일링,"Data,AI/ML"
+데이터 분석 및 과학 계산,시각화,matplotlib,Basic,8,plot() 기본 그래프,plot() 기본 그래프,"Data,AI/ML"
+데이터 분석 및 과학 계산,시각화,matplotlib,Intermediate,28,서브플롯 + 스타일 커스터마이징,서브플롯 + 스타일 커스터마이징,"Data,AI/ML"
+데이터 분석 및 과학 계산,시각화,matplotlib,Advanced,72,애니메이션 + 커스텀 아티스트,애니메이션 + 커스텀 아티스트,"Data,AI/ML"
+데이터 분석 및 과학 계산,시각화,seaborn,Basic,9,"countplot, histplot 기본","countplot, histplot 기본","Data,AI/ML"
+데이터 분석 및 과학 계산,시각화,seaborn,Intermediate,30,pairplot + heatmap 커스터마이징,pairplot + heatmap 커스터마이징,"Data,AI/ML"
+데이터 분석 및 과학 계산,시각화,seaborn,Advanced,76,FacetGrid + 통계 시각화,FacetGrid + 통계 시각화,"Data,AI/ML"
+데이터 분석 및 과학 계산,시각화,plotly,Basic,9,기본 인터랙티브 차트,기본 인터랙티브 차트,"Data,AI/ML"
+데이터 분석 및 과학 계산,시각화,plotly,Intermediate,32,대시보드 레이아웃,대시보드 레이아웃,"Data,AI/ML"
+데이터 분석 및 과학 계산,시각화,plotly,Advanced,80,커스텀 콜백 + 실시간 업데이트,커스텀 콜백 + 실시간 업데이트,"Data,AI/ML"
+머신러닝 및 딥러닝,Scikit-learn,모델 학습,Basic,9,fit/predict 기본 사용,fit/predict 기본 사용,AI/ML
+머신러닝 및 딥러닝,Scikit-learn,모델 학습,Intermediate,32,Pipeline + GridSearchCV,Pipeline + GridSearchCV,AI/ML
+머신러닝 및 딥러닝,Scikit-learn,모델 학습,Advanced,80,커스텀 Estimator + 앙상블,커스텀 Estimator + 앙상블,AI/ML
+머신러닝 및 딥러닝,Scikit-learn,전처리,Basic,8,StandardScaler 기본,StandardScaler 기본,AI/ML
+머신러닝 및 딥러닝,Scikit-learn,전처리,Intermediate,30,ColumnTransformer + 커스텀 변환기,ColumnTransformer + 커스텀 변환기,AI/ML
+머신러닝 및 딥러닝,Scikit-learn,전처리,Advanced,76,FeatureUnion + 전처리 파이프라인 최적화,FeatureUnion + 전처리 파이프라인 최적화,AI/ML
+머신러닝 및 딥러닝,Scikit-learn,평가,Basic,8,accuracy_score 기본,accuracy_score 기본,AI/ML
+머신러닝 및 딥러닝,Scikit-learn,평가,Intermediate,28,교차 검증 + 여러 메트릭,교차 검증 + 여러 메트릭,AI/ML
+머신러닝 및 딥러닝,Scikit-learn,평가,Advanced,72,커스텀 스코어 함수 + 학습 곡선 분석,커스텀 스코어 함수 + 학습 곡선 분석,AI/ML
+머신러닝 및 딥러닝,TensorFlow/Keras,모델 구축,Basic,10,Sequential 기본 모델,Sequential 기본 모델,AI/ML
+머신러닝 및 딥러닝,TensorFlow/Keras,모델 구축,Intermediate,35,Functional API + 커스텀 레이어,Functional API + 커스텀 레이어,AI/ML
+머신러닝 및 딥러닝,TensorFlow/Keras,모델 구축,Advanced,80,Subclassing + 커스텀 훈련 루프,Subclassing + 커스텀 훈련 루프,AI/ML
+머신러닝 및 딥러닝,TensorFlow/Keras,학습,Basic,9,model.fit() 기본,model.fit() 기본,AI/ML
+머신러닝 및 딥러닝,TensorFlow/Keras,학습,Intermediate,32,콜백 + 체크포인트,콜백 + 체크포인트,AI/ML
+머신러닝 및 딥러닝,TensorFlow/Keras,학습,Advanced,80,tf.GradientTape + 분산 학습,tf.GradientTape + 분산 학습,AI/ML
+머신러닝 및 딥러닝,TensorFlow/Keras,최적화,Intermediate,35,모델 저장/로드 + 양자화,모델 저장/로드 + 양자화,AI/ML
+머신러닝 및 딥러닝,TensorFlow/Keras,최적화,Advanced,80,TensorRT + TFLite 변환,TensorRT + TFLite 변환,AI/ML
+머신러닝 및 딥러닝,PyTorch,모델 정의,Basic,10,nn.Module 기본 상속,nn.Module 기본 상속,AI/ML
+머신러닝 및 딥러닝,PyTorch,모델 정의,Intermediate,35,커스텀 nn.Module + forward 구현,커스텀 nn.Module + forward 구현,AI/ML
+머신러닝 및 딥러닝,PyTorch,모델 정의,Advanced,80,동적 그래프 + 커스텀 autograd 함수,동적 그래프 + 커스텀 autograd 함수,AI/ML
+머신러닝 및 딥러닝,PyTorch,학습 루프,Basic,9,기본 훈련 루프,기본 훈련 루프,AI/ML
+머신러닝 및 딥러닝,PyTorch,학습 루프,Intermediate,32,DataLoader + 학습/검증 분리,DataLoader + 학습/검증 분리,AI/ML
+머신러닝 및 딥러닝,PyTorch,학습 루프,Advanced,80,분산 학습 + 혼합 정밀도,분산 학습 + 혼합 정밀도,AI/ML
+머신러닝 및 딥러닝,Hugging Face & LangChain,Transformers,Basic,10,pipeline() 기본 사용,pipeline() 기본 사용,AI/ML
+머신러닝 및 딥러닝,Hugging Face & LangChain,Transformers,Intermediate,38,모델 미세 조정 + Trainer,모델 미세 조정 + Trainer,AI/ML
+머신러닝 및 딥러닝,Hugging Face & LangChain,Transformers,Advanced,80,커스텀 모델 + 양자화,커스텀 모델 + 양자화,AI/ML
+머신러닝 및 딥러닝,Hugging Face & LangChain,LangChain,Basic,10,기본 체인 생성,기본 체인 생성,AI/ML
+머신러닝 및 딥러닝,Hugging Face & LangChain,LangChain,Intermediate,40,메모리 + 에이전트,메모리 + 에이전트,AI/ML
+머신러닝 및 딥러닝,Hugging Face & LangChain,LangChain,Advanced,80,커스텀 도구 + RAG 파이프라인,커스텀 도구 + RAG 파이프라인,AI/ML
+머신러닝 및 딥러닝,Hugging Face & LangChain,벡터 DB 통합,Intermediate,35,Chroma/FAISS 기본,Chroma/FAISS 기본,AI/ML
+머신러닝 및 딥러닝,Hugging Face & LangChain,벡터 DB 통합,Advanced,80,하이브리드 검색 + 리랭킹,하이브리드 검색 + 리랭킹,AI/ML
+데이터베이스 연동,SQL 데이터베이스,기본 연결,Basic,6,sqlite3 기본 연결,sqlite3 기본 연결,"Data,AI/ML"
+데이터베이스 연동,SQL 데이터베이스,기본 연결,Intermediate,25,연결 풀 + 파라미터화 쿼리,연결 풀 + 파라미터화 쿼리,"Data,AI/ML"
+데이터베이스 연동,SQL 데이터베이스,기본 연결,Advanced,68,"비동기 DB (asyncpg, aiomysql)","비동기 DB (asyncpg, aiomysql)","Data,AI/ML"
+데이터베이스 연동,SQL 데이터베이스,SQLAlchemy Core,Basic,8,기본 쿼리 실행,기본 쿼리 실행,"Data,AI/ML"
+데이터베이스 연동,SQL 데이터베이스,SQLAlchemy Core,Intermediate,30,트랜잭션 + 조인,트랜잭션 + 조인,"Data,AI/ML"
+데이터베이스 연동,SQL 데이터베이스,SQLAlchemy Core,Advanced,76,CTE + Window 함수,CTE + Window 함수,"Data,AI/ML"
+데이터베이스 연동,SQL 데이터베이스,SQLAlchemy ORM,Basic,9,기본 모델 CRUD,기본 모델 CRUD,"Data,AI/ML"
+데이터베이스 연동,SQL 데이터베이스,SQLAlchemy ORM,Intermediate,35,관계 매핑 + 쿼리 최적화,관계 매핑 + 쿼리 최적화,"Data,AI/ML"
+데이터베이스 연동,SQL 데이터베이스,SQLAlchemy ORM,Advanced,80,하이브리드 프로퍼티 + 이벤트 리스너,하이브리드 프로퍼티 + 이벤트 리스너,"Data,AI/ML"
+데이터베이스 연동,NoSQL 데이터베이스,MongoDB (pymongo),Basic,9,기본 CRUD 연산,기본 CRUD 연산,"Data,AI/ML"
+데이터베이스 연동,NoSQL 데이터베이스,MongoDB (pymongo),Intermediate,32,집계 파이프라인 + 인덱스,집계 파이프라인 + 인덱스,"Data,AI/ML"
+데이터베이스 연동,NoSQL 데이터베이스,MongoDB (pymongo),Advanced,80,트랜잭션 + 샤딩 전략,트랜잭션 + 샤딩 전략,"Data,AI/ML"
+데이터베이스 연동,NoSQL 데이터베이스,Redis,Basic,9,get/set 기본 연산,get/set 기본 연산,"Data,AI/ML"
+데이터베이스 연동,NoSQL 데이터베이스,Redis,Intermediate,32,파이프라인 + Pub/Sub,파이프라인 + Pub/Sub,"Data,AI/ML"
+데이터베이스 연동,NoSQL 데이터베이스,Redis,Advanced,80,Lua 스크립트 + 클러스터,Lua 스크립트 + 클러스터,"Data,AI/ML"
+테스트 및 디버깅,pytest,기본 테스트,Basic,8,assert 기본 테스트,assert 기본 테스트,"All,QA"
+테스트 및 디버깅,pytest,기본 테스트,Intermediate,28,fixture + parametrize,fixture + parametrize,"All,QA"
+테스트 및 디버깅,pytest,기본 테스트,Advanced,76,커스텀 플러그인 + conftest 활용,커스텀 플러그인 + conftest 활용,"All,QA"
+테스트 및 디버깅,pytest,모킹,Intermediate,32,monkeypatch + mock 객체,monkeypatch + mock 객체,"All,QA"
+테스트 및 디버깅,pytest,모킹,Advanced,80,pytest-mock + 복잡한 모킹 시나리오,pytest-mock + 복잡한 모킹 시나리오,"All,QA"
+테스트 및 디버깅,pytest,커버리지,Intermediate,30,pytest-cov 기본 사용,pytest-cov 기본 사용,"All,QA"
+테스트 및 디버깅,pytest,커버리지,Advanced,76,브랜치 커버리지 + 커버리지 리포트,브랜치 커버리지 + 커버리지 리포트,"All,QA"
+테스트 및 디버깅,디버깅,디버거 사용,Basic,6,print 디버깅만,print 디버깅만,"All,QA"
+테스트 및 디버깅,디버깅,디버거 사용,Intermediate,28,pdb + breakpoint(),pdb + breakpoint(),"All,QA"
+테스트 및 디버깅,디버깅,디버거 사용,Advanced,72,ipdb + 조건부 브레이크포인트,ipdb + 조건부 브레이크포인트,"All,QA"
+테스트 및 디버깅,디버깅,로깅,Basic,8,print() 대신 logging 사용,print() 대신 logging 사용,"All,QA"
+테스트 및 디버깅,디버깅,로깅,Intermediate,30,로그 레벨 + 핸들러 설정,로그 레벨 + 핸들러 설정,"All,QA"
+테스트 및 디버깅,디버깅,로깅,Advanced,80,구조화된 로깅 + 로그 집계,구조화된 로깅 + 로그 집계,"All,QA"
+테스트 및 디버깅,디버깅,프로파일링,Intermediate,32,cProfile 기본 사용,cProfile 기본 사용,"All,QA"
+테스트 및 디버깅,디버깅,프로파일링,Advanced,80,line_profiler + memory_profiler,line_profiler + memory_profiler,"All,QA"
+클라우드 및 배포,컨테이너화,Docker,Basic,8,기본 Dockerfile 작성,기본 Dockerfile 작성,DevOps
+클라우드 및 배포,컨테이너화,Docker,Intermediate,32,멀티 스테이지 빌드 + .dockerignore,멀티 스테이지 빌드 + .dockerignore,DevOps
+클라우드 및 배포,컨테이너화,Docker,Advanced,80,보안 강화 + 최적화된 이미지,보안 강화 + 최적화된 이미지,DevOps
+클라우드 및 배포,컨테이너화,Docker Compose,Intermediate,30,다중 서비스 오케스트레이션,다중 서비스 오케스트레이션,DevOps
+클라우드 및 배포,컨테이너화,Docker Compose,Advanced,76,환경별 설정 + 볼륨 관리,환경별 설정 + 볼륨 관리,DevOps
+클라우드 및 배포,CI/CD,GitHub Actions,Basic,4,기본 워크플로우,기본 워크플로우,All
+클라우드 및 배포,CI/CD,GitHub Actions,Intermediate,28,매트릭스 빌드 + 캐싱,매트릭스 빌드 + 캐싱,All
+클라우드 및 배포,CI/CD,GitHub Actions,Advanced,68,재사용 가능한 워크플로우 + 시크릿 관리,재사용 가능한 워크플로우 + 시크릿 관리,All
+클라우드 및 배포,CI/CD,배포 자동화,Basic,8,수동 배포 스크립트,수동 배포 스크립트,DevOps
+클라우드 및 배포,CI/CD,배포 자동화,Intermediate,32,자동 배포 파이프라인,자동 배포 파이프라인,DevOps
+클라우드 및 배포,CI/CD,배포 자동화,Advanced,80,Blue-Green + 카나리 배포,Blue-Green + 카나리 배포,DevOps
+클라우드 및 배포,클라우드 플랫폼,AWS,Basic,9,EC2 기본 배포,EC2 기본 배포,"DevOps,Backend"
+클라우드 및 배포,클라우드 플랫폼,AWS,Intermediate,35,Lambda + S3 + RDS 통합,Lambda + S3 + RDS 통합,"DevOps,Backend"
+클라우드 및 배포,클라우드 플랫폼,AWS,Advanced,80,ECS/EKS + CloudFormation/CDK,ECS/EKS + CloudFormation/CDK,"DevOps,Backend"
+클라우드 및 배포,클라우드 플랫폼,Kubernetes,Intermediate,40,기본 배포 + 서비스,기본 배포 + 서비스,DevOps
+클라우드 및 배포,클라우드 플랫폼,Kubernetes,Advanced,80,Helm + 오토스케일링 + 모니터링,Helm + 오토스케일링 + 모니터링,DevOps
+코드 품질 및 스타일,코드 스타일,PEP 8 준수,Basic,6,기본적인 들여쓰기,기본적인 들여쓰기,All
+코드 품질 및 스타일,코드 스타일,PEP 8 준수,Intermediate,25,"자동 포맷터 (Black, autopep8)","자동 포맷터 (Black, autopep8)",All
+코드 품질 및 스타일,코드 스타일,PEP 8 준수,Advanced,68,pre-commit + 팀 컨벤션,pre-commit + 팀 컨벤션,All
+코드 품질 및 스타일,코드 스타일,Docstring,Basic,6,간단한 주석만,간단한 주석만,All
+코드 품질 및 스타일,코드 스타일,Docstring,Intermediate,28,Google/NumPy 스타일 docstring,Google/NumPy 스타일 docstring,All
+코드 품질 및 스타일,코드 스타일,Docstring,Advanced,72,Sphinx + autodoc + 타입 힌트 통합,Sphinx + autodoc + 타입 힌트 통합,All
+코드 품질 및 스타일,코드 스타일,타입 힌트,Basic,8,일부 함수에만 타입 힌트,일부 함수에만 타입 힌트,All
+코드 품질 및 스타일,코드 스타일,타입 힌트,Intermediate,30,대부분의 함수 + mypy 통과,대부분의 함수 + mypy 통과,All
+코드 품질 및 스타일,코드 스타일,타입 힌트,Advanced,80,100% 커버리지 + strict 모드,100% 커버리지 + strict 모드,All
+코드 품질 및 스타일,정적 분석,Linting,Basic,8,pylint/flake8 기본 실행,pylint/flake8 기본 실행,All
+코드 품질 및 스타일,정적 분석,Linting,Intermediate,30,설정 파일 커스터마이징,설정 파일 커스터마이징,All
+코드 품질 및 스타일,정적 분석,Linting,Advanced,76,커스텀 린트 규칙 + CI 통합,커스텀 린트 규칙 + CI 통합,All
+코드 품질 및 스타일,정적 분석,보안 스캔,Intermediate,32,bandit 기본 스캔,bandit 기본 스캔,"Backend,Security"
+코드 품질 및 스타일,정적 분석,보안 스캔,Advanced,80,safety + 의존성 취약점 자동 패치,safety + 의존성 취약점 자동 패치,"Backend,Security"
+추가 프레임워크 및 라이브러리,작업 스케줄링,Celery,Basic,9,기본 태스크 정의,기본 태스크 정의,Backend
+추가 프레임워크 및 라이브러리,작업 스케줄링,Celery,Intermediate,35,Celery Beat + 결과 백엔드,Celery Beat + 결과 백엔드,Backend
+추가 프레임워크 및 라이브러리,작업 스케줄링,Celery,Advanced,80,분산 시스템 + 커스텀 라우팅,분산 시스템 + 커스텀 라우팅,Backend
+추가 프레임워크 및 라이브러리,작업 스케줄링,APScheduler,Basic,8,기본 스케줄러,기본 스케줄러,All
+추가 프레임워크 및 라이브러리,작업 스케줄링,APScheduler,Intermediate,30,Cron 표현식 + 저장소,Cron 표현식 + 저장소,All
+추가 프레임워크 및 라이브러리,작업 스케줄링,APScheduler,Advanced,76,이벤트 리스너 + 동적 스케줄,이벤트 리스너 + 동적 스케줄,All
+추가 프레임워크 및 라이브러리,작업 스케줄링,Airflow,Intermediate,40,DAG 작성 + 오퍼레이터,DAG 작성 + 오퍼레이터,"Data,Backend,DevOps"
+추가 프레임워크 및 라이브러리,작업 스케줄링,Airflow,Advanced,80,커스텀 오퍼레이터 + 분산 실행,커스텀 오퍼레이터 + 분산 실행,"Data,Backend,DevOps"
+추가 프레임워크 및 라이브러리,웹 스크래핑,BeautifulSoup,Basic,8,기본 파싱,기본 파싱,"Backend,Data"
+추가 프레임워크 및 라이브러리,웹 스크래핑,BeautifulSoup,Intermediate,28,CSS/XPath 선택자,CSS/XPath 선택자,"Backend,Data"
+추가 프레임워크 및 라이브러리,웹 스크래핑,BeautifulSoup,Advanced,68,복잡한 HTML 구조 + 에러 처리,복잡한 HTML 구조 + 에러 처리,"Backend,Data"
+추가 프레임워크 및 라이브러리,웹 스크래핑,Scrapy,Basic,9,기본 스파이더,기본 스파이더,"Backend,Data"
+추가 프레임워크 및 라이브러리,웹 스크래핑,Scrapy,Intermediate,35,미들웨어 + 파이프라인,미들웨어 + 파이프라인,"Backend,Data"
+추가 프레임워크 및 라이브러리,웹 스크래핑,Scrapy,Advanced,80,분산 크롤링 + 커스텀 설정,분산 크롤링 + 커스텀 설정,"Backend,Data"
+추가 프레임워크 및 라이브러리,웹 스크래핑,Playwright/Selenium,Basic,9,기본 자동화,기본 자동화,"QA,Fullstack"
+추가 프레임워크 및 라이브러리,웹 스크래핑,Playwright/Selenium,Intermediate,35,대기 전략 + 스크린샷,대기 전략 + 스크린샷,"QA,Fullstack"
+추가 프레임워크 및 라이브러리,웹 스크래핑,Playwright/Selenium,Advanced,80,네트워크 인터셉션 + 병렬 실행,네트워크 인터셉션 + 병렬 실행,"QA,Fullstack"
+추가 프레임워크 및 라이브러리,CLI 프레임워크,Click,Basic,8,기본 명령어,기본 명령어,All
+추가 프레임워크 및 라이브러리,CLI 프레임워크,Click,Intermediate,28,서브 명령어 + 옵션,서브 명령어 + 옵션,All
+추가 프레임워크 및 라이브러리,CLI 프레임워크,Click,Advanced,72,커스텀 타입 + 플러그인 시스템,커스텀 타입 + 플러그인 시스템,All
+추가 프레임워크 및 라이브러리,CLI 프레임워크,Typer,Basic,9,타입 안전 CLI,타입 안전 CLI,All
+추가 프레임워크 및 라이브러리,CLI 프레임워크,Typer,Intermediate,30,콜백 + 검증,콜백 + 검증,All
+추가 프레임워크 및 라이브러리,CLI 프레임워크,Typer,Advanced,76,복잡한 CLI 앱 + 자동 완성,복잡한 CLI 앱 + 자동 완성,All
+추가 프레임워크 및 라이브러리,API 클라이언트,requests,Basic,8,get/post 기본,get/post 기본,All
+추가 프레임워크 및 라이브러리,API 클라이언트,requests,Intermediate,28,Session + 재시도 로직,Session + 재시도 로직,All
+추가 프레임워크 및 라이브러리,API 클라이언트,requests,Advanced,72,인증 + 스트리밍 + 타임아웃 최적화,인증 + 스트리밍 + 타임아웃 최적화,All
+추가 프레임워크 및 라이브러리,API 클라이언트,httpx,Basic,9,동기/비동기 기본,동기/비동기 기본,"Backend,All"
+추가 프레임워크 및 라이브러리,API 클라이언트,httpx,Intermediate,32,이벤트 훅 + HTTP/2,이벤트 훅 + HTTP/2,"Backend,All"
+추가 프레임워크 및 라이브러리,API 클라이언트,httpx,Advanced,80,커스텀 트랜스포트 + 연결 풀,커스텀 트랜스포트 + 연결 풀,"Backend,All"
+추가 프레임워크 및 라이브러리,데이터 검증,Pydantic v2,Basic,9,BaseModel 기본,BaseModel 기본,"Backend,All"
+추가 프레임워크 및 라이브러리,데이터 검증,Pydantic v2,Intermediate,32,@field_validator + 마이그레이션,@field_validator + 마이그레이션,"Backend,All"
+추가 프레임워크 및 라이브러리,데이터 검증,Pydantic v2,Advanced,80,Generic 모델 + 커스텀 직렬화,Generic 모델 + 커스텀 직렬화,"Backend,All"
+추가 프레임워크 및 라이브러리,데이터 검증,Marshmallow,Basic,9,스키마 정의,스키마 정의,"Backend,Data"
+추가 프레임워크 및 라이브러리,데이터 검증,Marshmallow,Intermediate,30,커스텀 필드 + 전처리,커스텀 필드 + 전처리,"Backend,Data"
+추가 프레임워크 및 라이브러리,데이터 검증,Marshmallow,Advanced,76,중첩 스키마 + 동적 스키마,중첩 스키마 + 동적 스키마,"Backend,Data"
+모니터링 및 관찰성,로깅 및 추적,구조화된 로깅,Basic,8,logging 기본 설정,logging 기본 설정,"DevOps,Backend"
+모니터링 및 관찰성,로깅 및 추적,구조화된 로깅,Intermediate,30,structlog + JSON 포맷,structlog + JSON 포맷,"DevOps,Backend"
+모니터링 및 관찰성,로깅 및 추적,구조화된 로깅,Advanced,80,컨텍스트 변수 + 로그 집계,컨텍스트 변수 + 로그 집계,"DevOps,Backend"
+모니터링 및 관찰성,로깅 및 추적,분산 추적,Intermediate,35,OpenTelemetry 기본 계측,OpenTelemetry 기본 계측,"DevOps,Backend"
+모니터링 및 관찰성,로깅 및 추적,분산 추적,Advanced,80,커스텀 스팬 + 메트릭 통합,커스텀 스팬 + 메트릭 통합,"DevOps,Backend"
+모니터링 및 관찰성,로깅 및 추적,에러 추적,Basic,9,Sentry 기본 설정,Sentry 기본 설정,"DevOps,Backend"
+모니터링 및 관찰성,로깅 및 추적,에러 추적,Intermediate,32,컨텍스트 + 브레드크럼,컨텍스트 + 브레드크럼,"DevOps,Backend"
+모니터링 및 관찰성,로깅 및 추적,에러 추적,Advanced,80,커스텀 인테그레이션 + 릴리스 추적,커스텀 인테그레이션 + 릴리스 추적,"DevOps,Backend"
+보안,인증 및 권한,JWT,Basic,9,토큰 생성/검증 기본,토큰 생성/검증 기본,"Backend,Security"
+보안,인증 및 권한,JWT,Intermediate,32,Refresh Token + 만료 처리,Refresh Token + 만료 처리,"Backend,Security"
+보안,인증 및 권한,JWT,Advanced,80,커스텀 클레임 + 토큰 회전 전략,커스텀 클레임 + 토큰 회전 전략,"Backend,Security"
+보안,인증 및 권한,OAuth2,Basic,9,기본 플로우 이해,기본 플로우 이해,"Backend,Security"
+보안,인증 및 권한,OAuth2,Intermediate,35,Authorization Code + PKCE,Authorization Code + PKCE,"Backend,Security"
+보안,인증 및 권한,OAuth2,Advanced,80,다중 제공자 + 동적 클라이언트 등록,다중 제공자 + 동적 클라이언트 등록,"Backend,Security"
+보안,인증 및 권한,API 키 관리,Basic,8,환경 변수 사용,환경 변수 사용,"Backend,Security"
+보안,인증 및 권한,API 키 관리,Intermediate,30,Secrets Manager 통합,Secrets Manager 통합,"Backend,Security"
+보안,인증 및 권한,API 키 관리,Advanced,80,키 로테이션 + 감사 로그,키 로테이션 + 감사 로그,"Backend,Security"
+보안,보안 강화,입력 검증,Basic,8,기본 타입 체크,기본 타입 체크,"Backend,Security"
+보안,보안 강화,입력 검증,Intermediate,30,Pydantic 검증 + 새니타이징,Pydantic 검증 + 새니타이징,"Backend,Security"
+보안,보안 강화,입력 검증,Advanced,80,OWASP 룰셋 + 커스텀 검증,OWASP 룰셋 + 커스텀 검증,"Backend,Security"
+보안,보안 강화,암호화,Basic,8,bcrypt 기본 사용,bcrypt 기본 사용,"Backend,Security"
+보안,보안 강화,암호화,Intermediate,32,Argon2 + Salt,Argon2 + Salt,"Backend,Security"
+보안,보안 강화,암호화,Advanced,80,커스텀 KDF + HSM 통합,커스텀 KDF + HSM 통합,"Backend,Security"
+메시지 큐 및 스트리밍,메시지 브로커,RabbitMQ,Basic,9,기본 송수신,기본 송수신,"Backend,Data,DevOps"
+메시지 큐 및 스트리밍,메시지 브로커,RabbitMQ,Intermediate,32,Exchange + 라우팅 키,Exchange + 라우팅 키,"Backend,Data,DevOps"
+메시지 큐 및 스트리밍,메시지 브로커,RabbitMQ,Advanced,80,우선순위 큐 + 데드 레터,우선순위 큐 + 데드 레터,"Backend,Data,DevOps"
+메시지 큐 및 스트리밍,메시지 브로커,Kafka,Basic,10,Producer/Consumer 기본,Producer/Consumer 기본,"Backend,Data,DevOps"
+메시지 큐 및 스트리밍,메시지 브로커,Kafka,Intermediate,38,파티션 + 컨슈머 그룹,파티션 + 컨슈머 그룹,"Backend,Data,DevOps"
+메시지 큐 및 스트리밍,메시지 브로커,Kafka,Advanced,80,트랜잭션 + Exactly-once 시맨틱,트랜잭션 + Exactly-once 시맨틱,"Backend,Data,DevOps"
+데이터 처리 최적화,대용량 데이터,Polars,Basic,9,기본 DataFrame 연산,기본 DataFrame 연산,"Data,AI/ML"
+데이터 처리 최적화,대용량 데이터,Polars,Intermediate,35,LazyFrames + 표현식,LazyFrames + 표현식,"Data,AI/ML"
+데이터 처리 최적화,대용량 데이터,Polars,Advanced,80,커스텀 표현식 + 스트리밍,커스텀 표현식 + 스트리밍,"Data,AI/ML"
+데이터 처리 최적화,대용량 데이터,Dask,Basic,10,Dask DataFrame 생성,Dask DataFrame 생성,"Data,AI/ML"
+데이터 처리 최적화,대용량 데이터,Dask,Intermediate,38,병렬 컴퓨팅 + 지연 평가,병렬 컴퓨팅 + 지연 평가,"Data,AI/ML"
+데이터 처리 최적화,대용량 데이터,Dask,Advanced,80,분산 클러스터 + 메모리 최적화,분산 클러스터 + 메모리 최적화,"Data,AI/ML"
+개발 도구,Git,기본 명령어,Basic,4,"add, commit, push 기본 사용",git add . && git commit -m 'msg',All
+개발 도구,Git,기본 명령어,Intermediate,20,브랜치 전략 + rebase,"git rebase, git cherry-pick",All
+개발 도구,Git,기본 명령어,Advanced,60,복잡한 히스토리 관리 + submodule,"git reflog, git bisect, submodule",All
+API & 통신,GraphQL,쿼리 작성,Basic,8,기본 query/mutation,query { users { id name } },"Backend,Fullstack"
+API & 통신,GraphQL,쿼리 작성,Intermediate,30,fragments + variables,"@include, @skip, fragments","Backend,Fullstack"
+API & 통신,GraphQL,쿼리 작성,Advanced,76,스키마 설계 + 리졸버 최적화,"DataLoader, N+1 해결","Backend,Fullstack"
+API & 통신,gRPC,서비스 정의,Basic,9,.proto 파일 작성,service UserService { rpc GetUser },Backend
+API & 통신,gRPC,서비스 정의,Intermediate,32,스트리밍 RPC,"stream Request, stream Response",Backend
+API & 통신,gRPC,서비스 정의,Advanced,80,인터셉터 + 메타데이터,"Custom interceptor, deadline",Backend
+API & 통신,Protobuf,메시지 정의,Intermediate,28,복잡한 메시지 구조,"oneof, map, repeated","Backend,Data"
+API & 통신,Protobuf,메시지 정의,Advanced,72,커스텀 옵션 + 확장,"extend, option","Backend,Data"
+데이터 저장,ElasticSearch,인덱싱 및 검색,Basic,9,기본 CRUD,"index, search 기본 쿼리","Data,AI/ML"
+데이터 저장,ElasticSearch,인덱싱 및 검색,Intermediate,35,복잡한 쿼리 DSL,"bool query, aggregations","Data,AI/ML"
+데이터 저장,ElasticSearch,인덱싱 및 검색,Advanced,80,커스텀 analyzer + 성능 튜닝,"custom analyzer, shard 최적화","Data,AI/ML"
+데이터 저장,Neo4j,그래프 쿼리,Intermediate,32,Cypher 쿼리 작성,"MATCH (n)-[r]->(m) RETURN n,r,m","Data,AI/ML"
+데이터 저장,Neo4j,그래프 쿼리,Advanced,80,복잡한 그래프 알고리즘,"shortest path, PageRank","Data,AI/ML"
+메시지 큐,Kafka,스트림 처리,Intermediate,35,Kafka Streams 기본,"KStream, KTable","Backend,Data,DevOps"
+메시지 큐,Kafka,스트림 처리,Advanced,80,복잡한 토폴로지 + 상태 저장소,"windowing, joining streams","Backend,Data,DevOps"
+인프라,Nginx,설정 및 운영,Basic,8,기본 서버 블록,server { listen 80; },DevOps
+인프라,Nginx,설정 및 운영,Intermediate,30,리버스 프록시 + 로드밸런싱,"proxy_pass, upstream",DevOps
+인프라,Nginx,설정 및 운영,Advanced,76,커스텀 모듈 + 성능 튜닝,"worker_processes, caching",DevOps
+인프라,Terraform,인프라 코드,Basic,10,기본 리소스 정의,resource aws_instance,DevOps
+인프라,Terraform,인프라 코드,Intermediate,38,모듈화 + 변수,"module, variables, outputs",DevOps
+인프라,Terraform,인프라 코드,Advanced,80,복잡한 상태 관리 + 워크스페이스,"remote backend, workspaces",DevOps
+인프라,Ansible,자동화,Basic,9,기본 플레이북,- hosts: all tasks: - name:,DevOps
+인프라,Ansible,자동화,Intermediate,35,roles + inventory,"roles, group_vars",DevOps
+인프라,Ansible,자동화,Advanced,80,커스텀 모듈 + 동적 인벤토리,"custom module, dynamic inventory",DevOps
+모니터링,Prometheus,메트릭 수집,Basic,9,기본 메트릭 노출,"prometheus_client counter, gauge","DevOps,Backend"
+모니터링,Prometheus,메트릭 수집,Intermediate,32,PromQL + 알림 규칙,"rate, histogram_quantile","DevOps,Backend"
+모니터링,Prometheus,메트릭 수집,Advanced,80,서비스 디스커버리 + 연합,"file_sd, relabeling","DevOps,Backend"
+모니터링,Grafana,대시보드,Basic,8,기본 패널 생성,"Graph, Stat panels","DevOps,Backend"
+모니터링,Grafana,대시보드,Intermediate,30,템플릿 변수 + 알림,"variables, alerting","DevOps,Backend"
+모니터링,Grafana,대시보드,Advanced,80,커스텀 플러그인 + 프로비저닝,"custom panel, provisioning","DevOps,Backend"
+메시지 큐,RabbitMQ,Exchange 패턴,Intermediate,32,다양한 Exchange 타입,"direct, topic, fanout, headers","Backend,Data,DevOps"
+메시지 큐,RabbitMQ,Exchange 패턴,Advanced,80,복잡한 라우팅 + 플러그인,"shovel, federation plugin","Backend,Data,DevOps"
+데이터 저장,SQLite,임베디드 DB,Basic,6,기본 SQL 쿼리,"SELECT, INSERT, UPDATE","Data,AI/ML"
+데이터 저장,SQLite,임베디드 DB,Intermediate,25,트랜잭션 + 인덱스,"BEGIN, CREATE INDEX","Data,AI/ML"
+데이터 저장,SQLite,임베디드 DB,Advanced,68,WAL 모드 + 최적화,PRAGMA journal_mode=WAL,"Data,AI/ML"
+클라우드 저장소,MinIO,객체 스토리지,Basic,9,기본 업로드/다운로드,"put_object, get_object",DevOps
+클라우드 저장소,MinIO,객체 스토리지,Intermediate,32,버킷 정책 + 라이프사이클,"bucket policy, lifecycle rules",DevOps
+클라우드 저장소,MinIO,객체 스토리지,Advanced,80,멀티파트 업로드 + 암호화,"multipart upload, SSE",DevOps
+실시간 통신,WebSocket,양방향 통신,Basic,9,기본 연결 및 메시지,"WebSocket(), send(), onmessage",All
+실시간 통신,WebSocket,양방향 통신,Intermediate,32,재연결 로직 + 하트비트,"ping/pong, reconnection",All
+실시간 통신,WebSocket,양방향 통신,Advanced,80,스케일링 + Redis Pub/Sub,"horizontal scaling, pub/sub",All
+실시간 통신,SSE,서버 푸시,Intermediate,28,기본 이벤트 스트림,"text/event-stream, EventSource",All
+실시간 통신,SSE,서버 푸시,Advanced,72,재연결 + 커스텀 이벤트,"Last-Event-ID, custom events",All
+템플릿 엔진,Jinja2,템플릿 작성,Basic,8,기본 변수 및 반복,"{{ var }}, {% for %}","Backend,Fullstack"
+템플릿 엔진,Jinja2,템플릿 작성,Intermediate,28,상속 + 필터,"{% extends %}, {{ var|filter }}","Backend,Fullstack"
+템플릿 엔진,Jinja2,템플릿 작성,Advanced,72,커스텀 필터 + 전역 함수,@app.template_filter,"Backend,Fullstack"
+모니터링,New Relic,APM,Intermediate,30,기본 트랜잭션 추적,transaction tracing,"DevOps,Backend"
+모니터링,New Relic,APM,Advanced,80,커스텀 메트릭 + 알림,"custom metrics, alert policies","DevOps,Backend"
+보안,HashiCorp Vault,비밀 관리,Intermediate,32,시크릿 읽기/쓰기,"kv-v2 engine, dynamic secrets","Backend,Security"
+보안,HashiCorp Vault,비밀 관리,Advanced,80,PKI + 동적 시크릿,"PKI engine, database secrets","Backend,Security"
+인증 & 권한,LDAP,디렉토리 서비스,Intermediate,30,LDAP 쿼리 및 인증,"ldapsearch, bind","Backend,Security"
+인증 & 권한,LDAP,디렉토리 서비스,Advanced,80,복잡한 필터 + 그룹 관리,"complex filters, nested groups","Backend,Security"
+인증 & 권한,Keycloak,IAM,Intermediate,35,Realm 설정 + 클라이언트,"realms, clients, users","Backend,Security"
+인증 & 권한,Keycloak,IAM,Advanced,80,커스텀 SPI + 페더레이션,"custom SPI, user federation","Backend,Security"
+캐싱,Memcached,분산 캐시,Basic,8,기본 get/set,"client.get, client.set",All
+캐싱,Memcached,분산 캐시,Intermediate,28,만료 시간 + CAS,"expiry, compare-and-swap",All
+캐싱,Memcached,분산 캐시,Advanced,72,일관성 해싱 + 클러스터링,consistent hashing,All
+캐싱,Varnish,HTTP 캐시,Intermediate,32,VCL 기본 설정,"vcl_recv, vcl_backend_response",All
+캐싱,Varnish,HTTP 캐시,Advanced,80,복잡한 캐싱 전략 + ESI,"ESI, edge includes",All
+빅데이터,Apache Spark,분산 처리,Intermediate,38,RDD 및 DataFrame 연산,"rdd.map, df.filter","Data,AI/ML"
+빅데이터,Apache Spark,분산 처리,Advanced,80,MLlib + Spark Streaming,"MLlib pipelines, structured streaming","Data,AI/ML"
+워크플로우,Airflow,Task Dependencies,Intermediate,35,TaskGroups + Sensors,"TaskGroup, ExternalTaskSensor","Backend,Data,DevOps"
+워크플로우,Airflow,Task Dependencies,Advanced,80,Dynamic DAGs + SubDAGs,dynamic task mapping,"Backend,Data,DevOps"
+워크플로우,Prefect,데이터 파이프라인,Basic,10,기본 Flow 작성,"@flow, @task","Backend,Data,DevOps"
+워크플로우,Prefect,데이터 파이프라인,Intermediate,35,파라미터 + 재시도,"parameters, retries","Backend,Data,DevOps"
+워크플로우,Prefect,데이터 파이프라인,Advanced,80,Deployment + Agents,"deployments, work queues","Backend,Data,DevOps"
+웹 프레임워크,FastAPI 심화,WebSocket 처리,Intermediate,32,실시간 양방향 통신 구현,"WebSocket endpoint, await websocket.accept()","Backend,Fullstack"
+웹 프레임워크,FastAPI 심화,WebSocket 처리,Advanced,80,스케일링 + Redis Pub/Sub 통합,WebSocket + Redis pub/sub,"Backend,DevOps"
+웹 프레임워크,FastAPI 심화,GraphQL 통합,Intermediate,35,Strawberry/Ariadne 통합,GraphQL schema with FastAPI,"Backend,Fullstack"
+웹 프레임워크,FastAPI 심화,GraphQL 통합,Advanced,80,DataLoader + 복잡한 리졸버,"DataLoader pattern, N+1 해결","Backend,Fullstack"
+웹 프레임워크,FastAPI 심화,이벤트 시스템,Intermediate,30,startup/shutdown 이벤트,@app.on_event('startup'),"Backend,Fullstack"
+웹 프레임워크,FastAPI 심화,이벤트 시스템,Advanced,76,Lifespan context manager,async with lifespan:,"Backend,Fullstack"
+웹 프레임워크,Django 심화,Django Channels,Intermediate,38,WebSocket consumer 작성,AsyncWebsocketConsumer,"Backend,Fullstack"
+웹 프레임워크,Django 심화,Django Channels,Advanced,80,Channel layers + Redis,"get_channel_layer, group_send","Backend,DevOps"
+웹 프레임워크,Django 심화,Django Celery Beat,Intermediate,35,주기적 작업 스케줄링,"PeriodicTask, CrontabSchedule","Backend,Fullstack"
+웹 프레임워크,Django 심화,Django Celery Beat,Advanced,80,동적 작업 생성 + 모니터링,Dynamic task creation,"Backend,DevOps"
+웹 프레임워크,Django 심화,Django Rest Framework ViewSets,Advanced,80,커스텀 액션 + 복잡한 권한,"@action decorator, custom permissions","Backend,Fullstack"
+웹 프레임워크,Django 심화,Django Ninja,Intermediate,32,FastAPI 스타일 Django,Django Ninja router,"Backend,Fullstack"
+웹 프레임워크,Django 심화,Django Debug Toolbar,Intermediate,28,성능 프로파일링,"SQL queries, cache hits","Backend,Fullstack"
+웹 프레임워크,Django 심화,Django Extensions,Intermediate,30,개발 생산성 도구,"shell_plus, runserver_plus","Backend,All"
+웹 프레임워크,Flask 심화,Flask-CORS,Intermediate,25,CORS 설정,"CORS(app, resources={...})","Backend,Fullstack"
+웹 프레임워크,Flask 심화,Flask-Limiter,Intermediate,30,Rate limiting,@limiter.limit('10 per minute'),"Backend,Fullstack"
+웹 프레임워크,Flask 심화,Flask-Caching,Intermediate,32,캐싱 전략,@cache.cached(timeout=60),"Backend,Fullstack"
+웹 프레임워크,Flask 심화,Flask-Migrate,Intermediate,30,Alembic 기반 마이그레이션,flask db migrate,"Backend,Fullstack"
+웹 프레임워크,Flask 심화,Flask-JWT-Extended,Intermediate,35,JWT 인증,create_access_token,"Backend,Fullstack"
+웹 프레임워크,Flask 심화,Flask-Mail,Intermediate,28,이메일 발송,"Message, mail.send","Backend,Fullstack"
+프론트엔드 통합,HTMX,동적 UI,Basic,10,HTML over the wire,"hx-get, hx-post","Frontend,Fullstack"
+프론트엔드 통합,HTMX,동적 UI,Intermediate,32,이벤트 + 트리거,"hx-trigger, hx-swap","Frontend,Fullstack"
+프론트엔드 통합,Alpine.js,경량 JS 프레임워크,Basic,9,기본 디렉티브,"x-data, x-show","Frontend,Fullstack"
+프론트엔드 통합,Alpine.js,경량 JS 프레임워크,Intermediate,30,컴포넌트 + 스토어,"Alpine.store, Alpine.data","Frontend,Fullstack"
+프론트엔드 통합,Tailwind CSS,유틸리티 CSS,Basic,9,기본 클래스 사용,"flex, grid, p-4","Frontend,Fullstack"
+프론트엔드 통합,Tailwind CSS,유틸리티 CSS,Intermediate,30,커스텀 설정,tailwind.config.js,"Frontend,Fullstack"
+프론트엔드 통합,Bootstrap,CSS 프레임워크,Basic,8,그리드 시스템,"container, row, col","Frontend,Fullstack"
+프론트엔드 통합,Webpack,번들러,Intermediate,32,기본 설정,webpack.config.js,"Frontend,Fullstack"
+프론트엔드 통합,Vite,빌드 도구,Intermediate,30,빠른 개발 서버,vite.config.js,"Frontend,Fullstack"
+데이터베이스,PostgreSQL,고급 쿼리,Intermediate,35,CTE + Window 함수,"WITH RECURSIVE, ROW_NUMBER()","Backend,Data"
+데이터베이스,PostgreSQL,고급 쿼리,Advanced,80,Full-text search + GIN 인덱스,"tsvector, tsquery, GIN index","Backend,Data"
+데이터베이스,PostgreSQL,파티셔닝,Advanced,80,테이블 파티셔닝,PARTITION BY RANGE,"Backend,Data,DevOps"
+데이터베이스,PostgreSQL,복제,Advanced,80,스트리밍 복제,"pg_basebackup, replication slots","DevOps,Data"
+데이터베이스,PostgreSQL,JSON 처리,Intermediate,32,JSONB 타입,jsonb_path_query,"Backend,Data"
+데이터베이스,PostgreSQL,PL/pgSQL,Advanced,76,저장 프로시저,"CREATE FUNCTION, TRIGGER","Backend,Data"
+데이터베이스,MySQL,InnoDB 최적화,Advanced,76,버퍼 풀 튜닝,innodb_buffer_pool_size,"Backend,DevOps"
+데이터베이스,MySQL,레플리케이션,Advanced,80,Master-Slave 설정,"binlog, slave configuration","DevOps,Data"
+데이터베이스,MongoDB,집계 최적화,Advanced,80,인덱스 활용 + 파이프라인,$lookup with index,"Backend,Data"
+데이터베이스,MongoDB,샤딩,Advanced,80,분산 데이터,sh.shardCollection,"DevOps,Data"
+데이터베이스,MongoDB,Change Streams,Advanced,76,실시간 변경 감지,watch() on collection,"Backend,Data"
+데이터베이스,MongoDB,GridFS,Intermediate,32,대용량 파일 저장,GridFS bucket,"Backend,Data"
+데이터베이스,Redis,Redis Streams,Intermediate,35,이벤트 스트리밍,"XADD, XREAD, consumer groups","Backend,Data"
+데이터베이스,Redis,Redis Streams,Advanced,80,복잡한 컨슈머 그룹,"XACK, XPENDING","Backend,Data"
+데이터베이스,Redis,Redis Modules,Advanced,76,"RediSearch, RedisJSON","FT.CREATE, JSON.SET","Backend,Data"
+데이터베이스,Redis,Redis Cluster,Advanced,80,클러스터 운영,"CLUSTER SLOTS, resharding","DevOps,Data"
+데이터베이스,Redis,Redis Sentinel,Advanced,76,고가용성,"sentinel.conf, failover","Backend,Data,DevOps"
+AI/ML,자연어 처리,spaCy,Basic,10,기본 NLP 파이프라인,"nlp = spacy.load, doc = nlp(text)","AI/ML,Data"
+AI/ML,자연어 처리,spaCy,Intermediate,35,커스텀 컴포넌트,"Language.component, custom pipeline","AI/ML,Data"
+AI/ML,자연어 처리,spaCy,Advanced,80,학습 + 배포,"spacy train, packaging","AI/ML,Data"
+AI/ML,자연어 처리,NLTK,Basic,9,토큰화 + 품사 태깅,"word_tokenize, pos_tag","AI/ML,Data"
+AI/ML,자연어 처리,NLTK,Intermediate,30,감성 분석,SentimentIntensityAnalyzer,"AI/ML,Data"
+AI/ML,자연어 처리,Gensim,Intermediate,32,토픽 모델링,"LdaModel, Word2Vec","AI/ML,Data"
+AI/ML,자연어 처리,Gensim,Advanced,76,Doc2Vec + 커스텀 코퍼스,Doc2Vec training,"AI/ML,Data"
+AI/ML,자연어 처리,SentenceTransformers,Intermediate,35,문장 임베딩,model.encode(sentences),"AI/ML,Data"
+AI/ML,자연어 처리,SentenceTransformers,Advanced,80,파인튜닝,"InputExample, DataLoader","AI/ML,Data"
+AI/ML,컴퓨터 비전,OpenCV,Basic,10,이미지 읽기/쓰기,"cv2.imread, cv2.imshow",AI/ML
+AI/ML,컴퓨터 비전,OpenCV,Intermediate,35,이미지 처리,"cv2.filter2D, cv2.threshold",AI/ML
+AI/ML,컴퓨터 비전,OpenCV,Advanced,80,객체 감지 + 추적,"cv2.TrackerKCF, cascade classifier",AI/ML
+AI/ML,컴퓨터 비전,Pillow,Basic,9,이미지 조작,"Image.open, resize, crop","AI/ML,Backend,All"
+AI/ML,컴퓨터 비전,Pillow,Intermediate,30,필터 + 변환,"ImageFilter, ImageOps","AI/ML,Backend"
+AI/ML,컴퓨터 비전,torchvision,Intermediate,35,사전 학습 모델,models.resnet50(pretrained=True),AI/ML
+AI/ML,컴퓨터 비전,torchvision,Advanced,80,커스텀 데이터셋,"Dataset, DataLoader, transforms",AI/ML
+AI/ML,컴퓨터 비전,YOLO,Intermediate,38,객체 감지,"YOLOv8, ultralytics",AI/ML
+AI/ML,컴퓨터 비전,YOLO,Advanced,80,커스텀 학습,Custom dataset training,AI/ML
+AI/ML,강화학습,OpenAI Gym,Basic,12,기본 환경,"env = gym.make, env.step",AI/ML
+AI/ML,강화학습,OpenAI Gym,Intermediate,38,커스텀 환경,gym.Env 상속,AI/ML
+AI/ML,강화학습,Stable Baselines3,Intermediate,40,RL 알고리즘,"PPO, A2C, SAC",AI/ML
+AI/ML,강화학습,Stable Baselines3,Advanced,80,하이퍼파라미터 튜닝,Optuna + SB3,AI/ML
+AI/ML,MLOps,MLflow,Basic,12,실험 추적,"mlflow.log_param, log_metric","AI/ML,Data"
+AI/ML,MLOps,MLflow,Intermediate,38,모델 레지스트리,mlflow.register_model,"AI/ML,DevOps"
+AI/ML,MLOps,MLflow,Advanced,80,모델 배포,"MLflow serving, REST API","AI/ML,DevOps"
+AI/ML,MLOps,Weights & Biases,Basic,12,실험 로깅,"wandb.init, wandb.log","AI/ML,DevOps"
+AI/ML,MLOps,Weights & Biases,Intermediate,38,하이퍼파라미터 스윕,wandb.sweep,"AI/ML,DevOps"
+AI/ML,MLOps,DVC,Intermediate,35,데이터 버전 관리,"dvc add, dvc push","AI/ML,Data"
+AI/ML,MLOps,DVC,Advanced,80,파이프라인 관리,"dvc.yaml, dvc repro","AI/ML,Data,DevOps"
+AI/ML,MLOps,Kubeflow,Advanced,80,ML 파이프라인,"Kubeflow Pipelines, KFServing","AI/ML,DevOps"
+데이터 엔지니어링,Airflow,TaskFlow API,Intermediate,35,파이썬 데코레이터,@task decorator,"Data,Backend"
+데이터 엔지니어링,Airflow,TaskFlow API,Advanced,80,XCom + 타입 힌트,"Typed XCom, TaskGroup","Data,Backend,DevOps"
+데이터 엔지니어링,Airflow,커스텀 오퍼레이터,Advanced,80,BaseOperator 상속,Custom operator class,"Data,Backend,DevOps"
+데이터 엔지니어링,Airflow,Sensor,Intermediate,32,외부 이벤트 대기,"ExternalTaskSensor, FileSensor","Data,Backend,DevOps"
+데이터 엔지니어링,Airflow,Connection & Hook,Intermediate,35,외부 시스템 연동,"Hook, Connection","Data,Backend"
+데이터 엔지니어링,Spark,Spark SQL,Intermediate,38,DataFrame 연산,"df.select, df.filter, df.groupBy","Backend,Data"
+데이터 엔지니어링,Spark,Spark SQL,Advanced,80,UDF + 윈도우 함수,"udf, Window.partitionBy","Backend,Data"
+데이터 엔지니어링,Spark,Spark Streaming,Advanced,80,실시간 처리,"readStream, writeStream",Data
+데이터 엔지니어링,Spark,Spark MLlib,Intermediate,38,분산 머신러닝,"Pipeline, VectorAssembler","Data,AI/ML"
+데이터 엔지니어링,Spark,PySpark 최적화,Advanced,80,파티셔닝 + 캐싱,"repartition, cache, broadcast",Data
+데이터 엔지니어링,Kafka,Kafka Connect,Intermediate,38,커넥터 설정,Source/Sink connectors,"Data,Backend"
+데이터 엔지니어링,Kafka,Kafka Connect,Advanced,80,커스텀 커넥터,Custom connector development,"Backend,Data,DevOps"
+데이터 엔지니어링,Kafka,ksqlDB,Intermediate,38,SQL 스트림 처리,"CREATE STREAM, SELECT","Backend,Data"
+데이터 엔지니어링,Kafka,ksqlDB,Advanced,80,복잡한 조인 + 집계,"Stream-table join, windowing","Backend,Data"
+데이터 엔지니어링,Kafka,Schema Registry,Intermediate,35,Avro 스키마 관리,"Schema Registry, Avro","Data,Backend"
+데이터 엔지니어링,DBT,모델 작성,Basic,12,SQL 변환,{{ ref('model') }},Data
+데이터 엔지니어링,DBT,모델 작성,Intermediate,38,증분 모델,"incremental models, {{ is_incremental() }}",Data
+데이터 엔지니어링,DBT,테스트,Intermediate,32,데이터 품질,schema.yml tests,"Data,QA"
+데이터 엔지니어링,DBT,매크로,Advanced,76,재사용 가능한 SQL,"{% macro %}, Jinja",Data
+데이터 엔지니어링,Great Expectations,데이터 검증,Intermediate,35,Expectation 작성,expect_column_values_to_be_unique,"Data,QA"
+데이터 엔지니어링,Great Expectations,데이터 검증,Advanced,80,커스텀 Expectation,Custom expectation class,"Data,QA"
+DevOps,Kubernetes,Pod 관리,Basic,12,기본 Pod 배포,kubectl create pod,DevOps
+DevOps,Kubernetes,Pod 관리,Intermediate,38,Deployment + Service,kubectl apply -f deployment.yaml,DevOps
+DevOps,Kubernetes,ConfigMap & Secret,Intermediate,35,설정 관리,"ConfigMap, Secret","DevOps,Backend"
+DevOps,Kubernetes,StatefulSet,Advanced,76,상태 유지 앱,"StatefulSet, PVC",DevOps
+DevOps,Kubernetes,Ingress,Intermediate,38,라우팅,"Ingress, Ingress Controller",DevOps
+DevOps,Kubernetes,Helm,Intermediate,40,패키지 관리,"helm install, Chart.yaml",DevOps
+DevOps,Kubernetes,Helm,Advanced,80,커스텀 차트,"templates, values.yaml",DevOps
+DevOps,Kubernetes,Operators,Advanced,80,커스텀 리소스,"CRD, Operator pattern",DevOps
+DevOps,Kubernetes,Service Mesh (Istio),Advanced,80,트래픽 관리,"Istio, Envoy proxy",DevOps
+DevOps,CI/CD,GitHub Actions,Basic,6,기본 워크플로우,"on: push, jobs","DevOps,All"
+DevOps,CI/CD,GitHub Actions,Intermediate,28,매트릭스 빌드,strategy.matrix,All
+DevOps,CI/CD,GitHub Actions,Advanced,68,재사용 가능한 워크플로우,"workflow_call, composite actions",All
+DevOps,CI/CD,GitLab CI,Intermediate,35,.gitlab-ci.yml,"stages, jobs, artifacts",All
+DevOps,CI/CD,GitLab CI,Advanced,80,복잡한 파이프라인,"needs, rules, include",All
+DevOps,CI/CD,Jenkins,Intermediate,38,Jenkinsfile,"pipeline, stages",DevOps
+DevOps,CI/CD,Jenkins,Advanced,80,Shared Libraries,"vars, src directories",DevOps
+DevOps,CI/CD,ArgoCD,Intermediate,40,GitOps,"Application CRD, sync",DevOps
+DevOps,CI/CD,ArgoCD,Advanced,80,ApplicationSet,"generators, multi-cluster",DevOps
+DevOps,Terraform,State 관리,Intermediate,35,Remote backend,"backend s3, state locking",DevOps
+DevOps,Terraform,State 관리,Advanced,80,State 마이그레이션,"terraform state mv, import",DevOps
+DevOps,Terraform,Modules,Intermediate,38,재사용 가능한 모듈,"module source, outputs",DevOps
+DevOps,Terraform,Modules,Advanced,80,복잡한 모듈 구조,"for_each, dynamic blocks",DevOps
+DevOps,Terraform,Providers,Advanced,76,커스텀 프로바이더,Plugin development,DevOps
+DevOps,Monitoring,Prometheus AlertManager,Intermediate,35,알림 규칙,"alertmanager.yml, routes","DevOps,Backend"
+DevOps,Monitoring,Prometheus AlertManager,Advanced,80,복잡한 라우팅,"inhibit_rules, receivers","DevOps,Backend"
+DevOps,Monitoring,Grafana Loki,Intermediate,38,로그 집계,LogQL queries,"DevOps,Backend"
+DevOps,Monitoring,Grafana Loki,Advanced,80,멀티 테넌시,tenant isolation,"DevOps,Backend"
+DevOps,Monitoring,Jaeger,Intermediate,38,분산 추적,"OpenTracing, spans","DevOps,Backend"
+DevOps,Monitoring,Jaeger,Advanced,80,커스텀 계측,Custom instrumentation,"DevOps,Backend"
+DevOps,Monitoring,ELK Stack,Intermediate,40,로그 파이프라인,"Elasticsearch, Logstash, Kibana","DevOps,Data"
+DevOps,Monitoring,ELK Stack,Advanced,80,복잡한 파싱,Logstash grok patterns,"DevOps,Data"
+클라우드,AWS Lambda,서버리스 함수,Basic,10,기본 Lambda 함수,"lambda_handler, event","Backend,DevOps"
+클라우드,AWS Lambda,서버리스 함수,Intermediate,35,이벤트 소스 통합,"S3, SNS, SQS triggers","Backend,DevOps"
+클라우드,AWS Lambda,서버리스 함수,Advanced,80,Lambda Layers + 최적화,"Layers, cold start optimization","Backend,DevOps"
+클라우드,AWS S3,객체 스토리지,Basic,9,파일 업로드/다운로드,boto3 s3.upload_file,"Backend,DevOps,All"
+클라우드,AWS S3,객체 스토리지,Intermediate,32,버킷 정책 + CORS,"bucket policy, CORS configuration","Backend,DevOps"
+클라우드,AWS S3,객체 스토리지,Advanced,76,라이프사이클 + 암호화,"lifecycle rules, KMS encryption","DevOps,Backend"
+클라우드,AWS DynamoDB,NoSQL,Basic,10,기본 CRUD,"put_item, get_item","Backend,Data"
+클라우드,AWS DynamoDB,NoSQL,Intermediate,35,GSI + 쿼리 최적화,Global Secondary Index,"Backend,Data"
+클라우드,AWS DynamoDB,NoSQL,Advanced,80,DynamoDB Streams,"Stream processing, Lambda trigger","Backend,Data"
+클라우드,AWS SQS,메시지 큐,Intermediate,32,큐 처리,"send_message, receive_message","Backend,DevOps"
+클라우드,AWS SQS,메시지 큐,Advanced,76,FIFO + 배치 처리,"FIFO queue, batch operations","Backend,DevOps"
+클라우드,AWS SNS,알림 서비스,Intermediate,30,Pub/Sub,"publish, subscribe","Backend,DevOps"
+클라우드,AWS SNS,알림 서비스,Advanced,72,필터 정책,message filtering,"Backend,DevOps"
+클라우드,AWS ECS,컨테이너 오케스트레이션,Intermediate,40,Task Definition,"ECS Task, Service","DevOps,Backend"
+클라우드,AWS ECS,컨테이너 오케스트레이션,Advanced,80,Fargate + Auto Scaling,"Fargate, service auto scaling","DevOps,Backend"
+클라우드,AWS CloudFormation,IaC,Intermediate,38,스택 관리,"Resources, Parameters, Outputs","DevOps,Backend"
+클라우드,AWS CloudFormation,IaC,Advanced,80,StackSets + 복잡한 템플릿,"StackSets, nested stacks","DevOps,Backend"
+클라우드,AWS CDK,프로그래밍 방식 IaC,Intermediate,40,기본 스택,"aws_cdk Stack, Construct","DevOps,Backend"
+클라우드,AWS CDK,프로그래밍 방식 IaC,Advanced,80,커스텀 Construct,"Custom constructs, aspects","DevOps,Backend"
+클라우드,GCP Cloud Functions,서버리스,Intermediate,35,HTTP 트리거,def hello_http(request):,"Backend,DevOps"
+클라우드,GCP Cloud Functions,서버리스,Advanced,80,이벤트 트리거,"Pub/Sub, Cloud Storage triggers","Backend,DevOps"
+클라우드,GCP BigQuery,데이터 웨어하우스,Intermediate,38,SQL 쿼리,"SELECT, JOIN, PARTITION BY","DevOps,Backend"
+클라우드,GCP BigQuery,데이터 웨어하우스,Advanced,80,스트리밍 삽입,"streaming inserts, partitioning","DevOps,Backend"
+클라우드,GCP Pub/Sub,메시징,Intermediate,35,토픽 + 구독,"publish, pull","Backend,Data,DevOps"
+클라우드,GCP Dataflow,스트림 처리,Advanced,80,Apache Beam,"PTransform, ParDo","DevOps,Backend"
+보안,암호화,Fernet,Intermediate,30,대칭 암호화,"Fernet.generate_key, encrypt","Backend,Security"
+보안,암호화,RSA,Advanced,72,비대칭 암호화,"RSA key pair, public/private","Backend,Security"
+보안,암호화,AES,Advanced,76,AES 암호화,AES-256-GCM,"Backend,Security"
+보안,해싱,hashlib,Basic,9,기본 해싱,"sha256, md5","Backend,Security"
+보안,해싱,bcrypt,Intermediate,30,비밀번호 해싱,"bcrypt.hashpw, salt","Backend,Security"
+보안,해싱,Argon2,Advanced,72,최신 해싱,argon2.PasswordHasher,"Backend,Security"
+보안,입력 검증,validators,Intermediate,28,데이터 검증,"validators.email, validators.url","Backend,All"
+보안,입력 검증,bleach,Intermediate,32,XSS 방지,"bleach.clean, allowed_tags","Backend,Security"
+보안,SQL Injection 방지,파라미터화 쿼리,Intermediate,35,Prepared statements,cursor.execute with params,"Backend,Security,All"
+보안,CSRF 방지,토큰 검증,Intermediate,32,CSRF 토큰,csrf_token validation,"Backend,Security"
+보안,레이트 리미팅,slowapi,Intermediate,30,API 제한,"Limiter, limiter.limit","Backend,Security"
+보안,레이트 리미팅,Redis 기반,Advanced,72,분산 레이트 리미팅,Redis rate limiting,"Backend,DevOps"
+성능 최적화,프로파일링,cProfile,Intermediate,32,CPU 프로파일링,"cProfile.run, pstats","Backend,All"
+성능 최적화,프로파일링,line_profiler,Advanced,72,라인 단위 프로파일링,@profile decorator,"Backend,All"
+성능 최적화,프로파일링,memory_profiler,Advanced,72,메모리 프로파일링,@profile for memory,"Backend,All"
+성능 최적화,프로파일링,py-spy,Advanced,76,샘플링 프로파일러,py-spy record,"Backend,DevOps"
+성능 최적화,캐싱,functools.lru_cache,Intermediate,28,함수 결과 캐싱,@lru_cache(maxsize=128),"Backend,All"
+성능 최적화,캐싱,cachetools,Intermediate,32,고급 캐싱,"TTLCache, LRUCache",Backend
+성능 최적화,캐싱,diskcache,Advanced,68,디스크 캐싱,"Cache, FanoutCache",Backend
+성능 최적화,멀티프로세싱,multiprocessing,Intermediate,35,병렬 처리,"Pool, Process","Backend,Data,All"
+성능 최적화,멀티프로세싱,concurrent.futures,Intermediate,38,스레드/프로세스 풀,"ProcessPoolExecutor, ThreadPoolExecutor","Backend,All"
+성능 최적화,비동기 I/O,aiofiles,Intermediate,32,비동기 파일 I/O,async with aiofiles.open,Backend
+성능 최적화,비동기 I/O,aiomysql,Intermediate,35,비동기 MySQL,await conn.execute,"Backend,Data"
+성능 최적화,비동기 I/O,asyncpg,Advanced,72,비동기 PostgreSQL,"await conn.fetch, prepared statements",Backend
+테스트,pytest,픽스처,Intermediate,28,테스트 셋업,@pytest.fixture,"Backend,All,QA"
+테스트,pytest,파라미터화,Intermediate,30,여러 입력 테스트,@pytest.mark.parametrize,"Backend,All,QA"
+테스트,pytest,마커,Intermediate,28,테스트 분류,@pytest.mark.slow,"Backend,All,QA"
+테스트,pytest,플러그인,Advanced,76,커스텀 플러그인,"pytest_configure, hooks","Backend,QA"
+테스트,unittest,Mock,Intermediate,32,객체 모킹,"unittest.mock.Mock, patch","Backend,All,QA"
+테스트,unittest,Mock,Advanced,72,복잡한 모킹,"side_effect, mock chaining","Backend,QA"
+테스트,pytest-mock,모킹,Intermediate,32,pytest 모킹,mocker fixture,"Backend,QA"
+테스트,hypothesis,속성 기반 테스트,Advanced,76,랜덤 입력 테스트,"@given decorator, strategies","Backend,QA"
+테스트,tox,다중 환경 테스트,Intermediate,35,환경별 테스트,"tox.ini, envlist","Backend,DevOps,QA"
+테스트,coverage,커버리지,Intermediate,30,코드 커버리지,"coverage run, coverage report","Backend,QA,All"
+테스트,Selenium,E2E 테스트,Intermediate,35,웹 자동화,"webdriver, find_element","QA,Fullstack"
+테스트,Selenium,E2E 테스트,Advanced,80,Page Object Pattern,Page Object Model,"QA,Fullstack"
+테스트,Playwright,모던 E2E,Intermediate,38,브라우저 자동화,"page.goto, page.click","QA,Fullstack"
+테스트,Playwright,모던 E2E,Advanced,80,병렬 테스트,"pytest-playwright, parallel","QA,DevOps"
+테스트,Locust,부하 테스트,Intermediate,38,성능 테스트,"HttpUser, @task","QA,Backend,DevOps"
+테스트,Locust,부하 테스트,Advanced,80,분산 부하 테스트,Master-slave setup,"QA,DevOps"
+임베디드/IoT,MicroPython,마이크로컨트롤러,Basic,10,기본 GPIO 제어,"Pin, PWM",Embedded
+임베디드/IoT,MicroPython,마이크로컨트롤러,Intermediate,35,센서 통합,"I2C, SPI protocols",Embedded
+임베디드/IoT,CircuitPython,Adafruit,Basic,10,기본 보드 제어,board.LED,Embedded
+임베디드/IoT,RPi.GPIO,Raspberry Pi,Intermediate,32,GPIO 프로그래밍,"GPIO.setup, GPIO.output",Embedded
+임베디드/IoT,MQTT,IoT 메시징,Intermediate,35,Pub/Sub,"paho-mqtt, publish, subscribe","Embedded,Backend"
+임베디드/IoT,MQTT,IoT 메시징,Advanced,76,QoS + 보안,"QoS levels, TLS","Embedded,Backend,Security"
+임베디드/IoT,CoAP,제약 프로토콜,Advanced,72,경량 프로토콜,aiocoap library,Embedded
+네트워킹,socket,저수준 네트워크,Intermediate,32,TCP/UDP 소켓,"socket.socket, bind, listen","Backend,All"
+네트워킹,socket,저수준 네트워크,Advanced,76,논블로킹 소켓,"select, epoll",Backend
+네트워킹,asyncio,비동기 네트워크,Advanced,80,프로토콜 구현,"asyncio.Protocol, transport",Backend
+네트워킹,Twisted,이벤트 기반,Advanced,76,네트워크 프레임워크,twisted.internet.reactor,Backend
+네트워킹,Paramiko,SSH,Intermediate,35,SSH 클라이언트,"SSHClient, exec_command","Backend,DevOps"
+네트워킹,Paramiko,SSH,Advanced,76,SFTP + 키 관리,"SFTPClient, RSA keys","Backend,DevOps"
+네트워킹,Scapy,패킷 조작,Advanced,76,네트워크 분석,"sniff, send, sr","Security,Backend"
+네트워킹,requests-html,웹 렌더링,Intermediate,32,JavaScript 렌더링,"HTMLSession, render","Backend,Data"
+데이터 포맷,JSON,기본 처리,Basic,6,"json.dumps, json.loads",json.dumps(data),All
+데이터 포맷,JSON,기본 처리,Intermediate,25,커스텀 인코더,"JSONEncoder, default method","Backend,All"
+데이터 포맷,YAML,설정 파일,Basic,9,yaml.safe_load,yaml.safe_load(file),"All,DevOps"
+데이터 포맷,YAML,설정 파일,Intermediate,30,복잡한 구조,"anchors, aliases","All,DevOps"
+데이터 포맷,XML,XML 처리,Intermediate,30,ElementTree,"ET.parse, find, findall","Backend,Data"
+데이터 포맷,XML,XML 처리,Advanced,68,lxml + XPath,"lxml.etree, xpath","Backend,Data"
+데이터 포맷,Pickle,직렬화,Basic,9,pickle.dump/load,"pickle.dump(obj, file)",All
+데이터 포맷,Pickle,직렬화,Advanced,64,프로토콜 최적화,"protocol=5, __getstate__",Backend
+데이터 포맷,MessagePack,바이너리 직렬화,Intermediate,35,효율적 직렬화,"msgpack.packb, unpackb","Backend,Data"
+데이터 포맷,Apache Avro,스키마 직렬화,Advanced,72,스키마 진화,"avro schema, serialization","Data,Backend"
+데이터 포맷,Parquet,컬럼 스토리지,Intermediate,38,효율적 저장,"pyarrow, pandas.to_parquet",Data
+데이터 포맷,Parquet,컬럼 스토리지,Advanced,80,파티셔닝,partitioned writes,Data
+문서화,Sphinx,문서 생성,Basic,10,기본 설정,sphinx-quickstart,All
+문서화,Sphinx,문서 생성,Intermediate,35,autodoc,.. automodule::,All
+문서화,Sphinx,문서 생성,Advanced,80,커스텀 테마 + 확장,"custom theme, extensions",All
+문서화,MkDocs,Markdown 문서,Basic,10,기본 사이트,mkdocs.yml,All
+문서화,MkDocs,Markdown 문서,Intermediate,32,Material 테마,mkdocs-material,All
+문서화,pdoc,API 문서,Intermediate,30,자동 생성,pdoc --html,All
+문서화,Swagger/OpenAPI,API 스펙,Intermediate,35,자동 문서화,FastAPI auto docs,"Backend,Fullstack"
+코드 품질,Black,코드 포맷터,Intermediate,25,자동 포맷팅,black .,All
+코드 품질,isort,Import 정렬,Intermediate,25,Import 정렬,isort .,All
+코드 품질,flake8,린터,Intermediate,28,스타일 체크,flake8 .,All
+코드 품질,flake8,린터,Advanced,68,커스텀 플러그인,flake8 plugin development,All
+코드 품질,pylint,정적 분석,Intermediate,30,코드 분석,pylint --rcfile=.pylintrc,All
+코드 품질,pylint,정적 분석,Advanced,72,커스텀 체커,Custom checker,All
+코드 품질,mypy,타입 체킹,Intermediate,32,기본 타입 체크,mypy .,All
+코드 품질,mypy,타입 체킹,Advanced,76,strict 모드,mypy --strict,All
+코드 품질,pyright,타입 체커,Advanced,72,빠른 타입 체크,pyright,All
+코드 품질,bandit,보안 스캔,Intermediate,32,취약점 탐지,bandit -r .,"All,Security"
+코드 품질,safety,의존성 체크,Intermediate,32,취약한 패키지,safety check,"All,Security,DevOps"
+코드 품질,pre-commit,Git hooks,Intermediate,35,자동 검사,.pre-commit-config.yaml,"All,DevOps"
+코드 품질,SonarQube,종합 분석,Advanced,76,코드 품질 플랫폼,sonar-scanner,"All,DevOps"
+패키징,setuptools,패키지 생성,Intermediate,30,setup.py,setuptools.setup,All
+패키징,setuptools,패키지 생성,Advanced,72,복잡한 설정,"setup.cfg, entry_points",All
+패키징,Poetry,의존성 관리,Basic,12,기본 사용,"poetry init, poetry add",All
+패키징,Poetry,의존성 관리,Intermediate,38,빌드 + 배포,"poetry build, poetry publish",All
+패키징,Poetry,의존성 관리,Advanced,80,플러그인 시스템,Poetry plugins,All
+패키징,Pipenv,가상 환경,Intermediate,30,Pipfile,"pipenv install, pipenv lock",All
+패키징,PDM,모던 패키지 관리,Intermediate,35,PEP 582,"pdm add, pdm.lock",All
+패키징,PyInstaller,실행 파일,Intermediate,32,바이너리 생성,pyinstaller script.py,All
+패키징,PyInstaller,실행 파일,Advanced,76,최적화,"--onefile, custom hooks",All
+패키징,cx_Freeze,크로스 플랫폼,Advanced,72,멀티 플랫폼 빌드,setup.py with cx_Freeze,All
+GUI,Tkinter,기본 GUI,Basic,9,윈도우 생성,"Tk(), mainloop",All
+GUI,Tkinter,기본 GUI,Intermediate,30,위젯 + 레이아웃,"Button, Entry, grid/pack",All
+GUI,PyQt,Qt 프레임워크,Intermediate,38,신호/슬롯,"QMainWindow, signals/slots",All
+GUI,PyQt,Qt 프레임워크,Advanced,80,커스텀 위젯,"Custom widgets, painting",All
+GUI,Kivy,멀티터치,Intermediate,35,모바일 앱,"Kivy App, kv language",Mobile
+GUI,Kivy,멀티터치,Advanced,80,Android/iOS 빌드,"buildozer, python-for-android",Mobile
+GUI,Dear PyGui,모던 GUI,Intermediate,32,즉시 모드 GUI,dpg.create_context,All
+게임 개발,Pygame,2D 게임,Basic,10,기본 게임 루프,"pygame.init, game loop",All
+게임 개발,Pygame,2D 게임,Intermediate,35,스프라이트 + 충돌,"Sprite, collide_rect",All
+게임 개발,Pygame,2D 게임,Advanced,80,복잡한 게임,"Scene management, particles",All
+게임 개발,Pyglet,OpenGL,Intermediate,38,OpenGL 렌더링,"pyglet.window, batch rendering",All
+과학 계산,SciPy,과학 함수,Intermediate,35,최적화 + 적분,"scipy.optimize, scipy.integrate","Data,AI/ML"
+과학 계산,SciPy,과학 함수,Advanced,80,신호 처리,"scipy.signal, FFT","Data,AI/ML"
+과학 계산,SymPy,심볼릭 수학,Intermediate,35,대수 연산,"symbols, solve, simplify","Data,AI/ML"
+과학 계산,SymPy,심볼릭 수학,Advanced,76,미적분,"diff, integrate, limit","Data,AI/ML"
+과학 계산,Numba,JIT 컴파일,Intermediate,38,성능 가속,"@jit, @vectorize","Data,AI/ML"
+과학 계산,Numba,JIT 컴파일,Advanced,80,CUDA + 병렬,"@cuda.jit, parallel=True","Data,AI/ML"
+과학 계산,Cython,C 확장,Advanced,80,C/C++ 통합,".pyx files, cdef",All
+특수 목적,requests-cache,HTTP 캐싱,Intermediate,30,요청 캐싱,CachedSession,"Backend,Data"
+특수 목적,fake-useragent,User-Agent,Intermediate,25,랜덤 UA,UserAgent().random,"Backend,Data"
+특수 목적,python-dotenv,환경 변수,Basic,9,.env 로딩,load_dotenv(),All
+특수 목적,schedule,작업 스케줄링,Intermediate,28,간단한 스케줄,schedule.every().day.do(job),"Backend,All"
+특수 목적,Arrow,날짜/시간,Intermediate,30,편리한 시간 처리,"arrow.now(), humanize",All
+특수 목적,python-dateutil,날짜 파싱,Intermediate,28,유연한 파싱,dateutil.parser.parse,All
+특수 목적,phonenumbers,전화번호,Intermediate,28,번호 검증,phonenumbers.parse,"Backend,All"
+특수 목적,email-validator,이메일 검증,Intermediate,25,이메일 유효성,validate_email,"Backend,All"
+특수 목적,Pillow,이미지 처리,Intermediate,30,이미지 조작,"Image.open, resize, filter","Backend,All"
+특수 목적,reportlab,PDF 생성,Intermediate,32,PDF 문서,"canvas, SimpleDocTemplate",Backend
+특수 목적,PyPDF2,PDF 조작,Intermediate,30,PDF 읽기/쓰기,"PdfReader, PdfWriter",Backend
+특수 목적,python-barcode,바코드,Intermediate,25,바코드 생성,"Code128, generate",Backend
+특수 목적,qrcode,QR 코드,Intermediate,25,QR 생성,qrcode.make,"Backend,All"
+Web3/Blockchain,web3.py,이더리움 상호작용,Intermediate,38,스마트 컨트랙트 호출,"Web3(provider), contract.functions.call()",Backend
+Web3/Blockchain,web3.py,이더리움 상호작용,Advanced,80,트랜잭션 서명,"sign_transaction, send_raw_transaction",Backend
+Web3/Blockchain,Brownie,스마트 컨트랙트 개발,Advanced,76,테스트 + 배포,"brownie test, brownie run",Backend
+멀티미디어,pydub,오디오 편집,Intermediate,32,오디오 조작,"AudioSegment, export","Backend,All"
+멀티미디어,librosa,오디오 분석,Intermediate,38,특징 추출,"librosa.load, librosa.feature","AI/ML,Data"
+멀티미디어,librosa,오디오 분석,Advanced,80,스펙트로그램,"librosa.stft, mel_spectrogram",AI/ML
+멀티미디어,soundfile,오디오 I/O,Intermediate,30,파일 읽기/쓰기,"sf.read, sf.write","Backend,All"
+멀티미디어,pyaudio,실시간 오디오,Advanced,72,스트리밍,"PyAudio stream, callback","Backend,Embedded"
+멀티미디어,OpenCV Video,비디오 처리,Intermediate,35,비디오 읽기/쓰기,"cv2.VideoCapture, VideoWriter","AI/ML,Backend"
+멀티미디어,moviepy,비디오 편집,Intermediate,35,동영상 조작,"VideoFileClip, concatenate","Backend,All"
+멀티미디어,moviepy,비디오 편집,Advanced,76,이펙트 + 합성,"CompositeVideoClip, fx",Backend
+멀티미디어,ffmpeg-python,FFmpeg 래퍼,Advanced,72,복잡한 변환,ffmpeg.input().output(),Backend
+GIS,GeoPandas,지리 데이터,Intermediate,38,공간 데이터 분석,"GeoDataFrame, spatial joins","Data,AI/ML"
+GIS,GeoPandas,지리 데이터,Advanced,80,복잡한 공간 연산,"buffer, union, intersection","Data,AI/ML"
+GIS,Shapely,기하 객체,Intermediate,35,도형 연산,"Point, Polygon, intersects","Data,Backend"
+GIS,Folium,지도 시각화,Intermediate,32,인터랙티브 지도,"folium.Map, Marker","Data,Backend"
+GIS,Folium,지도 시각화,Advanced,72,커스텀 레이어,"GeoJson, choropleth","Data,Backend"
+GIS,pyproj,좌표 변환,Advanced,68,투영 변환,"Transformer, CRS",Data
+자동화,pyautogui,GUI 자동화,Intermediate,30,마우스/키보드 제어,"click, press, screenshot","All,QA"
+자동화,pyautogui,GUI 자동화,Advanced,68,이미지 인식,"locateOnScreen, confidence","All,QA"
+자동화,keyboard,키보드 제어,Intermediate,28,핫키,keyboard.add_hotkey,All
+자동화,mouse,마우스 제어,Intermediate,28,마우스 이벤트,"mouse.move, mouse.click",All
+자동화,pywinauto,Windows 자동화,Advanced,72,윈도우 앱 제어,"Application, Desktop","All,QA"
+자동화,python-docx,Word 문서,Intermediate,30,문서 생성,"Document, add_paragraph","Backend,All"
+자동화,openpyxl,Excel 조작,Intermediate,32,엑셀 읽기/쓰기,"load_workbook, save","Backend,All,Data"
+자동화,openpyxl,Excel 조작,Advanced,72,복잡한 수식,"formulas, styles, charts","Backend,Data"
+자동화,xlwings,Excel 매크로,Advanced,76,Python-Excel 통합,"xw.Book, UDF","Backend,Data"
+웹 스크래핑,Scrapy Splash,JavaScript 렌더링,Advanced,76,동적 페이지,"Splash, scrapy-splash","Backend,Data"
+웹 스크래핑,Scrapy Redis,분산 크롤링,Advanced,80,Redis 기반 큐,RedisCrawlSpider,"Backend,Data,DevOps"
+웹 스크래핑,newspaper3k,뉴스 추출,Intermediate,32,기사 파싱,"Article, download, parse","Backend,Data"
+웹 스크래핑,trafilatura,웹 콘텐츠 추출,Intermediate,35,본문 추출,"fetch_url, extract","Backend,Data"
+웹 스크래핑,selenium-wire,네트워크 캡처,Advanced,72,요청 인터셉트,"driver.requests, interceptor","Backend,QA"
+API 개발,FastAPI Rate Limiting,속도 제한,Intermediate,32,SlowAPI 통합,limiter.limit decorator,"Backend,Fullstack"
+API 개발,FastAPI Caching,응답 캐싱,Intermediate,35,fastapi-cache2,cache decorator,"Backend,Fullstack"
+API 개발,FastAPI Background Tasks,백그라운드 작업,Intermediate,32,비동기 작업,BackgroundTasks.add_task,"Backend,Fullstack"
+API 개발,FastAPI Events,이벤트 핸들러,Advanced,72,startup/shutdown,app.on_event,"Backend,Fullstack"
+API 개발,API 버저닝,버전 관리,Intermediate,35,URL 버저닝,"/api/v1/, APIRouter prefix",Backend
+API 개발,API 버저닝,버전 관리,Advanced,76,헤더 기반 버저닝,Accept header versioning,Backend
+메시징,ZeroMQ,메시징 라이브러리,Intermediate,38,소켓 패턴,"REQ-REP, PUB-SUB, PUSH-PULL",Backend
+메시징,ZeroMQ,메시징 라이브러리,Advanced,80,복잡한 패턴,"ROUTER-DEALER, proxy",Backend
+메시징,NATS,클라우드 네이티브 메시징,Intermediate,38,Pub/Sub,nats.py client,"Backend,DevOps"
+메시징,NATS,클라우드 네이티브 메시징,Advanced,80,JetStream,persistent streams,"Backend,DevOps"
+메시징,Pulsar,분산 메시징,Advanced,76,Apache Pulsar,"producer, consumer, topics","Backend,Data,DevOps"
+검색,Whoosh,순수 Python 검색,Intermediate,35,전문 검색,"Index, Schema, QueryParser","Backend,Data"
+검색,Elasticsearch DSL,쿼리 빌더,Intermediate,38,파이썬 DSL,"Search, Q, A","Backend,Data"
+검색,Elasticsearch DSL,쿼리 빌더,Advanced,80,복잡한 쿼리,"nested, bool, function_score","Backend,Data"
+검색,MeiliSearch,현대적 검색,Intermediate,35,빠른 검색,meilisearch-python client,Backend
+검색,Typesense,오픈소스 검색,Intermediate,35,타입 안전 검색,typesense-python,Backend
+시계열,InfluxDB,시계열 DB,Intermediate,38,메트릭 저장,"InfluxDBClient, write_points","Backend,Data,DevOps"
+시계열,InfluxDB,시계열 DB,Advanced,80,Flux 쿼리,Flux query language,"Data,DevOps"
+시계열,TimescaleDB,PostgreSQL 확장,Advanced,76,하이브리드 DB,continuous aggregates,"Backend,Data"
+시계열,Prophet,시계열 예측,Intermediate,40,페이스북 예측 라이브러리,"Prophet model, fit, predict","Data,AI/ML"
+시계열,Prophet,시계열 예측,Advanced,80,커스텀 시즌,"seasonality, holidays","Data,AI/ML"
+시계열,statsmodels,통계 모델,Advanced,76,"ARIMA, 시계열","ARIMA, seasonal_decompose","Data,AI/ML"
+그래프 분석,NetworkX,그래프 라이브러리,Intermediate,38,그래프 생성,"Graph, add_edge, shortest_path","Data,AI/ML"
+그래프 분석,NetworkX,그래프 라이브러리,Advanced,80,알고리즘,"pagerank, community detection","Data,AI/ML"
+그래프 분석,igraph,고성능 그래프,Advanced,76,대규모 그래프,"igraph.Graph, clustering",Data
+그래프 분석,graph-tool,효율적 그래프,Advanced,80,C++ 기반,"Graph, graph_draw","Data,AI/ML"
+그래프 분석,py2neo,Neo4j 드라이버,Intermediate,35,Cypher OGM,"Graph, Node, Relationship","Backend,Data"
+NLP,TextBlob,간단한 NLP,Intermediate,30,감성 분석,"TextBlob, sentiment","AI/ML,Data"
+NLP,polyglot,다국어 NLP,Intermediate,35,다국어 지원,"polyglot.text, detect_language",AI/ML
+NLP,fastText,단어 임베딩,Advanced,72,Facebook 임베딩,"train_unsupervised, word vectors",AI/ML
+NLP,Flair,NER & 분류,Advanced,76,문맥 임베딩,"Sentence, SequenceTagger",AI/ML
+NLP,AllenNLP,NLP 연구,Advanced,80,딥러닝 NLP,"Predictors, Model",AI/ML
+컴퓨터 비전,Detectron2,객체 감지,Advanced,80,Facebook 프레임워크,"DefaultPredictor, config",AI/ML
+컴퓨터 비전,Albumentations,이미지 증강,Intermediate,38,빠른 augmentation,"Compose, transforms",AI/ML
+컴퓨터 비전,Albumentations,이미지 증강,Advanced,80,커스텀 변환,"BasicTransform, DualTransform",AI/ML
+컴퓨터 비전,face_recognition,얼굴 인식,Intermediate,38,얼굴 감지/인식,"face_locations, face_encodings",AI/ML
+로보틱스,ROS (rospy),로봇 운영체제,Advanced,80,노드 통신,"rospy.init_node, Publisher, Subscriber",Embedded
+로보틱스,PyBullet,물리 시뮬레이션,Advanced,76,로봇 시뮬,"pybullet.loadURDF, stepSimulation","AI/ML,Embedded"
+양자 컴퓨팅,Qiskit,IBM 양자,Advanced,80,양자 회로,"QuantumCircuit, execute","AI/ML,Data"
+양자 컴퓨팅,Cirq,Google 양자,Advanced,80,양자 알고리즘,"cirq.Circuit, Simulator",AI/ML
+바이오인포매틱스,Biopython,생물정보학,Advanced,76,서열 분석,"SeqIO, Seq, Align","Data,AI/ML"
+바이오인포매틱스,scikit-bio,생물 데이터,Advanced,72,다양성 분석,"diversity, distance",Data
+금융,QuantLib,금융 공학,Advanced,80,파생상품 가격,"ql.Option, ql.BlackScholes","Data,Backend"
+금융,zipline,백테스팅,Advanced,76,알고리즘 트레이딩,"TradingAlgorithm, run_algorithm","Data,Backend"
+금융,TA-Lib,기술적 분석,Intermediate,38,금융 지표,"talib.SMA, talib.RSI",Data
+금융,yfinance,야후 금융,Intermediate,32,주가 데이터,"yf.download, Ticker","Data,Backend"
+금융,ccxt,암호화폐 거래소,Intermediate,38,거래소 API,"ccxt.binance, fetch_ticker","Backend,Data"
+금융,ccxt,암호화폐 거래소,Advanced,80,알고 트레이딩,"create_order, watch_ticker","Backend,Data"
+과학 시뮬레이션,SimPy,이산 이벤트,Advanced,72,프로세스 시뮬,"simpy.Environment, process","Data,All"
+과학 시뮬레이션,Mesa,에이전트 기반,Advanced,76,ABM 시뮬,"Model, Agent, schedule","Data,AI/ML"
+최적화,PuLP,선형 계획법,Intermediate,38,LP/IP 문제,"LpProblem, LpVariable",Data
+최적화,PuLP,선형 계획법,Advanced,80,복잡한 제약,"solver selection, sensitivity",Data
+최적화,CVXPY,볼록 최적화,Advanced,76,최적화 문제,"cp.Variable, cp.Problem","Data,AI/ML"
+최적화,OR-Tools,Google 최적화,Advanced,80,조합 최적화,"pywraplp, routing","Data,Backend"
+최적화,Optuna,하이퍼파라미터,Intermediate,40,자동 튜닝,"study.optimize, suggest_int","AI/ML,Data"
+최적화,Optuna,하이퍼파라미터,Advanced,80,고급 샘플링,"TPESampler, pruning",AI/ML
+분산 컴퓨팅,Ray,분산 컴퓨팅,Intermediate,40,병렬 처리,"@ray.remote, ray.get","Data,AI/ML,Backend"
+분산 컴퓨팅,Ray,분산 컴퓨팅,Advanced,80,Ray Tune + Serve,"ray.tune, ray.serve","AI/ML,DevOps"
+분산 컴퓨팅,Dask Distributed,분산 Dask,Advanced,80,클러스터 컴퓨팅,"Client, LocalCluster","Data,AI/ML"
+분산 컴퓨팅,Joblib,병렬화,Intermediate,32,간단한 병렬,"Parallel, delayed","Data,All"
+웹 서버,Gunicorn,WSGI 서버,Intermediate,32,프로덕션 서버,gunicorn app:app --workers 4,"Backend,DevOps"
+웹 서버,Gunicorn,WSGI 서버,Advanced,72,워커 튜닝,"worker_class, max_requests","Backend,DevOps"
+웹 서버,uWSGI,앱 서버,Advanced,72,고성능 서버,uwsgi.ini configuration,"Backend,DevOps"
+웹 서버,Uvicorn,ASGI 서버,Intermediate,35,FastAPI 서버,uvicorn main:app,"Backend,DevOps"
+웹 서버,Uvicorn,ASGI 서버,Advanced,76,멀티 워커,uvicorn with multiple workers,"Backend,DevOps"
+프록시,mitmproxy,HTTP 프록시,Advanced,76,트래픽 분석,"mitmdump, addons","Backend,Security,QA"
+프록시,requests-mock,HTTP 모킹,Intermediate,32,요청 모킹,requests_mock.Mocker,"Backend,QA"
+설정 관리,Dynaconf,설정 라이브러리,Intermediate,32,계층적 설정,"settings.get, validators","Backend,All"
+설정 관리,python-decouple,설정 분리,Intermediate,28,환경별 설정,config from .env,"Backend,All"
+설정 관리,Hydra,복잡한 설정,Advanced,72,구성 관리,"@hydra.main, compose","AI/ML,Backend"
+상태 관리,Redis-py,Redis 클라이언트,Intermediate,32,캐시 + 세션,"redis.Redis, get/set","Backend,Data,DevOps"
+상태 관리,Redis-py,Redis 클라이언트,Advanced,76,파이프라인 + Lua,"pipeline, eval","Backend,Data,DevOps"
+상태 관리,aioredis,비동기 Redis,Advanced,72,비동기 Redis,aioredis.create_redis_pool,"Backend,Data,DevOps"
+웹 프레임워크,Django ORM,QuerySet 최적화,Advanced,72,select_related와 prefetch_related,select_related('author__profile'),"Backend,Fullstack"
+웹 프레임워크,Django ORM,Raw SQL 사용,Advanced,68,복잡한 쿼리,Model.objects.raw(),"Backend,Data"
+웹 프레임워크,Django ORM,F() 표현식,Intermediate,35,필드 참조 연산,F('price') * 1.1,"Backend,Fullstack"
+웹 프레임워크,Django ORM,Q() 복잡한 쿼리,Advanced,64,"OR, AND 조합",Q(a=1) | Q(b=2),"Backend,Fullstack"
+웹 프레임워크,Django ORM,Subquery 사용,Advanced,76,서브쿼리,Subquery(queryset),"Backend,Fullstack"
+웹 프레임워크,Django ORM,Aggregation,Intermediate,38,집계 함수,"Count, Sum, Avg","Backend,Fullstack"
+웹 프레임워크,Django ORM,Annotation,Advanced,68,계산 필드,annotate(total=Sum('amount')),"Backend,Fullstack"
+웹 프레임워크,Django ORM,Transaction 관리,Advanced,72,트랜잭션,transaction.atomic(),"Backend,Fullstack"
+웹 프레임워크,Django ORM,Database Router,Advanced,80,멀티 DB 라우팅,DatabaseRouter class,"Backend,DevOps"
+웹 프레임워크,Django ORM,Custom Manager,Advanced,68,커스텀 매니저,models.Manager 상속,"Backend,Fullstack"
+웹 프레임워크,Django ORM,Model Meta Options,Intermediate,32,메타 옵션,"ordering, indexes, unique_together","Backend,Fullstack"
+웹 프레임워크,Django 템플릿,템플릿 상속,Intermediate,30,extends와 block,"{% extends %}, {% block %}","Backend,Fullstack"
+웹 프레임워크,Django 템플릿,커스텀 템플릿 태그,Advanced,72,태그 작성,@register.simple_tag,"Backend,Fullstack"
+웹 프레임워크,Django 템플릿,커스텀 필터,Intermediate,35,필터 작성,@register.filter,"Backend,Fullstack"
+웹 프레임워크,Django 캐싱,뷰 캐싱,Intermediate,35,데코레이터 캐싱,@cache_page,"Backend,Fullstack"
+웹 프레임워크,Django 캐싱,템플릿 fragment 캐싱,Intermediate,32,부분 캐싱,{% cache 500 %},"Backend,Fullstack"
+웹 프레임워크,Django 캐싱,Low-level 캐싱,Advanced,68,직접 제어,"cache.set, cache.get","Backend,Fullstack"
+웹 프레임워크,Django Middleware,커스텀 미들웨어,Advanced,76,요청/응답 처리,"__call__, process_view","Backend,Fullstack"
+웹 프레임워크,Django Management Commands,커스텀 명령어,Intermediate,38,manage.py 확장,"BaseCommand, handle()","Backend,Fullstack"
+웹 프레임워크,Django REST Framework Serializer,중첩 직렬화,Advanced,72,Nested serializer,"depth, SerializerMethodField","Backend,Fullstack"
+웹 프레임워크,Django REST Framework Serializer,검증 로직,Intermediate,38,validate 메서드,"validate_field, validate","Backend,Fullstack"
+웹 프레임워크,Django REST Framework Permissions,커스텀 권한,Advanced,68,권한 클래스,"BasePermission, has_permission","Backend,Security"
+웹 프레임워크,Django REST Framework Throttling,요청 제한,Intermediate,35,Throttle 클래스,"AnonRateThrottle, UserRateThrottle","Backend,Fullstack"
+웹 프레임워크,Django REST Framework Pagination,페이지네이션,Intermediate,32,커스텀 페이지,PageNumberPagination,"Backend,Fullstack"
+웹 프레임워크,Django REST Framework Filtering,필터링,Intermediate,35,django-filter,"FilterSet, filterset_fields","Backend,Fullstack"
+웹 프레임워크,FastAPI Dependency,계층적 의존성,Advanced,72,중첩 Depends,"Depends(get_db), Depends(get_user)","Backend,Fullstack"
+웹 프레임워크,FastAPI Dependency,제너레이터 의존성,Advanced,76,컨텍스트 관리,yield를 사용한 의존성,"Backend,Fullstack"
+웹 프레임워크,FastAPI Dependency,클래스 기반 의존성,Advanced,68,의존성 클래스,__call__ 메서드,"Backend,Fullstack"
+웹 프레임워크,FastAPI Pydantic,Field 검증,Intermediate,35,Field constraints,"Field(gt=0, le=100)","Backend,Fullstack"
+웹 프레임워크,FastAPI Pydantic,Custom validator,Advanced,68,커스텀 검증,@field_validator,"Backend,Fullstack"
+웹 프레임워크,FastAPI Pydantic,Config 설정,Intermediate,32,모델 설정,"model_config, ConfigDict","Backend,Fullstack"
+웹 프레임워크,FastAPI Response,다양한 응답 타입,Intermediate,35,Response 모델,"JSONResponse, HTMLResponse, StreamingResponse","Backend,Fullstack"
+웹 프레임워크,FastAPI Response,파일 응답,Intermediate,32,파일 다운로드,FileResponse,"Backend,Fullstack"
+웹 프레임워크,FastAPI Request,파일 업로드,Intermediate,35,멀티파트,"File, UploadFile","Backend,Fullstack"
+웹 프레임워크,FastAPI Request,Form 데이터,Intermediate,30,폼 처리,Form(...),"Backend,Fullstack"
+웹 프레임워크,FastAPI Request,Header 파라미터,Intermediate,30,헤더 추출,Header(...),"Backend,Fullstack"
+웹 프레임워크,FastAPI Request,Cookie 파라미터,Intermediate,30,쿠키 처리,Cookie(...),"Backend,Fullstack"
+웹 프레임워크,FastAPI Background Tasks,백그라운드 작업,Intermediate,38,비동기 작업,BackgroundTasks.add_task,"Backend,Fullstack"
+웹 프레임워크,FastAPI Middleware,CORS 미들웨어,Intermediate,32,CORS 설정,CORSMiddleware,"Backend,Fullstack"
+웹 프레임워크,FastAPI Security,OAuth2 Password,Advanced,72,OAuth2 흐름,"OAuth2PasswordBearer, OAuth2PasswordRequestForm","Backend,Security"
+웹 프레임워크,FastAPI Security,API Key,Intermediate,35,API 키 인증,"APIKeyHeader, APIKeyQuery","Backend,Security"
+웹 프레임워크,FastAPI Testing,TestClient,Intermediate,35,엔드포인트 테스트,"TestClient, client.get","Backend,QA"
+웹 프레임워크,FastAPI OpenAPI,커스텀 문서,Advanced,68,스키마 커스터마이징,openapi_schema 오버라이드,"Backend,Fullstack"
+웹 프레임워크,Flask Blueprint,모듈화,Intermediate,35,블루프린트,Blueprint 등록,"Backend,Fullstack"
+웹 프레임워크,Flask Blueprint,URL prefix,Intermediate,32,URL 접두사,url_prefix 설정,"Backend,Fullstack"
+웹 프레임워크,Flask Context,Application Context,Advanced,68,앱 컨텍스트,"app_context(), current_app","Backend,Fullstack"
+웹 프레임워크,Flask Context,Request Context,Advanced,68,요청 컨텍스트,"request, session, g","Backend,Fullstack"
+웹 프레임워크,Flask 에러 처리,에러 핸들러,Intermediate,35,커스텀 에러,@app.errorhandler,"Backend,Fullstack"
+웹 프레임워크,Flask 에러 처리,abort,Intermediate,30,에러 발생,abort(404),"Backend,Fullstack"
+웹 프레임워크,Flask Signals,이벤트 시그널,Advanced,68,시그널 처리,"before_request, after_request","Backend,Fullstack"
+웹 프레임워크,Flask Session,세션 관리,Intermediate,35,세션 사용,session['key'],"Backend,Fullstack"
+웹 프레임워크,Flask 파일 업로드,secure_filename,Intermediate,32,안전한 파일명,secure_filename(),"Backend,Security"
+데이터베이스,SQLAlchemy Core,Table 정의,Intermediate,32,테이블 스키마,"Table, Column, MetaData","Backend,Data"
+데이터베이스,SQLAlchemy Core,Select 문,Intermediate,35,쿼리 빌더,select().where().order_by(),"Backend,Data"
+데이터베이스,SQLAlchemy Core,Join,Advanced,64,테이블 조인,select().join(),"Backend,Data"
+데이터베이스,SQLAlchemy ORM,relationship,Intermediate,38,관계 정의,"relationship, backref","Backend,Data"
+데이터베이스,SQLAlchemy ORM,lazy loading,Advanced,68,지연 로딩 전략,"lazy='select', 'joined', 'subquery'","Backend,Data"
+데이터베이스,SQLAlchemy ORM,Session 관리,Advanced,72,세션 라이프사이클,"session.add, commit, rollback","Backend,Data"
+데이터베이스,SQLAlchemy ORM,Query API,Intermediate,35,쿼리 작성,"filter, filter_by, all, first","Backend,Data"
+데이터베이스,SQLAlchemy ORM,hybrid_property,Advanced,76,하이브리드 속성,@hybrid_property,"Backend,Data"
+데이터베이스,SQLAlchemy Migration,Alembic,Intermediate,38,DB 마이그레이션,"alembic revision, upgrade","Backend,DevOps"
+데이터 분석,Pandas DataFrame,인덱싱,Intermediate,32,"loc, iloc","df.loc[], df.iloc[]","Data,AI/ML"
+데이터 분석,Pandas DataFrame,필터링,Intermediate,32,조건 필터,df[df['col'] > 10],"Data,AI/ML"
+데이터 분석,Pandas DataFrame,groupby,Intermediate,38,그룹 집계,df.groupby('col').agg(),"Data,AI/ML"
+데이터 분석,Pandas DataFrame,pivot_table,Advanced,68,피벗 테이블,pd.pivot_table(),"Data,AI/ML"
+데이터 분석,Pandas DataFrame,merge/join,Intermediate,38,데이터 병합,"pd.merge(), df.join()","Data,AI/ML"
+데이터 분석,Pandas DataFrame,concat,Intermediate,32,데이터 결합,pd.concat(),"Data,AI/ML"
+데이터 분석,Pandas DataFrame,apply,Intermediate,35,함수 적용,df.apply(lambda x: ...),"Data,AI/ML"
+데이터 분석,Pandas DataFrame,map,Intermediate,32,Series 변환,series.map(),"Data,AI/ML"
+데이터 분석,Pandas DataFrame,applymap,Intermediate,32,모든 요소 적용,df.applymap(),"Data,AI/ML"
+데이터 분석,Pandas 결측치,dropna,Intermediate,30,결측치 제거,df.dropna(),"Data,AI/ML"
+데이터 분석,Pandas 결측치,fillna,Intermediate,32,결측치 채우기,df.fillna(),"Data,AI/ML"
+데이터 분석,Pandas 결측치,interpolate,Advanced,64,보간,df.interpolate(),"Data,AI/ML"
+데이터 분석,Pandas 타입,astype,Intermediate,30,타입 변환,df.astype('category'),"Data,AI/ML"
+데이터 분석,Pandas 타입,to_datetime,Intermediate,32,날짜 변환,pd.to_datetime(),"Data,AI/ML"
+데이터 분석,Pandas 문자열,str 메서드,Intermediate,32,문자열 처리,df['col'].str.contains(),"Data,AI/ML"
+데이터 분석,Pandas 시계열,resample,Advanced,68,리샘플링,df.resample('D').mean(),"Data,AI/ML"
+데이터 분석,Pandas 시계열,rolling,Advanced,64,이동 평균,df.rolling(window=3).mean(),"Data,AI/ML"
+데이터 분석,Pandas 최적화,category 타입,Advanced,68,메모리 최적화,astype('category'),"Data,AI/ML"
+데이터 분석,Pandas 최적화,chunksize,Advanced,72,대용량 처리,pd.read_csv(chunksize=10000),"Data,AI/ML"
+데이터 분석,Pandas 최적화,eval/query,Advanced,72,빠른 연산,df.eval('C = A + B'),"Data,AI/ML"
+데이터 분석,NumPy 배열,boolean indexing,Intermediate,35,조건 인덱싱,arr[arr > 5],"Data,AI/ML"
+데이터 분석,NumPy 배열,fancy indexing,Advanced,64,정수 배열 인덱싱,"arr[[0, 2, 4]]","Data,AI/ML"
+데이터 분석,NumPy 배열,reshape,Intermediate,32,형상 변경,"arr.reshape((3, 4))","Data,AI/ML"
+데이터 분석,NumPy 배열,broadcasting,Advanced,68,브로드캐스팅,"arr + arr[:, np.newaxis]","Data,AI/ML"
+데이터 분석,NumPy 연산,universal functions,Intermediate,35,벡터화 연산,"np.sin, np.exp","Data,AI/ML"
+데이터 분석,NumPy 연산,aggregate,Intermediate,35,집계,"np.sum, np.mean, axis","Data,AI/ML"
+데이터 분석,NumPy 연산,einsum,Advanced,76,텐서 연산,"np.einsum('ij,jk->ik', A, B)","Data,AI/ML"
+데이터 분석,NumPy 선형대수,dot product,Intermediate,35,내적,"np.dot, @","Data,AI/ML"
+데이터 분석,NumPy 선형대수,matrix operations,Advanced,68,행렬 연산,"np.linalg.inv, np.linalg.eig","Data,AI/ML"
+AI/ML,PyTorch Tensor,생성,Intermediate,32,텐서 생성,"torch.tensor, torch.zeros, torch.randn",AI/ML
+AI/ML,PyTorch Tensor,연산,Intermediate,35,텐서 연산,"add, mul, matmul",AI/ML
+AI/ML,PyTorch Tensor,device,Intermediate,38,GPU 사용,"tensor.to('cuda'), tensor.cuda()",AI/ML
+AI/ML,PyTorch Autograd,backward,Advanced,68,역전파,loss.backward(),AI/ML
+AI/ML,PyTorch Autograd,gradient,Advanced,64,그래디언트,"tensor.grad, torch.autograd.grad",AI/ML
+AI/ML,PyTorch nn.Module,forward,Intermediate,38,순전파,"def forward(self, x):",AI/ML
+AI/ML,PyTorch nn.Module,layers,Intermediate,35,레이어,"nn.Linear, nn.Conv2d, nn.ReLU",AI/ML
+AI/ML,PyTorch nn.Module,parameters,Advanced,64,파라미터 관리,"model.parameters(), named_parameters",AI/ML
+AI/ML,PyTorch Optimizer,SGD,Intermediate,35,최적화,"optim.SGD(params, lr)",AI/ML
+AI/ML,PyTorch Optimizer,Adam,Intermediate,35,Adam 옵티마이저,optim.Adam(params),AI/ML
+AI/ML,PyTorch Optimizer,step,Intermediate,35,가중치 업데이트,"optimizer.step(), optimizer.zero_grad()",AI/ML
+AI/ML,PyTorch DataLoader,Dataset,Intermediate,38,데이터셋 클래스,torch.utils.data.Dataset,AI/ML
+AI/ML,PyTorch DataLoader,DataLoader,Intermediate,38,배치 로딩,"DataLoader(dataset, batch_size)",AI/ML
+AI/ML,PyTorch 저장/로드,save,Intermediate,32,모델 저장,torch.save(model.state_dict()),AI/ML
+AI/ML,PyTorch 저장/로드,load,Intermediate,32,모델 로드,model.load_state_dict(torch.load()),AI/ML
+AI/ML,PyTorch 분산,DistributedDataParallel,Advanced,80,분산 학습,"DDP, dist.init_process_group","AI/ML,DevOps"
+AI/ML,PyTorch JIT,torch.jit.script,Advanced,76,JIT 컴파일,@torch.jit.script,AI/ML
+AI/ML,sklearn 전처리,StandardScaler,Intermediate,32,표준화,StandardScaler().fit_transform(),"AI/ML,Data"
+AI/ML,sklearn 전처리,MinMaxScaler,Intermediate,32,정규화,MinMaxScaler(),"AI/ML,Data"
+AI/ML,sklearn 전처리,LabelEncoder,Intermediate,30,레이블 인코딩,LabelEncoder().fit_transform(),"AI/ML,Data"
+AI/ML,sklearn 전처리,OneHotEncoder,Intermediate,35,원핫 인코딩,OneHotEncoder(),"AI/ML,Data"
+AI/ML,sklearn 전처리,PolynomialFeatures,Advanced,64,다항 특징,PolynomialFeatures(degree=2),AI/ML
+AI/ML,sklearn 모델,LinearRegression,Intermediate,32,선형 회귀,"LinearRegression().fit(X, y)","AI/ML,Data"
+AI/ML,sklearn 모델,LogisticRegression,Intermediate,35,로지스틱 회귀,LogisticRegression(),"AI/ML,Data"
+AI/ML,sklearn 모델,RandomForest,Intermediate,38,랜덤 포레스트,RandomForestClassifier(),"AI/ML,Data"
+AI/ML,sklearn 모델,SVM,Advanced,64,서포트 벡터 머신,SVC(kernel='rbf'),AI/ML
+AI/ML,sklearn 모델,KMeans,Intermediate,35,K-평균 군집화,KMeans(n_clusters=3),"AI/ML,Data"
+AI/ML,sklearn Pipeline,Pipeline,Advanced,68,파이프라인,Pipeline(steps=[...]),AI/ML
+AI/ML,sklearn Pipeline,ColumnTransformer,Advanced,72,컬럼별 변환,ColumnTransformer(transformers),AI/ML
+AI/ML,sklearn 평가,cross_val_score,Intermediate,38,교차 검증,"cross_val_score(model, X, y, cv=5)","AI/ML,QA"
+AI/ML,sklearn 평가,GridSearchCV,Advanced,68,하이퍼파라미터 탐색,"GridSearchCV(estimator, param_grid)",AI/ML
+AI/ML,sklearn 평가,confusion_matrix,Intermediate,35,혼동 행렬,"confusion_matrix(y_true, y_pred)","AI/ML,QA"
+AI/ML,sklearn 평가,classification_report,Intermediate,35,분류 리포트,classification_report(),"AI/ML,QA"
+네트워킹,requests 기본,GET 요청,Basic,12,GET,requests.get(url),All
+네트워킹,requests 기본,POST 요청,Basic,12,POST,"requests.post(url, data={})",All
+네트워킹,requests 고급,Session,Intermediate,32,세션 유지,requests.Session(),"Backend,All"
+네트워킹,requests 고급,Headers,Intermediate,30,헤더 설정,headers={'User-Agent': ...},"Backend,All"
+네트워킹,requests 고급,Timeout,Intermediate,30,타임아웃,"requests.get(url, timeout=5)","Backend,All"
+네트워킹,requests 고급,Retry,Advanced,64,재시도,HTTPAdapter(max_retries=3),All
+네트워킹,requests 고급,Authentication,Intermediate,35,인증,"auth=('user', 'pass'), HTTPBasicAuth","Backend,Security"
+네트워킹,requests 고급,SSL 검증,Intermediate,32,인증서 검증,"verify=False, cert=('client.cert', 'client.key')","Backend,Security"
+네트워킹,requests 고급,Streaming,Advanced,68,스트리밍,"stream=True, iter_content()",All
+비동기,asyncio 기본,coroutine,Intermediate,35,코루틴,"async def, await",Backend
+비동기,asyncio 기본,asyncio.run,Intermediate,32,이벤트 루프,asyncio.run(main()),Backend
+비동기,asyncio Task,create_task,Intermediate,38,태스크 생성,asyncio.create_task(coro),Backend
+비동기,asyncio Task,gather,Advanced,64,병렬 실행,asyncio.gather(*tasks),Backend
+비동기,asyncio Task,wait,Advanced,68,태스크 대기,"asyncio.wait(tasks, return_when)",Backend
+비동기,asyncio Task,TaskGroup,Advanced,72,태스크 그룹,async with asyncio.TaskGroup(),Backend
+비동기,asyncio 동기화,Lock,Advanced,64,락,asyncio.Lock(),Backend
+비동기,asyncio 동기화,Semaphore,Advanced,68,세마포어,asyncio.Semaphore(10),Backend
+비동기,asyncio 동기화,Event,Advanced,64,이벤트,asyncio.Event(),Backend
+비동기,asyncio 동기화,Queue,Advanced,68,큐,asyncio.Queue(),Backend
+비동기,asyncio Timeout,wait_for,Intermediate,35,타임아웃,"asyncio.wait_for(coro, timeout)",Backend
+비동기,asyncio Timeout,timeout,Advanced,64,컨텍스트 타임아웃,async with asyncio.timeout(10):,Backend
+컨테이너,Dockerfile,FROM,Basic,9,베이스 이미지,FROM python:3.11,"DevOps,All"
+컨테이너,Dockerfile,RUN,Basic,10,명령 실행,RUN pip install,"DevOps,All"
+컨테이너,Dockerfile,COPY/ADD,Basic,10,파일 복사,COPY . /app,"DevOps,All"
+컨테이너,Dockerfile,WORKDIR,Basic,9,작업 디렉토리,WORKDIR /app,"DevOps,All"
+컨테이너,Dockerfile,ENV,Basic,10,환경 변수,ENV PATH=/app:$PATH,"DevOps,All"
+컨테이너,Dockerfile,EXPOSE,Basic,9,포트 노출,EXPOSE 8000,"DevOps,All"
+컨테이너,Dockerfile,CMD/ENTRYPOINT,Intermediate,30,실행 명령,"CMD ['python', 'app.py']","DevOps,All"
+컨테이너,Dockerfile,Multi-stage build,Advanced,68,멀티 스테이지,FROM ... AS builder,DevOps
+컨테이너,Dockerfile,ARG,Intermediate,30,빌드 인자,ARG VERSION=1.0,DevOps
+컨테이너,Dockerfile,HEALTHCHECK,Advanced,60,헬스 체크,HEALTHCHECK CMD curl,DevOps
+컨테이너,Docker CLI,build,Intermediate,30,이미지 빌드,docker build -t app .,"DevOps,All"
+컨테이너,Docker CLI,run,Intermediate,30,컨테이너 실행,docker run -p 8000:8000,"DevOps,All"
+컨테이너,Docker CLI,exec,Intermediate,30,컨테이너 명령,docker exec -it container bash,"DevOps,All"
+컨테이너,Docker CLI,logs,Intermediate,28,로그 확인,docker logs -f container,"DevOps,All"
+컨테이너,Docker CLI,volumes,Advanced,60,볼륨 관리,docker volume create,DevOps
+컨테이너,Docker CLI,networks,Advanced,64,네트워크,docker network create,DevOps
+컨테이너,Docker Compose,services,Intermediate,35,서비스 정의,services: app: image:,DevOps
+컨테이너,Docker Compose,volumes,Intermediate,32,볼륨 마운트,volumes: - ./data:/data,DevOps
+컨테이너,Docker Compose,depends_on,Intermediate,32,의존성,depends_on: - db,DevOps
+컨테이너,Docker Compose,environment,Intermediate,30,환경 변수,environment: VAR=value,DevOps
+테스트,pytest 기본,test 함수,Basic,12,테스트 작성,def test_func(): assert ...,"All,QA"
+테스트,pytest 기본,assert,Basic,12,검증,assert result == expected,"All,QA"
+테스트,pytest fixture,함수 픽스처,Intermediate,32,테스트 셋업,@pytest.fixture,"All,QA"
+테스트,pytest fixture,scope,Advanced,64,픽스처 범위,scope='session',"All,QA"
+테스트,pytest fixture,autouse,Advanced,60,자동 사용,autouse=True,"All,QA"
+테스트,pytest parametrize,단일 파라미터,Intermediate,35,여러 케이스,"@pytest.mark.parametrize('x', [1,2,3])","All,QA"
+테스트,pytest parametrize,다중 파라미터,Advanced,64,조합 테스트,"@pytest.mark.parametrize('x,y', [(1,2), (3,4)])","All,QA"
+테스트,pytest markers,skip,Intermediate,30,테스트 스킵,@pytest.mark.skip,"All,QA"
+테스트,pytest markers,skipif,Intermediate,32,조건부 스킵,@pytest.mark.skipif(condition),"All,QA"
+테스트,pytest markers,xfail,Intermediate,30,예상 실패,@pytest.mark.xfail,"All,QA"
+테스트,pytest markers,커스텀 마커,Advanced,64,사용자 마커,pytest.ini markers,"All,QA"
+테스트,pytest monkeypatch,setattr,Intermediate,35,속성 패치,"monkeypatch.setattr(obj, 'attr', value)","Backend,QA"
+테스트,pytest monkeypatch,setenv,Intermediate,32,환경 변수,"monkeypatch.setenv('KEY', 'value')","Backend,QA"
+테스트,pytest caplog,로그 캡처,Intermediate,32,로그 테스트,"caplog.text, caplog.records","All,QA"
+테스트,pytest capsys,출력 캡처,Intermediate,32,stdout 테스트,capsys.readouterr(),"All,QA"
+테스트,pytest tmpdir,임시 디렉토리,Intermediate,32,파일 테스트,tmpdir fixture,"All,QA"
+버전 관리,git 기본,init,Basic,8,저장소 초기화,git init,All
+버전 관리,git 기본,clone,Basic,9,저장소 복제,git clone url,All
+버전 관리,git 기본,add,Basic,9,스테이징,git add file,All
+버전 관리,git 기본,commit,Basic,10,커밋,git commit -m 'msg',All
+버전 관리,git 기본,push,Basic,10,원격 푸시,git push origin main,All
+버전 관리,git 기본,pull,Basic,10,원격 가져오기,git pull,All
+버전 관리,git 브랜치,branch,Intermediate,28,브랜치 생성,git branch feature,All
+버전 관리,git 브랜치,checkout,Intermediate,28,브랜치 전환,git checkout branch,All
+버전 관리,git 브랜치,switch,Intermediate,28,브랜치 전환 (신),git switch branch,All
+버전 관리,git 브랜치,merge,Intermediate,32,브랜치 병합,git merge feature,All
+버전 관리,git 브랜치,rebase,Advanced,64,리베이스,git rebase main,All
+버전 관리,git 고급,cherry-pick,Advanced,64,커밋 선택,git cherry-pick hash,All
+버전 관리,git 고급,stash,Intermediate,32,임시 저장,"git stash, git stash pop",All
+버전 관리,git 고급,reset,Advanced,60,커밋 되돌리기,git reset --hard HEAD~1,All
+버전 관리,git 고급,revert,Intermediate,35,커밋 취소,git revert hash,All
+버전 관리,git 고급,reflog,Advanced,68,참조 로그,git reflog,All
+버전 관리,git 고급,bisect,Advanced,72,이진 탐색,git bisect start,All
+버전 관리,git 고급,submodule,Advanced,68,서브모듈,git submodule add,All
+버전 관리,git 고급,worktree,Advanced,72,작업 트리,git worktree add,All
+머신러닝 및 딥러닝,전통 ML,XGBoost,Intermediate,35,fit/predict 기본 사용,"XGBClassifier().fit(X, y)","AI/ML,Data"
+머신러닝 및 딥러닝,전통 ML,XGBoost,Advanced,76,조기종료 + 피처 중요도,"early_stopping_rounds, feature_importances_",AI/ML
+머신러닝 및 딥러닝,전통 ML,LightGBM,Intermediate,35,기본 학습,lgb.LGBMClassifier(),"AI/ML,Data"
+머신러닝 및 딥러닝,전통 ML,LightGBM,Advanced,76,하이퍼파라미터 튜닝,"num_leaves, learning_rate 최적화",AI/ML
+머신러닝 및 딥러닝,전통 ML,CatBoost,Intermediate,35,범주형 변수 처리,CatBoostClassifier(cat_features),"AI/ML,Data"
+머신러닝 및 딥러닝,전통 ML,CatBoost,Advanced,76,커스텀 손실 함수,custom loss function,AI/ML
+머신러닝 및 딥러닝,LLM 오케스트레이션,LangGraph,Intermediate,38,기본 그래프 빌드,"StateGraph, add_node","AI/ML,Backend"
+머신러닝 및 딥러닝,LLM 오케스트레이션,LangGraph,Advanced,80,복잡한 워크플로우,"conditional edges, checkpoints",AI/ML
+머신러닝 및 딥러닝,LLM 오케스트레이션,CrewAI,Intermediate,38,멀티 에이전트 시스템,"Agent, Task, Crew","AI/ML,Backend"
+머신러닝 및 딥러닝,LLM 오케스트레이션,CrewAI,Advanced,80,협업 에이전트,"agent collaboration, delegation",AI/ML
+머신러닝 및 딥러닝,Generative AI,Diffusers,Intermediate,38,Stable Diffusion 사용,StableDiffusionPipeline,AI/ML
+머신러닝 및 딥러닝,Generative AI,Diffusers,Advanced,80,ControlNet + 파인튜닝,"ControlNetModel, Lora",AI/ML
+AI/ML,MLOps,BentoML,Intermediate,38,모델 서빙,@bentoml.service decorator,"AI/ML,DevOps"
+AI/ML,MLOps,BentoML,Advanced,80,Bento 배포 + 최적화,"bentoml build, containerize","AI/ML,DevOps"
+AI/ML,MLOps,TorchServe,Intermediate,38,PyTorch 모델 서빙,torch-model-archiver,"AI/ML,DevOps"
+AI/ML,MLOps,TorchServe,Advanced,80,배치 처리 + 스케일링,"batch inference, multi-model","AI/ML,DevOps"
+AI/ML,MLOps,Feast,Intermediate,40,Feature Store 기본,"FeatureStore, apply","AI/ML,Data"
+AI/ML,MLOps,Feast,Advanced,80,실시간 피처 제공,"online store, feature materialization","AI/ML,Data"
+데이터 저장,Vector DB,Qdrant,Intermediate,35,벡터 검색,"QdrantClient, search","AI/ML,Backend"
+데이터 저장,Vector DB,Qdrant,Advanced,76,필터링 + 하이브리드 검색,"payload filtering, hybrid search","AI/ML,Backend"
+데이터 저장,Vector DB,Pinecone,Intermediate,35,벡터 인덱싱,"Index.upsert, query","AI/ML,Backend"
+데이터 저장,Vector DB,Pinecone,Advanced,76,메타데이터 필터 + 스케일링,"metadata filtering, namespace","AI/ML,Backend"
+데이터 처리 최적화,임베디드 DB,DuckDB,Basic,10,기본 쿼리,"duckdb.connect(), execute","Data,AI/ML"
+데이터 처리 최적화,임베디드 DB,DuckDB,Intermediate,35,Pandas 통합,duckdb.query_df(),"Data,AI/ML"
+데이터 처리 최적화,임베디드 DB,DuckDB,Advanced,76,Parquet + Arrow 최적화,"read_parquet, arrow integration",Data
+데이터 저장,OLAP,ClickHouse,Intermediate,38,컬럼형 쿼리,clickhouse-driver,"Data,Backend"
+데이터 저장,OLAP,ClickHouse,Advanced,80,분산 테이블 + 최적화,"Distributed table, MergeTree","Data,DevOps"
+추가 프레임워크 및 라이브러리,작업 스케줄링,Dramatiq,Intermediate,32,태스크 큐,@dramatiq.actor decorator,Backend
+추가 프레임워크 및 라이브러리,작업 스케줄링,Dramatiq,Advanced,72,재시도 + 미들웨어,"Retries, custom middleware",Backend
+DevOps,Service Mesh,Istio,Advanced,76,트래픽 관리,"VirtualService, DestinationRule",DevOps
+DevOps,Service Mesh,Linkerd,Advanced,72,경량 서비스 메시,"linkerd inject, traffic split",DevOps
+API & 통신,API Gateway,Kong,Intermediate,35,라우팅 + 플러그인,"Routes, Services, Plugins","Backend,DevOps"
+API & 통신,API Gateway,Kong,Advanced,76,커스텀 플러그인,Lua custom plugin,"Backend,DevOps"
+API & 통신,API Gateway,Tyk,Intermediate,35,API 관리,"API definitions, policies","Backend,DevOps"
+API & 통신,GraphQL,Hasura,Intermediate,38,즉시 GraphQL API,"Hasura console, relationships","Backend,Fullstack"
+API & 통신,GraphQL,Hasura,Advanced,80,실시간 구독 + 권한,"subscriptions, role-based access","Backend,Fullstack"
+클라우드 및 배포,IaC,Pulumi,Intermediate,38,파이썬으로 IaC,"pulumi.Config, pulumi up",DevOps
+클라우드 및 배포,IaC,Pulumi,Advanced,80,복잡한 리소스 관리,"ComponentResource, Stack references",DevOps
+인프라,자동화,Chef,Intermediate,32,Cookbook 작성,"Recipe, Resources",DevOps
+인프라,자동화,Chef,Advanced,72,복잡한 구성 관리,"Chef InSpec, Test Kitchen",DevOps
+인프라,자동화,Puppet,Intermediate,32,Manifest 작성,"puppet apply, modules",DevOps
+인프라,자동화,Puppet,Advanced,72,Hiera + Orchestration,"Hiera data, Puppet orchestrator",DevOps
+DevOps,서비스 디스커버리,Consul,Intermediate,35,서비스 등록/발견,"consul agent, service registration","DevOps,Backend"
+DevOps,서비스 디스커버리,Consul,Advanced,76,KV Store + Service Mesh,"consul kv, connect",DevOps
+DevOps,Monitoring,Loki,Intermediate,35,로그 집계,LogQL queries,"DevOps,Backend"
+DevOps,Monitoring,Loki,Advanced,76,분산 로그 + 알림,"promtail, alerting rules",DevOps
+데이터 엔지니어링,CDC,Debezium,Intermediate,40,변경 데이터 캡처,Debezium connector,"Data,Backend"
+데이터 엔지니어링,CDC,Debezium,Advanced,80,복잡한 파이프라인,"transformations, Kafka Connect","Data,DevOps"
+메시지 큐 및 스트리밍,스트림 처리,Flink,Intermediate,40,DataStream API,StreamExecutionEnvironment,"Data,Backend"
+메시지 큐 및 스트리밍,스트림 처리,Flink,Advanced,80,Stateful 처리,"state management, checkpoints",Data
+개발 도구,빌드 자동화,Makefile,Basic,9,기본 타겟,"make, targets, phony",All
+개발 도구,빌드 자동화,Makefile,Intermediate,30,변수 + 패턴,"variables, pattern rules","All,DevOps"
+개발 도구,빌드 자동화,Makefile,Advanced,68,복잡한 빌드 시스템,"automatic variables, includes",DevOps
+데이터 저장,Time-Series DB,TimescaleDB,Intermediate,35,Hypertable 생성,"CREATE HYPERTABLE, time_bucket","Data,Backend"
+데이터 저장,Time-Series DB,TimescaleDB,Advanced,76,연속 집계 + 압축,"continuous aggregates, compression","Data,DevOps"
+데이터 엔지니어링,Data Lake,Apache Iceberg,Intermediate,40,Table format,"Iceberg tables, schema evolution",Data
+데이터 엔지니어링,Data Lake,Apache Iceberg,Advanced,80,Time travel + 파티션,"snapshot isolation, hidden partitioning",Data
+데이터 엔지니어링,Data Lake,Apache Hudi,Intermediate,40,Upserts + Incremental,"COW/MOR tables, incremental queries",Data
+데이터 엔지니어링,Data Lake,Apache Hudi,Advanced,80,복잡한 CDC,"DeltaStreamer, clustering",Data
+Architectural Patterns,Event-Driven,Event Sourcing,Advanced,72,이벤트 스토어 구현,"event store, replay",Backend
+DevOps,Kubernetes,Kustomize,Intermediate,35,Overlay 관리,"kustomization.yaml, patches",DevOps
+DevOps,Kubernetes,Kustomize,Advanced,72,복잡한 변환,"transformers, generators",DevOps
+DevOps,Kubernetes,K3s,Intermediate,32,경량 Kubernetes,"k3s install, edge deployment",DevOps
+DevOps,Kubernetes,K3s,Advanced,72,Edge/IoT 배포,"multi-node cluster, HA setup","DevOps,Embedded"
+DevOps,Container Runtime,containerd,Advanced,72,Low-level container,"ctr, containerd API",DevOps
+DevOps,Container Runtime,CRI-O,Advanced,72,Kubernetes native runtime,"crictl, CRI interface",DevOps
+보안,인증 및 권한,OpenID Connect,Intermediate,35,OIDC 플로우,"ID token, UserInfo endpoint","Backend,Security"
+보안,인증 및 권한,OpenID Connect,Advanced,76,Discovery + Claims,"OIDC discovery, custom claims","Backend,Security"
+보안,인증 및 권한,mTLS,Advanced,76,상호 TLS 인증,"client certificates, mutual authentication","Backend,Security,DevOps"
+보안,API Security,Authlib,Intermediate,35,OAuth2 서버,"AuthorizationServer, ResourceProtector","Backend,Security"
+보안,API Security,Authlib,Advanced,76,OIDC + JWT,"OpenID Connect, token introspection","Backend,Security"
+클라우드,AWS,AWS SSM,Intermediate,32,Parameter Store,"SSM parameters, SecureString","DevOps,Backend"
+클라우드,AWS,AWS SSM,Advanced,72,Session Manager,"SSM Session, automation",DevOps
+클라우드,GCP,Cloud Pub/Sub,Intermediate,35,토픽 + 구독,"publish, pull, push subscription","Backend,Data,DevOps"
+클라우드,GCP,Cloud Pub/Sub,Advanced,76,순서 보장 + 필터,"ordering keys, message filtering","Backend,Data"
+AI/ML,MLOps,TFX,Advanced,76,TensorFlow Extended,"TFX components, orchestration","AI/ML,DevOps"
+AI/ML,Model Serving,Triton Inference Server,Intermediate,38,모델 서빙,"model repository, ensemble","AI/ML,DevOps"
+AI/ML,Model Serving,Triton Inference Server,Advanced,80,최적화 + 스케일,"dynamic batching, model analyzer","AI/ML,DevOps"
+AI/ML,AutoML,AutoKeras,Intermediate,35,자동 모델 탐색,"AutoModel, ImageClassifier",AI/ML
+AI/ML,AutoML,AutoKeras,Advanced,72,Custom search space,"custom blocks, tuner",AI/ML
+AI/ML,강화학습,RLlib,Intermediate,40,RL 알고리즘,"PPO, DQN, A3C",AI/ML
+AI/ML,강화학습,RLlib,Advanced,80,분산 학습,"distributed training, custom models",AI/ML
+AI/ML,컴퓨터 비전,Detectron2,Advanced,76,객체 감지 프레임워크,"Faster R-CNN, Mask R-CNN",AI/ML
+AI/ML,Explainable AI,SHAP,Intermediate,38,모델 해석,"TreeExplainer, summary_plot","AI/ML,Data"
+AI/ML,Explainable AI,SHAP,Advanced,76,복잡한 해석,"DeepExplainer, force_plot",AI/ML
+AI/ML,Explainable AI,LIME,Intermediate,35,로컬 해석,"LimeTabularExplainer, explain_instance","AI/ML,Data"
+데이터 저장,Knowledge Graph,RDF,Intermediate,35,RDF 트리플,"rdflib, Graph, Turtle format","Data,AI/ML"
+데이터 저장,Knowledge Graph,RDF,Advanced,76,SPARQL 쿼리,"SPARQL queries, inference","Data,AI/ML"
+데이터 저장,Knowledge Graph,Ontology,Advanced,72,OWL 온톨로지,"owlready2, reasoning","Data,AI/ML"
+Specialized,WebAssembly,PyScript,Intermediate,32,Browser에서 Python,"pyscript tag, py-script","Frontend,Fullstack"
+Specialized,WebAssembly,Pyodide,Intermediate,35,Python in WASM,"pyodide.loadPackage, runPython","Frontend,Fullstack"
+Specialized,WebAssembly,Pyodide,Advanced,76,JS 통합,"JavaScript interop, custom packages","Frontend,Fullstack"
+Architectural Patterns,Design Patterns,Domain-Driven Design,Advanced,76,DDD 구현,"Aggregate, Repository, Entity",Backend
+Architectural Patterns,Design Patterns,Hexagonal Architecture,Advanced,72,Ports & Adapters,"port/adapter pattern, dependency inversion",Backend
+Architectural Patterns,Design Patterns,Clean Architecture,Advanced,72,계층 분리,"entities, use cases, interface adapters",Backend
+함수형 프로그래밍 및 고급 기능,Reactive,RxPY,Intermediate,35,Observable 스트림,"Observable, operators","Backend,All"
+함수형 프로그래밍 및 고급 기능,Reactive,RxPY,Advanced,76,복잡한 파이프라인,"hot/cold observables, schedulers",Backend
+API & 통신,Serialization,Protocol Buffers,Basic,10,기본 메시지,"message definition, SerializeToString","Backend,All"
+API & 통신,Serialization,Protocol Buffers,Intermediate,35,복잡한 구조,"nested messages, repeated fields",Backend
+API & 통신,Serialization,Protocol Buffers,Advanced,76,최적화,"custom options, reflection",Backend
+추가 프레임워크 및 라이브러리,데이터 검증,Cerberus,Intermediate,30,스키마 검증,"Validator, schema rules","Backend,All"
+추가 프레임워크 및 라이브러리,데이터 검증,jsonschema,Intermediate,30,JSON Schema 검증,"validate, Draft7Validator","Backend,All"
+추가 프레임워크 및 라이브러리,데이터 검증,jsonschema,Advanced,68,커스텀 검증,"custom validators, format checkers",Backend
+워크플로우,Orchestration,Dagster,Intermediate,38,Data asset 관리,"@asset decorator, jobs","Data,Backend"
+워크플로우,Orchestration,Dagster,Advanced,80,복잡한 파이프라인,"partitions, sensors, schedules",Data
+문서화,API Docs,Redoc,Intermediate,28,OpenAPI 문서화,"Redoc UI, OpenAPI spec","Backend,Fullstack"
+모니터링 및 관찰성,분산 추적,Zipkin,Intermediate,35,분산 추적,"py_zipkin, trace context","DevOps,Backend"
+보안,Rate Limiting,python-limits,Intermediate,32,제한 전략,"storage backends, strategies",Backend
+파일 및 예외 처리,파일 I/O,ZIP 파일 압축 해제,Intermediate,25,Ability to extract files from a ZIP archive using the zipfile module in Python,The code uses the zipfile module to extract the contents of a ZIP file to a specified directory.,All
+멀티미디어,음성 처리,음성 인식 (Speech-to-Text),Intermediate,30,The code includes functionality for processing audio files and performing speech-to-text conversion. This suggests the need for skills in speech recognition and natural language processing.,The code calls methods to process audio files and convert them to text using speech recognition libraries.,All
+자연어 처리,음성 인식 후처리,음성 인식 결과 후처리,Intermediate,30,"The code processes the speech recognition results, including handling recognition errors, formatting the output, and saving the results to a CSV file.","The code catches various exceptions (UnknownValueError, RequestError) and formats the recognized text with timestamps, demonstrating basic post-processing of the speech recognition output.",All
+멀티미디어,오디오 녹음,음성 녹음,Intermediate,30,The code demonstrates the ability to record audio from a microphone using the pyaudio library.,"The code imports pyaudio and uses it to open an audio stream, record audio, and save it to a WAV file.",All
+멀티미디어,오디오 신호 처리,음성 데이터 전처리,Intermediate,30,"The code performs audio data preprocessing, such as chunking the audio stream and converting it to the appropriate format (paInt16) for speech recognition.","The code sets the chunk size, audio format, and other parameters for the audio stream, demonstrating basic audio data handling.",All
+보안,암호학,시저 암호 해독,Intermediate,30,시저 암호를 사용하여 암호화된 텍스트를 해독하는 기능 구현,"시저 암호 해독 알고리즘 구현, 단어 사전 활용, 모든 가능한 시프트 값 시도",All
+시스템 프로그래밍,시스템 정보,시스템 정보 수집,Intermediate,30,"Ability to collect and process system-level information, such as platform details and system metrics.","The code imports the 'platform' and 'psutil' modules, which are commonly used to gather system-level information.",All
+메모리 관리,mmap,메모리 매핑,Intermediate,30,"The code imports the 'mmap' module, which is used for memory-mapping files. This demonstrates the ability to efficiently work with large files by mapping them into memory.","The code imports the 'mmap' module, which is used for memory-mapping files.",All
+웹 프레임워크 - Flask,Flask 기초,Flask 디버그 모드,Basic,8,Flask 애플리케이션의 디버그 모드 사용 및 디버깅 정보 활용,"The code checks the app.debug flag to determine the hostname, demonstrating basic usage of Flask's debug mode.",All
+파일 및 예외 처리,파일 검색,날짜 범위 검색,Intermediate,25,"The code includes a bonus feature to search for text within a date range, which requires handling datetime objects and filtering CSV data accordingly.",The code imports the datetime module and uses it to filter CSV data based on a date range.,All
+검색,텍스트 검색,키워드 검색,Intermediate,25,"The code includes a bonus feature to search for text within the CSV data, which requires implementing a text search algorithm.","The code mentions a 'keyword search' feature, but does not provide the implementation details.",All
+수학,Calculator,공학용 계산기 기능 구현,Advanced,72,"Implementing the core functionality of an engineering calculator, including support for scientific notation, trigonometric functions, logarithms, and other advanced mathematical operations.","The code handles various calculator operations like basic arithmetic, trigonometric functions, logarithms, and other advanced math functions, with special handling for edge cases and precision issues.",All
+수학,Calculator Memory,계산기 메모리 기능,Intermediate,30,"Implementing memory-related features in a calculator, such as storing, retrieving, and performing operations on a memory value.","The code has methods like 'mc', 'm+', 'm-', and 'mr' that allow the user to manage a memory value in the calculator.",All
+알고리즘,수식 처리,계산기 로직 구현,Advanced,72,"The code implements the core logic of a calculator, including parsing mathematical expressions, handling operators and precedence, and evaluating the results. This demonstrates advanced skills in designing and implementing a complex calculator application.","tokenize, infix_to_postfix, evaluate_postfix, safe_calculate methods handle the calculation logic",All
