@@ -243,7 +243,12 @@ class AgentDebugLogger:
         self.agent_name = agent_name
         self.is_subagent = is_subagent
         
+        # StorageBackend 초기화 (환경변수에 따라 로컬/S3 선택)
+        from shared.storage import create_storage_backend
+        self.storage_backend = create_storage_backend(task_uuid, base_path)
+        
         # 디버그 디렉토리: data/analyze/{task_uuid}/debug/agents/{agent_name}
+        # 로컬에 임시 저장 (S3 사용 시에도 로컬에 먼저 저장 후 업로드)
         self.debug_dir = self.base_path / "debug" / "agents" / agent_name
         self.debug_dir.mkdir(parents=True, exist_ok=True)
         
@@ -259,7 +264,7 @@ class AgentDebugLogger:
         self.start_time = None
         self.errors_summary = []  # ✅ 오류 요약 리스트
         
-        logger.debug(f"🔍 AgentDebugLogger 초기화: {self.debug_dir} (서브에이전트: {is_subagent})")
+        logger.debug(f"🔍 AgentDebugLogger 초기화: {self.debug_dir} (서브에이전트: {is_subagent}, Storage: {type(self.storage_backend).__name__})")
     
     @classmethod
     def is_enabled(cls) -> bool:
@@ -1036,15 +1041,33 @@ class AgentDebugLogger:
         return "\n".join(lines)
     
     def _write_text(self, path: Path, content: str):
-        """텍스트 파일 저장"""
+        """
+        텍스트 파일 저장 (환경변수에 따라 로컬/S3)
+        
+        로컬: 기존처럼 로컬에 저장
+        S3: 로컬에 임시 저장하고, 작업 완료 시 일괄 업로드 (finalize_node에서 처리)
+        """
+        # 항상 로컬에 먼저 저장 (실시간 로깅 성능을 위해)
         path.write_text(content, encoding="utf-8")
+        
+        # S3 사용 시에도 로컬에 저장 (작업 완료 시 일괄 업로드)
+        # 실시간 S3 업로드는 성능 문제가 있으므로 로컬 저장만 수행
     
     def _write_json(self, path: Path, data: Any):
-        """JSON 파일 저장"""
+        """
+        JSON 파일 저장 (환경변수에 따라 로컬/S3)
+        
+        로컬: 기존처럼 로컬에 저장
+        S3: 로컬에 임시 저장하고, 작업 완료 시 일괄 업로드 (finalize_node에서 처리)
+        """
+        # 항상 로컬에 먼저 저장 (실시간 로깅 성능을 위해)
         path.write_text(
             json.dumps(data, indent=2, ensure_ascii=False, default=str),
             encoding="utf-8"
         )
+        
+        # S3 사용 시에도 로컬에 저장 (작업 완료 시 일괄 업로드)
+        # 실시간 S3 업로드는 성능 문제가 있으므로 로컬 저장만 수행
     
     def _serialize_messages(self, messages: List[Any]) -> List[Dict[str, Any]]:
         """LangChain 메시지를 직렬화 가능한 형태로 변환"""

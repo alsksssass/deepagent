@@ -7,6 +7,7 @@ CommitEvaluator Pydantic schemas
 from pydantic import BaseModel, Field, field_validator
 from typing import List, Literal, Optional
 from shared.schemas.common import BaseContext, BaseResponse
+from shared.utils.repo_utils import generate_repo_id, is_valid_git_url
 
 
 class CommitEvaluatorContext(BaseContext):
@@ -14,9 +15,11 @@ class CommitEvaluatorContext(BaseContext):
     CommitEvaluator 입력 스키마
 
     단일 커밋 평가를 위한 컨텍스트
+    Repository Isolation을 위해 git_url 추가
     """
     commit_hash: str = Field(..., description="평가할 커밋 해시")
     user: str = Field(..., description="커밋 작성자 이메일 또는 이름")
+    git_url: str = Field(..., description="Git repository URL (Repository Isolation용)")
 
     # Neo4j 연결 정보
     neo4j_uri: str = Field(default="bolt://localhost:7687", description="Neo4j URI")
@@ -29,6 +32,18 @@ class CommitEvaluatorContext(BaseContext):
         if len(v) < 7:
             raise ValueError("commit_hash는 최소 7자 이상이어야 합니다")
         return v
+
+    @field_validator("git_url")
+    def validate_git_url(cls, v):
+        """Git URL 형식 검증"""
+        if not is_valid_git_url(v):
+            raise ValueError(f"유효하지 않은 Git URL입니다: {v}")
+        return v
+
+    @property
+    def repo_id(self) -> str:
+        """Repository ID 생성 (Repository Isolation용)"""
+        return generate_repo_id(self.git_url)
 
 
 class CommitEvaluation(BaseModel):

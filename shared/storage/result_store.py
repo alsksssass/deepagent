@@ -3,8 +3,13 @@ ResultStore - 에이전트 결과 저장 및 관리
 
 에이전트 실행 결과를 JSON 파일로 저장하고 타입 안전하게 로드하는 스토리지 매니저
 
+환경변수에 따라 자동으로 LocalStorageBackend 또는 S3StorageBackend를 사용합니다.
+- STORAGE_BACKEND=local: 로컬 파일시스템
+- STORAGE_BACKEND=s3: AWS S3
+
 구조:
-    data/analyze/{task_uuid}/
+    Local: data/analyze/{task_uuid}/
+    S3: s3://bucket/analyze/{task_uuid}/
     ├── results/
     │   ├── repo_cloner.json
     │   ├── static_analyzer.json
@@ -24,6 +29,8 @@ from typing import Type, TypeVar, Optional, List, Any
 from datetime import datetime
 
 from shared.schemas.common import BaseResponse
+from shared.storage.base import StorageBackend
+from shared.storage.local_store import LocalStorageBackend
 
 logger = logging.getLogger(__name__)
 
@@ -39,37 +46,50 @@ class ResultStore:
     - 대용량 결과 배치 분할 저장 지원
     - 메모리 효율적인 결과 관리
     - 에이전트별 자동 경로 관리
+    - 환경변수에 따라 자동으로 Local/S3 백엔드 선택
     """
 
-    def __init__(self, task_uuid: str, base_path: Path):
+    def __init__(self, task_uuid: str, base_path: Path | str):
         """
         ResultStore 초기화
 
         Args:
             task_uuid: 작업 고유 UUID
-            base_path: 작업 기본 경로 (예: Path("./data/analyze/{task_uuid}"))
+            base_path: 작업 기본 경로 (예: Path("./data/analyze/{task_uuid}") 또는 "analyze/{task_uuid}")
         """
         self.task_uuid = task_uuid
-        self.base_path = Path(base_path)
-        self.results_dir = self.base_path / "results"
-        self.results_dir.mkdir(parents=True, exist_ok=True)
+        self.base_path = Path(base_path) if isinstance(base_path, Path) else base_path
+        
+        # 환경변수에 따라 동적으로 StorageBackend 생성 (순환 import 방지를 위해 함수 내부에서 import)
+        from shared.storage import create_storage_backend
+        self.backend: StorageBackend = create_storage_backend(task_uuid, base_path)
+        
+        # 호환성을 위한 results_dir 속성 (로컬일 때만 Path 객체)
+        if isinstance(self.backend, LocalStorageBackend):
+            self.results_dir = self.backend.results_dir
+        else:
+            # S3의 경우 results 디렉토리 경로 문자열 반환
+            # get_batch_dir("")로 results 디렉토리 경로 얻기
+            batch_dir = self.backend.get_batch_dir("")
+            # s3://bucket/analyze/task_uuid/results/ -> s3://bucket/analyze/task_uuid/results
+            self.results_dir = batch_dir.rstrip("/")
 
-        logger.debug(f"📦 ResultStore 초기화: {self.results_dir}")
+        logger.debug(f"📦 ResultStore 초기화: {type(self.backend).__name__} - {self.results_dir}")
 
     def save_result(
         self,
         agent_name: str,
         result: BaseResponse,
-    ) -> Path:
+    ) -> Path | str:
         """
-        에이전트 결과를 JSON 파일로 저장
+        에이전트 결과를 저장
 
         Args:
             agent_name: 에이전트 이름 (예: "repo_cloner", "static_analyzer")
             result: Pydantic BaseResponse 인스턴스
 
         Returns:
-            저장된 파일 경로
+            저장된 파일 경로 (로컬: Path, S3: s3://bucket/key 문자열)
 
         Example:
             >>> store = ResultStore("task-123", Path("./data/analyze/task-123"))
@@ -78,19 +98,12 @@ class ResultStore:
             >>> print(file_path)
             Path("./data/analyze/task-123/results/repo_cloner.json")
         """
-        file_path = self.results_dir / f"{agent_name}.json"
-
-        try:
-            # Pydantic 모델을 JSON으로 직렬화
-            json_content = result.model_dump_json(indent=2, ensure_ascii=False)
-            file_path.write_text(json_content, encoding="utf-8")
-
-            logger.info(f"💾 결과 저장: {agent_name} → {file_path}")
-            return file_path
-
-        except Exception as e:
-            logger.error(f"❌ 결과 저장 실패 ({agent_name}): {e}")
-            raise
+        saved_path = self.backend.save_result(agent_name, result)
+        
+        # 호환성을 위해 Path 객체로 변환 (로컬인 경우)
+        if isinstance(self.backend, LocalStorageBackend):
+            return Path(saved_path)
+        return saved_path
 
     def load_result(
         self,
@@ -118,37 +131,14 @@ class ResultStore:
             >>> print(result.repo_path)
             "/path/to/repo"
         """
-        file_path = self.results_dir / f"{agent_name}.json"
-
-        if not file_path.exists():
-            raise FileNotFoundError(
-                f"결과 파일을 찾을 수 없습니다: {agent_name} ({file_path})"
-            )
-
-        try:
-            # JSON 파일 읽기
-            json_content = file_path.read_text(encoding="utf-8")
-            data = json.loads(json_content)
-
-            # Pydantic 모델로 역직렬화
-            result = result_class(**data)
-
-            logger.debug(f"📂 결과 로드: {agent_name} ← {file_path}")
-            return result
-
-        except json.JSONDecodeError as e:
-            logger.error(f"❌ JSON 파싱 실패 ({agent_name}): {e}")
-            raise ValueError(f"잘못된 JSON 형식: {agent_name}") from e
-        except Exception as e:
-            logger.error(f"❌ 결과 로드 실패 ({agent_name}): {e}")
-            raise
+        return self.backend.load_result(agent_name, result_class)
 
     def save_batched_result(
         self,
         agent_name: str,
         batch_id: int,
         result: BaseResponse | List[BaseResponse] | dict[str, Any],
-    ) -> Path:
+    ) -> Path | str:
         """
         대용량 결과를 배치별로 저장 (CommitEvaluator 등)
 
@@ -158,7 +148,7 @@ class ResultStore:
             result: 저장할 결과 (Pydantic Response, Response 리스트, 또는 dict)
 
         Returns:
-            저장된 파일 경로
+            저장된 파일 경로 (로컬: Path, S3: s3://bucket/key 문자열)
 
         Example:
             >>> store = ResultStore("task-123", Path("./data/analyze/task-123"))
@@ -167,37 +157,12 @@ class ResultStore:
             >>> print(file_path)
             Path("./data/analyze/task-123/results/commit_evaluator/batch_0000.json")
         """
-        batch_dir = self.results_dir / agent_name
-        batch_dir.mkdir(parents=True, exist_ok=True)
-
-        file_path = batch_dir / f"batch_{batch_id:04d}.json"
-
-        try:
-            # 결과 타입에 따라 직렬화
-            if isinstance(result, BaseResponse):
-                json_content = result.model_dump_json(indent=2, ensure_ascii=False)
-            elif isinstance(result, list) and result and isinstance(result[0], BaseResponse):
-                # Pydantic Response 리스트
-                json_content = json.dumps(
-                    [r.model_dump() for r in result],
-                    indent=2,
-                    ensure_ascii=False,
-                )
-            elif isinstance(result, dict):
-                # dict 직접 저장
-                json_content = json.dumps(result, indent=2, ensure_ascii=False)
-            else:
-                # 기타 타입은 JSON 직렬화 시도
-                json_content = json.dumps(result, indent=2, ensure_ascii=False, default=str)
-
-            file_path.write_text(json_content, encoding="utf-8")
-
-            logger.info(f"💾 배치 결과 저장: {agent_name}/batch_{batch_id:04d} → {file_path}")
-            return file_path
-
-        except Exception as e:
-            logger.error(f"❌ 배치 결과 저장 실패 ({agent_name}/batch_{batch_id}): {e}")
-            raise
+        saved_path = self.backend.save_batched_result(agent_name, batch_id, result)
+        
+        # 호환성을 위해 Path 객체로 변환 (로컬인 경우)
+        if isinstance(self.backend, LocalStorageBackend):
+            return Path(saved_path)
+        return saved_path
 
     def load_batched_results(
         self,
@@ -221,68 +186,30 @@ class ResultStore:
             >>> print(len(batches))
             10
         """
-        batch_dir = self.results_dir / agent_name
+        return self.backend.load_batched_results(agent_name, result_class)
 
-        if not batch_dir.exists():
-            raise FileNotFoundError(
-                f"배치 디렉토리를 찾을 수 없습니다: {agent_name} ({batch_dir})"
-            )
-
-        # 배치 파일 목록 가져오기 (정렬)
-        batch_files = sorted(batch_dir.glob("batch_*.json"))
-
-        if not batch_files:
-            logger.warning(f"⚠️  배치 파일이 없습니다: {agent_name}")
-            return []
-
-        results = []
-
-        for batch_file in batch_files:
-            try:
-                json_content = batch_file.read_text(encoding="utf-8")
-                data = json.loads(json_content)
-
-                # result_class가 지정된 경우 Pydantic으로 변환
-                if result_class:
-                    if isinstance(data, list):
-                        # 리스트인 경우 각 항목을 Pydantic으로 변환
-                        results.extend([result_class(**item) for item in data])
-                    else:
-                        # 단일 객체인 경우
-                        results.append(result_class(**data))
-                else:
-                    # dict 그대로 반환
-                    if isinstance(data, list):
-                        results.extend(data)
-                    else:
-                        results.append(data)
-
-            except Exception as e:
-                logger.error(f"❌ 배치 파일 로드 실패 ({batch_file}): {e}")
-                continue
-
-        logger.debug(f"📂 배치 결과 로드: {agent_name} - {len(results)}개 항목")
-        return results
-
-    def get_result_path(self, agent_name: str) -> Path:
+    def get_result_path(self, agent_name: str) -> Path | str:
         """
-        에이전트 결과 파일 경로 반환 (에이전트가 직접 파일 읽기 가능)
+        에이전트 결과 파일 경로 반환
 
         Args:
             agent_name: 에이전트 이름
 
         Returns:
-            결과 파일 경로 (존재하지 않을 수 있음)
+            결과 파일 경로 (로컬: Path, S3: s3://bucket/key 문자열)
 
         Example:
             >>> store = ResultStore("task-123", Path("./data/analyze/task-123"))
             >>> path = store.get_result_path("static_analyzer")
-            >>> if path.exists():
-            ...     data = json.loads(path.read_text())
+            >>> if isinstance(path, Path) and path.exists():
+            ...     data = json.loads(path.read_text(encoding="utf-8"))
         """
-        return self.results_dir / f"{agent_name}.json"
+        path_str = self.backend.get_result_path(agent_name)
+        if isinstance(self.backend, LocalStorageBackend):
+            return Path(path_str)
+        return path_str
 
-    def get_batch_dir(self, agent_name: str) -> Path:
+    def get_batch_dir(self, agent_name: str) -> Path | str:
         """
         배치 결과 디렉토리 경로 반환
 
@@ -290,9 +217,12 @@ class ResultStore:
             agent_name: 에이전트 이름
 
         Returns:
-            배치 디렉토리 경로
+            배치 디렉토리 경로 (로컬: Path, S3: s3://bucket/key 문자열)
         """
-        return self.results_dir / agent_name
+        path_str = self.backend.get_batch_dir(agent_name)
+        if isinstance(self.backend, LocalStorageBackend):
+            return Path(path_str)
+        return path_str
 
     def list_available_results(self) -> List[str]:
         """
@@ -307,17 +237,7 @@ class ResultStore:
             >>> print(results)
             ["repo_cloner", "static_analyzer", "commit_analyzer"]
         """
-        if not self.results_dir.exists():
-            return []
-
-        # JSON 파일만 필터링 (디렉토리 제외)
-        result_files = [
-            f.stem
-            for f in self.results_dir.iterdir()
-            if f.is_file() and f.suffix == ".json"
-        ]
-
-        return sorted(result_files)
+        return self.backend.list_available_results()
 
     def list_batched_agents(self) -> List[str]:
         """
@@ -332,19 +252,9 @@ class ResultStore:
             >>> print(batched)
             ["commit_evaluator"]
         """
-        if not self.results_dir.exists():
-            return []
+        return self.backend.list_batched_agents()
 
-        # 배치 디렉토리만 필터링
-        batched_agents = [
-            d.name
-            for d in self.results_dir.iterdir()
-            if d.is_dir() and any(d.glob("batch_*.json"))
-        ]
-
-        return sorted(batched_agents)
-
-    def save_metadata(self, metadata: dict[str, Any]) -> Path:
+    def save_metadata(self, metadata: dict[str, Any]) -> Path | str:
         """
         작업 메타데이터 저장
 
@@ -352,23 +262,14 @@ class ResultStore:
             metadata: 메타데이터 dict
 
         Returns:
-            저장된 파일 경로
+            저장된 파일 경로 (로컬: Path, S3: s3://bucket/key 문자열)
         """
-        metadata_path = self.base_path / "metadata.json"
-
-        # 타임스탬프 추가
-        metadata["updated_at"] = datetime.now().isoformat()
-
-        try:
-            json_content = json.dumps(metadata, indent=2, ensure_ascii=False, default=str)
-            metadata_path.write_text(json_content, encoding="utf-8")
-
-            logger.debug(f"💾 메타데이터 저장: {metadata_path}")
-            return metadata_path
-
-        except Exception as e:
-            logger.error(f"❌ 메타데이터 저장 실패: {e}")
-            raise
+        saved_path = self.backend.save_metadata(metadata)
+        
+        # 호환성을 위해 Path 객체로 변환 (로컬인 경우)
+        if isinstance(self.backend, LocalStorageBackend):
+            return Path(saved_path)
+        return saved_path
 
     def load_metadata(self) -> dict[str, Any]:
         """
@@ -377,16 +278,72 @@ class ResultStore:
         Returns:
             메타데이터 dict (파일이 없으면 빈 dict)
         """
-        metadata_path = self.base_path / "metadata.json"
+        return self.backend.load_metadata()
 
-        if not metadata_path.exists():
-            return {}
+    def save_report(self, report_name: str, content: str) -> str:
+        """
+        리포트 파일 저장
 
-        try:
-            json_content = metadata_path.read_text(encoding="utf-8")
-            return json.loads(json_content)
+        Args:
+            report_name: 리포트 파일명 (예: "report_20240115_143052.md")
+            content: 리포트 내용
 
-        except Exception as e:
-            logger.error(f"❌ 메타데이터 로드 실패: {e}")
-            return {}
+        Returns:
+            저장된 경로 (로컬: Path string, S3: s3://bucket/key 문자열)
+        """
+        return self.backend.save_report(report_name, content)
+
+    def load_report(self, report_name: str) -> str:
+        """
+        리포트 파일 로드
+
+        Args:
+            report_name: 리포트 파일명
+
+        Returns:
+            리포트 내용
+
+        Raises:
+            FileNotFoundError: 리포트가 존재하지 않을 때
+        """
+        return self.backend.load_report(report_name)
+
+    def save_log(self, log_name: str, content: str) -> str:
+        """
+        로그 파일 저장
+
+        Args:
+            log_name: 로그 파일명 (예: "combined.log")
+            content: 로그 내용
+
+        Returns:
+            저장된 경로 (로컬: Path string, S3: s3://bucket/key 문자열)
+        """
+        return self.backend.save_log(log_name, content)
+
+    def upload_log_directory(self, local_log_dir: Path, remote_subdir: str = None) -> List[str]:
+        """
+        로그 디렉토리 전체를 업로드
+
+        Args:
+            local_log_dir: 로컬 로그 디렉토리 경로
+            remote_subdir: S3에 저장할 하위 디렉토리 (예: "debug" → logs/debug/)
+
+        Returns:
+            업로드된 파일 경로 리스트
+        """
+        return self.backend.upload_log_directory(local_log_dir, remote_subdir)
+
+    def save_debug_file(self, relative_path: str, content: str | bytes) -> str:
+        """
+        디버그 파일 저장
+
+        Args:
+            relative_path: 상대 경로 (예: "debug/agents/reporter/request.json")
+            content: 파일 내용 (문자열 또는 bytes)
+
+        Returns:
+            저장된 경로 (로컬: Path string, S3: s3://bucket/key 문자열)
+        """
+        return self.backend.save_debug_file(relative_path, content)
 
