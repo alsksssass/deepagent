@@ -5,10 +5,12 @@ Skill Tools for Deep Agents
 """
 
 import logging
+import os
 from typing import Any
 from langchain_core.tools import tool
 import chromadb
 from chromadb.config import Settings
+from shared.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -18,15 +20,47 @@ _skill_chroma_clients: dict[str, chromadb.ClientAPI] = {}
 
 def get_skill_chroma_client(persist_dir: str) -> chromadb.ClientAPI:
     """
-    Skill Charts용 ChromaDB 클라이언트 가져오기 (싱글톤 - persist_dir별로 캐싱)
+    Skill Charts용 ChromaDB 클라이언트 가져오기 (싱글톤)
+    
+    ⚠️ 스킬 시스템은 무조건 원격 호스트 사용 (CHROMADB_HOST 필수)
+    persist_dir 파라미터는 무시됨 (원격 서버 사용 시 불필요)
     """
     global _skill_chroma_clients
 
-    if persist_dir not in _skill_chroma_clients:
-        logger.info(f"🔧 Skill ChromaDB 클라이언트 생성: {persist_dir}")
-        _skill_chroma_clients[persist_dir] = chromadb.PersistentClient(path=persist_dir)
-
-    return _skill_chroma_clients[persist_dir]
+    # 원격 서버 설정 가져오기
+    chromadb_host = os.getenv("CHROMADB_HOST", settings.CHROMADB_HOST)
+    chromadb_port = int(os.getenv("CHROMADB_PORT", str(settings.CHROMADB_PORT)))
+    chromadb_auth_token = os.getenv("CHROMADB_AUTH_TOKEN", settings.CHROMADB_AUTH_TOKEN)
+    
+    # 원격 서버 정보 검증
+    if not chromadb_host or chromadb_host == "localhost":
+        raise ValueError(
+            "스킬 시스템은 원격 ChromaDB 서버를 사용해야 합니다. "
+            "CHROMADB_HOST 환경변수를 설정해주세요. (예: CHROMADB_HOST=13.125.186.57)"
+        )
+    
+    # host:port를 키로 사용 (persist_dir 무시)
+    client_key = f"{chromadb_host}:{chromadb_port}"
+    
+    if client_key not in _skill_chroma_clients:
+        # 원격 ChromaDB 서버 사용 (무조건)
+        logger.info(f"🔧 Skill ChromaDB 원격 클라이언트 생성: {chromadb_host}:{chromadb_port}")
+        client_settings = chromadb.Settings(
+            chroma_api_impl="rest",
+            chroma_server_host=chromadb_host,
+            chroma_server_http_port=chromadb_port,
+        )
+        if chromadb_auth_token:
+            client_settings.chroma_client_auth_provider = "chromadb.auth.token.TokenAuthClientProvider"
+            client_settings.chroma_client_auth_credentials = chromadb_auth_token
+        
+        _skill_chroma_clients[client_key] = chromadb.HttpClient(
+            host=chromadb_host,
+            port=chromadb_port,
+            settings=client_settings,
+        )
+    
+    return _skill_chroma_clients[client_key]
 
 
 @tool

@@ -168,7 +168,10 @@ class UserSkillProfilerContext(BaseContext):
 
     user: str = Field(..., description="유저 이메일 또는 이름")
     persist_dir: str = Field(
-        default="./data/chroma_db", description="ChromaDB 저장 디렉토리"
+        default="./data/chroma_db_skill_charts", description="스킬 차트 ChromaDB 저장 디렉토리"
+    )
+    code_persist_dir: Optional[str] = Field(
+        default=None, description="코드 RAG ChromaDB 저장 디렉토리 (None이면 persist_dir 사용)"
     )
     enable_hybrid: bool = Field(default=True, description="하이브리드 매칭 활성화")
     hybrid_config: Optional[HybridConfig] = Field(default=None, description="하이브리드 설정")

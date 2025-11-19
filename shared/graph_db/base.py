@@ -97,7 +97,7 @@ class GraphDBBackend(ABC):
 
         Args:
             user_email: 유저 이메일 또는 이름
-            repo_id: Repository ID (None이면 전체)
+            repo_id: Repository ID (⚠️ 필수: 복합 키 제약조건 때문에 필수입니다)
             limit: 최대 커밋 수
 
         Returns:
@@ -116,7 +116,7 @@ class GraphDBBackend(ABC):
 
         Args:
             commit_hash: 커밋 해시
-            repo_id: Repository ID
+            repo_id: Repository ID (⚠️ 필수: 복합 키 제약조건 때문에 필수입니다)
 
         Returns:
             커밋 상세 정보
@@ -137,7 +137,7 @@ class GraphDBBackend(ABC):
         Args:
             file_path: 파일 경로
             user_email: 유저 이메일 (None이면 전체 유저)
-            repo_id: Repository ID
+            repo_id: Repository ID (⚠️ 필수: 복합 키 제약조건 때문에 필수입니다)
             limit: 최대 커밋 수
 
         Returns:
@@ -156,7 +156,7 @@ class GraphDBBackend(ABC):
 
         Args:
             user_email: 유저 이메일
-            repo_id: Repository ID
+            repo_id: Repository ID (⚠️ 필수: 복합 키 제약조건 때문에 필수입니다)
 
         Returns:
             통계 정보

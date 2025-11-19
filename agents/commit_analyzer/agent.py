@@ -110,18 +110,21 @@ class CommitAnalyzerAgent:
         repo_label = self.backend.get_repo_label(repo_id)
 
         # 제약조건 생성 쿼리 (Repository별로 격리)
+        # Neo4j 5.x에서는 여러 라벨을 직접 사용할 수 없으므로,
+        # 단일 라벨 + 복합 키(repo_id 속성 포함)로 제약조건 생성
+        safe_repo_id = repo_id.replace('-', '_').replace('.', '_')
         constraints = [
-            # User 노드: email uniqueness within repository
-            f"CREATE CONSTRAINT user_email_{repo_id.replace('-', '_')} IF NOT EXISTS "
-            f"FOR (u:{repo_label}:User) REQUIRE u.email IS UNIQUE",
+            # User 노드: (email, repo_id) 복합 키로 repository별 uniqueness 보장
+            f"CREATE CONSTRAINT user_email_{safe_repo_id} IF NOT EXISTS "
+            f"FOR (u:User) REQUIRE (u.email, u.repo_id) IS UNIQUE",
 
-            # Commit 노드: hash uniqueness within repository
-            f"CREATE CONSTRAINT commit_hash_{repo_id.replace('-', '_')} IF NOT EXISTS "
-            f"FOR (c:{repo_label}:Commit) REQUIRE c.hash IS UNIQUE",
+            # Commit 노드: (hash, repo_id) 복합 키로 repository별 uniqueness 보장
+            f"CREATE CONSTRAINT commit_hash_{safe_repo_id} IF NOT EXISTS "
+            f"FOR (c:Commit) REQUIRE (c.hash, c.repo_id) IS UNIQUE",
 
-            # File 노드: path uniqueness within repository
-            f"CREATE CONSTRAINT file_path_{repo_id.replace('-', '_')} IF NOT EXISTS "
-            f"FOR (f:{repo_label}:File) REQUIRE f.path IS UNIQUE",
+            # File 노드: (path, repo_id) 복합 키로 repository별 uniqueness 보장
+            f"CREATE CONSTRAINT file_path_{safe_repo_id} IF NOT EXISTS "
+            f"FOR (f:File) REQUIRE (f.path, f.repo_id) IS UNIQUE",
         ]
 
         for constraint_query in constraints:
@@ -240,15 +243,16 @@ class CommitAnalyzerAgent:
             batch = commits_data[i : i + batch_size]
 
             # 배치 처리 쿼리 (MERGE 사용, Repository Isolation 적용)
+            # 제약조건이 복합 키이므로 MERGE도 복합 키로 매칭하되, 라벨은 여전히 추가
             query = f"""
             UNWIND $commits AS commit
 
-            // User 노드 생성/병합 (Repository 라벨 포함)
+            // User 노드 생성/병합 (복합 키: email + repo_id, Repository 라벨 포함)
             MERGE (u:{repo_label}:User {{email: commit.author_email, repo_id: $repo_id}})
             ON CREATE SET
                 u.name = commit.author_name
 
-            // Commit 노드 생성/병합 (Repository 라벨 포함, 멱등성 보장)
+            // Commit 노드 생성/병합 (복합 키: hash + repo_id, Repository 라벨 포함, 멱등성 보장)
             MERGE (c:{repo_label}:Commit {{hash: commit.hash, repo_id: $repo_id}})
             ON CREATE SET
                 c.message = commit.message,
@@ -272,6 +276,7 @@ class CommitAnalyzerAgent:
             WITH c, commit
             UNWIND commit.modifications AS mod
 
+            // File 노드 생성/병합 (복합 키: path + repo_id, Repository 라벨 포함)
             MERGE (f:{repo_label}:File {{path: mod.new_path, repo_id: $repo_id}})
             ON CREATE SET
                 f.filename = mod.filename,

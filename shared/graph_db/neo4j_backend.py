@@ -143,16 +143,15 @@ class Neo4jBackend(GraphDBBackend):
             # 이메일 형식 확인
             is_email = "@" in user_email
 
-            # Repository isolation
-            repo_filter = ""
-            if repo_id:
-                repo_label = self.get_repo_label(repo_id)
-                repo_filter = f"AND c:{repo_label}"
+            # Repository isolation: 제약조건이 복합 키이므로 repo_id 필수
+            if not repo_id:
+                logger.warning("⚠️  repo_id가 없으면 커밋 조회 불가 (복합 키 제약조건)")
+                return []
 
             if is_email:
                 query = f"""
-                MATCH (u:User {{email: $user_identifier}})-[:COMMITTED]->(c:Commit)
-                WHERE 1=1 {repo_filter}
+                MATCH (u:User {{email: $user_identifier, repo_id: $repo_id}})-[:COMMITTED]->(c:Commit)
+                WHERE c.repo_id = $repo_id
                 RETURN c.hash AS hash,
                        c.message AS message,
                        c.author_date AS date,
@@ -165,9 +164,9 @@ class Neo4jBackend(GraphDBBackend):
             else:
                 query = f"""
                 MATCH (u:User)
-                WHERE toLower(u.name) = toLower($user_identifier)
+                WHERE toLower(u.name) = toLower($user_identifier) AND u.repo_id = $repo_id
                 MATCH (u)-[:COMMITTED]->(c:Commit)
-                WHERE 1=1 {repo_filter}
+                WHERE c.repo_id = $repo_id
                 RETURN c.hash AS hash,
                        c.message AS message,
                        c.author_date AS date,
@@ -178,9 +177,11 @@ class Neo4jBackend(GraphDBBackend):
                 LIMIT $limit
                 """
 
+            # 제약조건이 복합 키이므로 repo_id 필수
+            params = {"user_identifier": user_email, "repo_id": repo_id, "limit": limit}
             records = await self.execute_query(
                 query,
-                {"user_identifier": user_email, "limit": limit}
+                params
             )
 
             logger.info(f"🔍 Neo4j: user={user_email} - {len(records)}개 커밋")
@@ -197,14 +198,10 @@ class Neo4jBackend(GraphDBBackend):
     ) -> Dict[str, Any]:
         """특정 커밋의 상세 정보 조회"""
         try:
-            repo_filter = ""
-            if repo_id:
-                repo_label = self.get_repo_label(repo_id)
-                repo_filter = f"AND c:{repo_label}"
-
+            # 제약조건이 복합 키이므로 repo_id 속성으로 필터링
             query = f"""
-            MATCH (c:Commit {{hash: $commit_hash}})-[:MODIFIED]->(f:File)
-            WHERE 1=1 {repo_filter}
+            MATCH (c:Commit {{hash: $commit_hash, repo_id: $repo_id}})-[:MODIFIED]->(f:File)
+            WHERE f.repo_id = $repo_id
             RETURN c.hash AS hash,
                    c.message AS message,
                    c.author_date AS date,
@@ -220,8 +217,16 @@ class Neo4jBackend(GraphDBBackend):
                    }}) AS files
             """
 
+            params = {"commit_hash": commit_hash}
+            if repo_id:
+                params["repo_id"] = repo_id
+            else:
+                # repo_id가 없으면 빈 결과 반환 (제약조건이 복합 키이므로 필수)
+                logger.warning("⚠️  repo_id가 없으면 커밋 조회 불가 (복합 키 제약조건)")
+                return {}
+
             async with self.driver.session() as session:
-                result = await session.run(query, commit_hash=commit_hash)
+                result = await session.run(query, **params)
                 record = await result.single()
 
                 if record:
@@ -245,16 +250,17 @@ class Neo4jBackend(GraphDBBackend):
     ) -> List[Dict[str, Any]]:
         """특정 파일의 수정 이력 조회"""
         try:
-            repo_filter = ""
-            if repo_id:
-                repo_label = self.get_repo_label(repo_id)
-                repo_filter = f"AND c:{repo_label}"
+            # 제약조건이 복합 키이므로 repo_id 속성으로 필터링
+            if not repo_id:
+                logger.warning("⚠️  repo_id가 없으면 파일 이력 조회 불가 (복합 키 제약조건)")
+                return []
 
             query = f"""
-            MATCH (c:Commit)-[:MODIFIED]->(f:File {{path: $file_path}})
-            WHERE ($user_email IS NULL OR EXISTS {{
-                MATCH (u:User {{email: $user_email}})-[:COMMITTED]->(c)
-            }}) {repo_filter}
+            MATCH (c:Commit)-[:MODIFIED]->(f:File {{path: $file_path, repo_id: $repo_id}})
+            WHERE c.repo_id = $repo_id AND f.repo_id = $repo_id
+            AND ($user_email IS NULL OR EXISTS {{
+                MATCH (u:User {{email: $user_email, repo_id: $repo_id}})-[:COMMITTED]->(c)
+            }})
             RETURN c.hash AS hash,
                    c.message AS message,
                    c.author_date AS date,
@@ -266,7 +272,7 @@ class Neo4jBackend(GraphDBBackend):
 
             records = await self.execute_query(
                 query,
-                {"file_path": file_path, "user_email": user_email, "limit": limit}
+                {"file_path": file_path, "user_email": user_email, "repo_id": repo_id, "limit": limit}
             )
 
             logger.info(f"🔍 Neo4j: file={file_path} - {len(records)}개 커밋")
@@ -283,16 +289,17 @@ class Neo4jBackend(GraphDBBackend):
     ) -> Dict[str, Any]:
         """유저 통계 조회"""
         try:
-            repo_filter = ""
-            if repo_id:
-                repo_label = self.get_repo_label(repo_id)
-                repo_filter = f"AND c:{repo_label}"
+            # 제약조건이 복합 키이므로 repo_id 속성으로 필터링
+            if not repo_id:
+                logger.warning("⚠️  repo_id가 없으면 유저 통계 조회 불가 (복합 키 제약조건)")
+                return {}
 
             query = f"""
-            MATCH (u:User {{email: $user_email}})-[:COMMITTED]->(c:Commit)
-            WHERE 1=1 {repo_filter}
+            MATCH (u:User {{email: $user_email, repo_id: $repo_id}})-[:COMMITTED]->(c:Commit)
+            WHERE c.repo_id = $repo_id
             WITH u, c
             MATCH (c)-[:MODIFIED]->(f:File)
+            WHERE f.repo_id = $repo_id
             RETURN count(DISTINCT c) AS total_commits,
                    sum(c.lines_added) AS total_lines_added,
                    sum(c.lines_deleted) AS total_lines_deleted,
@@ -300,7 +307,7 @@ class Neo4jBackend(GraphDBBackend):
             """
 
             async with self.driver.session() as session:
-                result = await session.run(query, user_email=user_email)
+                result = await session.run(query, user_email=user_email, repo_id=repo_id)
                 record = await result.single()
 
                 if record:

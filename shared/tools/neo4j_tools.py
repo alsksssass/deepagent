@@ -39,7 +39,7 @@ async def get_user_commits(
 
     Args:
         user_email: 유저 이메일 또는 이름 (이메일 형식이 아니면 이름으로도 검색)
-        repo_id: Repository ID (None이면 전체)
+        repo_id: Repository ID (⚠️ 필수: 복합 키 제약조건 때문에 필수입니다)
         limit: 최대 커밋 수
 
     Returns:
@@ -48,6 +48,7 @@ async def get_user_commits(
     Example:
         >>> commits = await get_user_commits(
         ...     user_email="user@example.com",
+        ...     repo_id="github_user_repo",  # 필수
         ...     limit=50
         ... )
         >>> print(commits[0]["message"])
@@ -77,13 +78,16 @@ async def get_commit_details(
 
     Args:
         commit_hash: 커밋 해시
-        repo_id: Repository ID (None이면 전체)
+        repo_id: Repository ID (⚠️ 필수: 복합 키 제약조건 때문에 필수입니다)
 
     Returns:
         커밋 상세 정보 {"hash": str, "message": str, "files": [...], ...}
 
     Example:
-        >>> details = await get_commit_details("abc123def456")
+        >>> details = await get_commit_details(
+        ...     commit_hash="abc123def456",
+        ...     repo_id="github_user_repo"  # 필수
+        ... )
         >>> print(details["files"])
         [{"path": "src/app.py", "added": 10, "deleted": 5}, ...]
     """
@@ -113,7 +117,7 @@ async def get_file_history(
     Args:
         file_path: 파일 경로
         user_email: 유저 이메일 (None이면 전체 유저)
-        repo_id: Repository ID (None이면 전체)
+        repo_id: Repository ID (⚠️ 필수: 복합 키 제약조건 때문에 필수입니다)
         limit: 최대 커밋 수
 
     Returns:
@@ -122,7 +126,8 @@ async def get_file_history(
     Example:
         >>> history = await get_file_history(
         ...     file_path="src/models.py",
-        ...     user_email="user@example.com"
+        ...     user_email="user@example.com",
+        ...     repo_id="github_user_repo"  # 필수
         ... )
     """
     try:
@@ -150,13 +155,16 @@ async def get_user_stats(
 
     Args:
         user_email: 유저 이메일
-        repo_id: Repository ID (None이면 전체)
+        repo_id: Repository ID (⚠️ 필수: 복합 키 제약조건 때문에 필수입니다)
 
     Returns:
         통계 정보 {"total_commits": int, "total_lines_added": int, ...}
 
     Example:
-        >>> stats = await get_user_stats("user@example.com")
+        >>> stats = await get_user_stats(
+        ...     user_email="user@example.com",
+        ...     repo_id="github_user_repo"  # 필수
+        ... )
         >>> print(stats["total_commits"])
         152
     """

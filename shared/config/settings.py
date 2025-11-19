@@ -74,6 +74,11 @@ class Settings(BaseSettings):
     CHROMADB_HOST: str = "localhost"
     CHROMADB_PORT: int = 8000
     CHROMADB_AUTH_TOKEN: str = ""  # 프로덕션에서는 필수
+    
+    # ChromaDB Persist 디렉토리
+    # 코드 RAG용: 일반적으로 작업별로 생성 (code_{task_uuid})
+    # 스킬 차트용: 전역으로 공유되는 스킬 차트 데이터 (격리 필요)
+    SKILL_CHARTS_CHROMADB_DIR: Path = Path("./data/chroma_db_skill_charts")
 
     # === AWS 공통 ===
     AWS_REGION: str = "us-east-1"

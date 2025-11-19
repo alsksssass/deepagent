@@ -63,15 +63,81 @@ class SkillChartsRAGBuilderAgent:
             # ChromaDB 클라이언트 (싱글톤 사용)
             client = get_skill_chroma_client(persist_dir)
 
-            # 컬렉션 생성 (기존 삭제 후 재생성)
+            # 컬렉션 확인: 기존 컬렉션이 있으면 재사용, 없으면 생성
             collection_name = "skill_charts"
+            
+            # list_collections()가 실패할 수 있으므로 try-except로 처리
+            # (원격 서버의 컬렉션 configuration에 _type 필드가 없을 수 있음)
+            existing_collections = []
             try:
-                client.delete_collection(name=collection_name)
-                logger.info(f"🗑️ 기존 '{collection_name}' 컬렉션 삭제")
-            except:
-                pass
-
-            collection = client.create_collection(name=collection_name)
+                existing_collections = [col.name for col in client.list_collections()]
+            except Exception as e:
+                logger.warning(f"⚠️ 컬렉션 목록 조회 실패 (직접 확인 시도): {e}")
+                # list_collections() 실패 시 직접 get_collection()으로 확인
+                try:
+                    collection = client.get_collection(name=collection_name)
+                    count = collection.count()
+                    if count > 0:
+                        logger.info(f"✅ 기존 '{collection_name}' 컬렉션 재사용 (기존 데이터 {count}개)")
+                        return SkillChartsRAGBuilderResponse(
+                            status="success",
+                            total_skills=count,
+                            categories=[],
+                            collection_name=collection_name,
+                            message="기존 컬렉션 재사용됨",
+                        )
+                except Exception:
+                    # 컬렉션이 없으면 새로 생성
+                    pass
+            
+            if collection_name in existing_collections:
+                collection = client.get_collection(name=collection_name)
+                # 컬렉션에 데이터가 있는지 확인
+                count = collection.count()
+                if count > 0:
+                    logger.info(f"✅ 기존 '{collection_name}' 컬렉션 재사용 (기존 데이터 {count}개)")
+                    return SkillChartsRAGBuilderResponse(
+                        status="success",
+                        total_skills=count,
+                        categories=[],  # 기존 데이터 재사용 시 카테고리는 확인 불가
+                        collection_name=collection_name,
+                        message="기존 컬렉션 재사용됨",
+                    )
+                else:
+                    logger.info(f"⚠️ 기존 '{collection_name}' 컬렉션은 있지만 비어있음, 재생성")
+                    try:
+                        client.delete_collection(name=collection_name)
+                    except Exception as e:
+                        logger.warning(f"⚠️ 컬렉션 삭제 실패 (무시): {e}")
+                    collection = client.create_collection(
+                        name=collection_name,
+                        metadata={"description": "Skill charts collection"}
+                    )
+            else:
+                logger.info(f"🆕 새 '{collection_name}' 컬렉션 생성")
+                # 컬렉션이 이미 존재할 수 있으므로 try-except로 처리
+                try:
+                    collection = client.create_collection(
+                        name=collection_name,
+                        metadata={"description": "Skill charts collection"}
+                    )
+                except Exception as e:
+                    # 이미 존재하는 경우 get_collection()으로 가져오기
+                    if "already exists" in str(e).lower() or "duplicate" in str(e).lower():
+                        logger.info(f"⚠️ 컬렉션이 이미 존재함, 기존 컬렉션 사용: {e}")
+                        collection = client.get_collection(name=collection_name)
+                        count = collection.count()
+                        if count > 0:
+                            logger.info(f"✅ 기존 '{collection_name}' 컬렉션 재사용 (기존 데이터 {count}개)")
+                            return SkillChartsRAGBuilderResponse(
+                                status="success",
+                                total_skills=count,
+                                categories=[],
+                                collection_name=collection_name,
+                                message="기존 컬렉션 재사용됨",
+                            )
+                    else:
+                        raise
 
             # 임베딩 및 저장
             await self._embed_and_store(skills_data, collection)
@@ -92,7 +158,10 @@ class SkillChartsRAGBuilderAgent:
             )
 
         except Exception as e:
+            import traceback
+            error_trace = traceback.format_exc()
             logger.error(f"❌ SkillChartsRAGBuilder: {e}")
+            logger.error(f"   상세 에러:\n{error_trace}")
             return SkillChartsRAGBuilderResponse(
                 status="failed",
                 total_skills=0,
@@ -152,15 +221,15 @@ class SkillChartsRAGBuilderAgent:
 
             documents.append(doc_text)
 
-            # 메타데이터
+            # 메타데이터 (ChromaDB는 모든 값을 문자열로 변환 필요)
             metadatas.append(
                 {
-                    "category": skill["category"],
-                    "subcategory": skill["subcategory"],
-                    "skill_name": skill["skill_name"],
-                    "level": skill["level"],
-                    "base_score": skill["base_score"],
-                    "developer_type": skill["developer_type"],
+                    "category": str(skill["category"]),
+                    "subcategory": str(skill["subcategory"]),
+                    "skill_name": str(skill["skill_name"]),
+                    "level": str(skill["level"]),
+                    "base_score": str(skill["base_score"]),  # 숫자를 문자열로 변환
+                    "developer_type": str(skill["developer_type"]),
                 }
             )
 
@@ -183,14 +252,18 @@ class SkillChartsRAGBuilderAgent:
             # 임베딩 생성
             embeddings = self.model.encode(batch_docs).tolist()
 
-            # ChromaDB에 저장
-            collection.add(
-                documents=batch_docs,
-                metadatas=batch_metas,
-                embeddings=embeddings,
-                ids=batch_ids,
-            )
-
-            logger.info(f"📊 {i + len(batch_docs)}/{len(documents)} 스킬 저장 중...")
+            # ChromaDB에 저장 (에러 처리 추가)
+            try:
+                collection.add(
+                    documents=batch_docs,
+                    metadatas=batch_metas,
+                    embeddings=embeddings,
+                    ids=batch_ids,
+                )
+                logger.info(f"📊 {i + len(batch_docs)}/{len(documents)} 스킬 저장 중...")
+            except Exception as e:
+                logger.error(f"❌ ChromaDB 저장 실패 (배치 {i//batch_size + 1}): {e}")
+                logger.error(f"   첫 번째 메타데이터 샘플: {batch_metas[0] if batch_metas else 'None'}")
+                raise
 
         logger.info(f"✅ {len(documents)}개 스킬 ChromaDB 저장 완료")

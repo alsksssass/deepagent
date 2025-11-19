@@ -20,3 +20,4 @@ class SkillChartsRAGBuilderResponse(BaseResponse):
     total_skills: int = Field(default=0, ge=0, description="저장된 스킬 수")
     categories: List[str] = Field(default_factory=list, description="카테고리 목록")
     collection_name: str = Field(default="", description="ChromaDB 컬렉션 이름")
+    message: str = Field(default="", description="추가 메시지 (기존 컬렉션 재사용 시 등)")

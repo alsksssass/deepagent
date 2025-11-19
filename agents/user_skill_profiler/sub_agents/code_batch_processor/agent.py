@@ -38,7 +38,6 @@ from .schemas import CodeBatchContext, CodeBatchResponse, CodeSample
 from shared.utils.prompt_loader import PromptLoader
 from shared.utils.agent_logging import log_subagent_execution
 from shared.utils.agent_debug_logger import AgentDebugLogger
-from shared.tools.chromadb_tools import get_chroma_client
 
 logger = logging.getLogger(__name__)
 
@@ -231,9 +230,10 @@ class CodeBatchProcessorAgent:
         debug_logger = parent_debug_logger.get_subagent_logger(f"code_batch_processor_batch_{context.batch_id}")
 
         try:
-            # ChromaDB 로드
+            # ChromaDB 로드 (스킬 차트용 클라이언트 사용)
             try:
-                client = get_chroma_client(context.persist_dir)
+                from shared.tools.skill_tools import get_skill_chroma_client
+                client = get_skill_chroma_client(context.persist_dir)
                 skill_collection = client.get_collection("skill_charts")
                 debug_logger.log_intermediate("chromadb_loaded", {
                     "persist_dir": context.persist_dir,
