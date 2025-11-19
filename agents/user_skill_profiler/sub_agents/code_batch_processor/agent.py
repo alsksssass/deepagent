@@ -36,6 +36,7 @@ from agents.user_skill_profiler.schemas import (
 )
 from .schemas import CodeBatchContext, CodeBatchResponse, CodeSample
 from shared.utils.prompt_loader import PromptLoader
+from shared.utils.agent_logging import log_subagent_execution
 from shared.utils.agent_debug_logger import AgentDebugLogger
 from shared.tools.chromadb_tools import get_chroma_client
 
@@ -175,6 +176,7 @@ class CodeBatchProcessorAgent:
 
         return user_prompt
 
+    @log_subagent_execution(parent_agent_name="user_skill_profiler", subagent_name="code_batch_processor")
     async def run(self, context: CodeBatchContext) -> CodeBatchResponse:
         """
         코드 배치 병렬 처리 메인 로직
@@ -218,8 +220,8 @@ class CodeBatchProcessorAgent:
             f"🔄 배치 {context.batch_id}: {total_codes}개 코드 처리 시작"
         )
 
-        # 디버깅 로거 초기화 (서브 에이전트)
-        # 부모 에이전트(UserSkillProfiler)의 subagents/ 디렉토리에 저장
+        # LLM 호출 로깅을 위해 logger 가져오기
+        from pathlib import Path
         base_path = Path(f"./data/analyze/{context.task_uuid}")
         parent_debug_logger = AgentDebugLogger.get_logger(
             context.task_uuid, 
@@ -228,168 +230,160 @@ class CodeBatchProcessorAgent:
         )
         debug_logger = parent_debug_logger.get_subagent_logger(f"code_batch_processor_batch_{context.batch_id}")
 
-        with debug_logger.track_execution():
-            # 요청 로깅
-            debug_logger.log_request(context)
-            
+        try:
+            # ChromaDB 로드
             try:
-                # ChromaDB 로드
-                try:
-                    client = get_chroma_client(context.persist_dir)
-                    skill_collection = client.get_collection("skill_charts")
-                    debug_logger.log_intermediate("chromadb_loaded", {
-                        "persist_dir": context.persist_dir,
-                        "collection": "skill_charts",
-                        "status": "success"
+                client = get_chroma_client(context.persist_dir)
+                skill_collection = client.get_collection("skill_charts")
+                debug_logger.log_intermediate("chromadb_loaded", {
+                    "persist_dir": context.persist_dir,
+                    "collection": "skill_charts",
+                    "status": "success"
+                })
+            except Exception as e:
+                logger.error(f"❌ ChromaDB 로드 실패: {e}")
+                debug_logger.log_intermediate("chromadb_loaded", {
+                    "persist_dir": context.persist_dir,
+                    "collection": "skill_charts",
+                    "status": "failed",
+                    "error": str(e)
+                })
+                raise
+
+            # 초기 처리 대상 = 전체 코드
+            codes_to_process = context.codes.copy()
+            all_matched_skills: List[SkillMatch] = []
+            all_missing_skills: List[MissingSkillInfo] = []
+
+            # 재시도 루프 (최대 3회)
+            while retry_count <= 3:
+                if not codes_to_process:
+                    logger.info(f"✅ 배치 {context.batch_id}: 모든 코드 처리 완료")
+                    debug_logger.log_intermediate(f"retry_{retry_count}_complete", {
+                        "remaining_codes": 0,
+                        "all_completed": True
                     })
-                except Exception as e:
-                    logger.error(f"❌ ChromaDB 로드 실패: {e}")
-                    debug_logger.log_intermediate("chromadb_loaded", {
-                        "persist_dir": context.persist_dir,
-                        "collection": "skill_charts",
-                        "status": "failed",
-                        "error": str(e)
-                    })
-                    raise
-
-                # 초기 처리 대상 = 전체 코드
-                codes_to_process = context.codes.copy()
-                all_matched_skills: List[SkillMatch] = []
-                all_missing_skills: List[MissingSkillInfo] = []
-
-                # 재시도 루프 (최대 3회)
-                while retry_count <= 3:
-                    if not codes_to_process:
-                        logger.info(f"✅ 배치 {context.batch_id}: 모든 코드 처리 완료")
-                        debug_logger.log_intermediate(f"retry_{retry_count}_complete", {
-                            "remaining_codes": 0,
-                            "all_completed": True
-                        })
-                        break
-
-                    logger.info(
-                        f"  시도 {retry_count + 1}: {len(codes_to_process)}개 코드 처리 중..."
-                    )
-                    
-                    debug_logger.log_intermediate(f"retry_{retry_count}_start", {
-                        "retry_count": retry_count,
-                        "codes_to_process": len(codes_to_process),
-                        "total_codes": total_codes
-                    })
-
-                    # 병렬 처리
-                    results = await self._process_codes_parallel(
-                        codes=codes_to_process,
-                        skill_collection=skill_collection,
-                        config=context.hybrid_config,
-                        debug_logger=debug_logger,
-                        retry_count=retry_count,
-                    )
-
-                    # 결과 분류 (성공 vs 실패)
-                    successful_codes: List[CodeSample] = []
-                    failed_codes: List[CodeSample] = []
-
-                    for code, result in zip(codes_to_process, results):
-                        if result is not None:
-                            # 성공: 결과 집계
-                            all_matched_skills.extend(result["matched_skills"])
-                            all_missing_skills.extend(result["missing_skills"])
-                            successful_codes.append(code)
-                        else:
-                            # 실패: 재시도 대상에 추가
-                            failed_codes.append(code)
-
-                    # 성공률 계산
-                    success_rate = len(successful_codes) / total_codes
-
-                    logger.info(
-                        f"  시도 {retry_count + 1} 결과: "
-                        f"성공 {len(successful_codes)}개, 실패 {len(failed_codes)}개 "
-                        f"(성공률: {success_rate:.1%})"
-                    )
-                    
-                    debug_logger.log_intermediate(f"retry_{retry_count}_result", {
-                        "successful_codes": len(successful_codes),
-                        "failed_codes": len(failed_codes),
-                        "success_rate": success_rate,
-                        "matched_skills_count": len(all_matched_skills),
-                        "missing_skills_count": len(all_missing_skills)
-                    })
-
-                    # 성공률 80% 이상이면 종료
-                    if success_rate >= 0.8:
-                        logger.info(
-                            f"✅ 배치 {context.batch_id}: 성공률 {success_rate:.1%} 달성"
-                        )
-                        codes_to_process = failed_codes  # 최종 failed_codes 업데이트
-                        break
-
-                    # 실패한 코드만 재시도
-                    codes_to_process = failed_codes
-                    retry_count += 1
-
-                    if retry_count > 3:
-                        logger.warning(
-                            f"⚠️ 배치 {context.batch_id}: 최대 재시도 횟수 초과 "
-                            f"(최종 성공률: {success_rate:.1%})"
-                        )
-
-                # 최종 성공률 계산
-                final_success_count = total_codes - len(codes_to_process)
-                final_success_rate = final_success_count / total_codes
-
-                # 처리 시간 계산
-                processing_time = time.time() - start_time
-
-                # 상태 결정
-                if final_success_rate >= 0.8:
-                    status = "success"
-                elif final_success_rate >= 0.5:
-                    status = "partial_success"
-                else:
-                    status = "failed"
+                    break
 
                 logger.info(
-                    f"🏁 배치 {context.batch_id} 완료: "
-                    f"상태={status}, 성공률={final_success_rate:.1%}, "
-                    f"처리시간={processing_time:.2f}s, 재시도={retry_count}회"
+                    f"  시도 {retry_count + 1}: {len(codes_to_process)}개 코드 처리 중..."
+                )
+                
+                debug_logger.log_intermediate(f"retry_{retry_count}_start", {
+                    "retry_count": retry_count,
+                    "codes_to_process": len(codes_to_process),
+                    "total_codes": total_codes
+                })
+
+                # 병렬 처리
+                results = await self._process_codes_parallel(
+                    codes=codes_to_process,
+                    skill_collection=skill_collection,
+                    config=context.hybrid_config,
+                    debug_logger=debug_logger,
+                    retry_count=retry_count,
                 )
 
-                response = CodeBatchResponse(
-                    batch_id=context.batch_id,
-                    matched_skills=all_matched_skills,
-                    missing_skills=all_missing_skills,
-                    success_rate=final_success_rate,
-                    failed_codes=codes_to_process,
-                    processing_time=processing_time,
-                    retry_count=retry_count,
-                    status=status,
-                    message=(
-                        f"배치 처리 완료: {final_success_count}/{total_codes}개 성공 "
-                        f"({final_success_rate:.1%})"
-                    ),
+                # 결과 분류 (성공 vs 실패)
+                successful_codes: List[CodeSample] = []
+                failed_codes: List[CodeSample] = []
+
+                for code, result in zip(codes_to_process, results):
+                    if result is not None:
+                        # 성공: 결과 집계
+                        all_matched_skills.extend(result["matched_skills"])
+                        all_missing_skills.extend(result["missing_skills"])
+                        successful_codes.append(code)
+                    else:
+                        # 실패: 재시도 대상에 추가
+                        failed_codes.append(code)
+
+                # 성공률 계산
+                success_rate = len(successful_codes) / total_codes
+
+                logger.info(
+                    f"  시도 {retry_count + 1} 결과: "
+                    f"성공 {len(successful_codes)}개, 실패 {len(failed_codes)}개 "
+                    f"(성공률: {success_rate:.1%})"
                 )
                 
-                # 최종 응답 로깅
-                debug_logger.log_response(response)
-                return response
-                
-            except Exception as e:
-                # 에러 응답 로깅
-                error_response = CodeBatchResponse(
-                    batch_id=context.batch_id,
-                    matched_skills=[],
-                    missing_skills=[],
-                    success_rate=0.0,
-                    failed_codes=context.codes,
-                    processing_time=time.time() - start_time,
-                    retry_count=retry_count,
-                    status="failed",
-                    message=f"배치 처리 실패: {str(e)}",
-                )
-                debug_logger.log_response(error_response)
-                raise
+                debug_logger.log_intermediate(f"retry_{retry_count}_result", {
+                    "successful_codes": len(successful_codes),
+                    "failed_codes": len(failed_codes),
+                    "success_rate": success_rate,
+                    "matched_skills_count": len(all_matched_skills),
+                    "missing_skills_count": len(all_missing_skills)
+                })
+
+                # 성공률 80% 이상이면 종료
+                if success_rate >= 0.8:
+                    logger.info(
+                        f"✅ 배치 {context.batch_id}: 성공률 {success_rate:.1%} 달성"
+                    )
+                    codes_to_process = failed_codes  # 최종 failed_codes 업데이트
+                    break
+
+                # 실패한 코드만 재시도
+                codes_to_process = failed_codes
+                retry_count += 1
+
+                if retry_count > 3:
+                    logger.warning(
+                        f"⚠️ 배치 {context.batch_id}: 최대 재시도 횟수 초과 "
+                        f"(최종 성공률: {success_rate:.1%})"
+                    )
+
+            # 최종 성공률 계산
+            final_success_count = total_codes - len(codes_to_process)
+            final_success_rate = final_success_count / total_codes
+
+            # 처리 시간 계산
+            processing_time = time.time() - start_time
+
+            # 상태 결정
+            if final_success_rate >= 0.8:
+                status = "success"
+            elif final_success_rate >= 0.5:
+                status = "partial_success"
+            else:
+                status = "failed"
+
+            logger.info(
+                f"🏁 배치 {context.batch_id} 완료: "
+                f"상태={status}, 성공률={final_success_rate:.1%}, "
+                f"처리시간={processing_time:.2f}s, 재시도={retry_count}회"
+            )
+
+            response = CodeBatchResponse(
+                batch_id=context.batch_id,
+                matched_skills=all_matched_skills,
+                missing_skills=all_missing_skills,
+                success_rate=final_success_rate,
+                failed_codes=codes_to_process,
+                processing_time=processing_time,
+                retry_count=retry_count,
+                status=status,
+                message=(
+                    f"배치 처리 완료: {final_success_count}/{total_codes}개 성공 "
+                    f"({final_success_rate:.1%})"
+                ),
+            )
+            return response
+
+        except Exception as e:
+            # 에러 응답 생성 (데코레이터가 자동으로 로깅)
+            error_response = CodeBatchResponse(
+                batch_id=context.batch_id,
+                matched_skills=[],
+                missing_skills=[],
+                success_rate=0.0,
+                failed_codes=context.codes,
+                processing_time=time.time() - start_time,
+                retry_count=retry_count,
+                status="failed",
+                message=f"배치 처리 실패: {str(e)}",
+            )
+            raise
 
     async def _process_codes_parallel(
         self,

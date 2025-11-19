@@ -71,13 +71,6 @@ class ReporterAgent:
             debug_logger.log_request(context)
             
             try:
-                # 리포트 디렉토리
-                report_dir = base_path / "reports"
-                report_dir.mkdir(parents=True, exist_ok=True)
-
-                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                report_path = report_dir / f"report_{timestamp}.md"
-
                 # ResultStore에서 결과 로드 (메모리 효율성 향상)
                 static_analysis_dict = context.static_analysis
                 user_aggregate_dict = context.user_aggregate
@@ -88,26 +81,27 @@ class ReporterAgent:
                         store = ResultStore(context.task_uuid, base_path)
                         
                         # StaticAnalyzer 결과 로드
-                        if store.get_result_path("static_analyzer").exists():
+                        # S3 사용 시 get_result_path()는 문자열을 반환하므로 list_available_results()로 확인
+                        available_results = store.list_available_results()
+                        if "static_analyzer" in available_results:
                             static_response = store.load_result("static_analyzer", StaticAnalyzerResponse)
                             static_analysis_dict = static_response.model_dump()
                             debug_logger.log_loaded_data("static_analyzer", static_analysis_dict)
                             logger.info("✅ ResultStore에서 StaticAnalyzer 결과 로드")
                         else:
-                            debug_logger.log_loaded_data("static_analyzer", None, error=f"File not found: {store.get_result_path('static_analyzer')}")
+                            debug_logger.log_loaded_data("static_analyzer", None, error=f"File not found: static_analyzer")
                         
                         # UserAggregator 결과 로드
-                        if store.get_result_path("user_aggregator").exists():
+                        if "user_aggregator" in available_results:
                             user_agg_response = store.load_result("user_aggregator", UserAggregatorResponse)
                             user_aggregate_dict = user_agg_response.model_dump()
                             debug_logger.log_loaded_data("user_aggregator", user_aggregate_dict)
                             logger.info("✅ ResultStore에서 UserAggregator 결과 로드")
                         else:
-                            debug_logger.log_loaded_data("user_aggregator", None, error=f"File not found: {store.get_result_path('user_aggregator')}")
+                            debug_logger.log_loaded_data("user_aggregator", None, error=f"File not found: user_aggregator")
                         
                         # UserSkillProfiler 결과 로드
-                        skill_profile_path = store.get_result_path("user_skill_profiler")
-                        if skill_profile_path.exists():
+                        if "user_skill_profiler" in available_results:
                             skill_profile_response = store.load_result("user_skill_profiler", UserSkillProfilerResponse)
                             skill_profile_dict = skill_profile_response.model_dump()
                             debug_logger.log_loaded_data("user_skill_profiler", skill_profile_dict)
@@ -123,13 +117,12 @@ class ReporterAgent:
                             
                             logger.info("✅ ResultStore에서 UserSkillProfiler 결과 로드")
                         else:
-                            debug_logger.log_loaded_data("user_skill_profiler", None, error=f"File not found: {skill_profile_path}")
+                            debug_logger.log_loaded_data("user_skill_profiler", None, error=f"File not found: user_skill_profiler")
                             debug_logger.log_intermediate("skill_profile_check", {
                                 "exists": False,
-                                "file_path": str(skill_profile_path),
                                 "error": "File not found",
                             })
-                            logger.warning(f"⚠️ UserSkillProfiler 결과 파일 없음: {skill_profile_path}")
+                            logger.warning(f"⚠️ UserSkillProfiler 결과 파일 없음: user_skill_profiler")
                     except Exception as e:
                         logger.warning(f"⚠️ ResultStore에서 결과 로드 실패, Context 데이터 사용: {e}")
                         debug_logger.log_loaded_data("static_analyzer", None, error=str(e))
@@ -216,10 +209,32 @@ class ReporterAgent:
                     recommendations_section=recommendations_section,
                 )
 
-                # 파일 저장
-                report_path.write_text(report_content, encoding="utf-8")
+                # 리포트 파일명 생성
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                report_name = f"report_{timestamp}.md"
 
-                logger.info(f"✅ Reporter: 리포트 저장 완료 - {report_path}")
+                # ResultStore를 통해 리포트 저장 (S3 또는 로컬)
+                if context.result_store_path:
+                    try:
+                        store = ResultStore(context.task_uuid, base_path)
+                        saved_path = store.save_report(report_name, report_content)
+                        logger.info(f"✅ Reporter: 리포트 저장 완료 - {saved_path}")
+                        report_path = saved_path
+                    except Exception as e:
+                        logger.warning(f"⚠️ ResultStore 저장 실패, 로컬에 저장: {e}")
+                        # Fallback: 로컬에 저장
+                        report_dir = base_path / "reports"
+                        report_dir.mkdir(parents=True, exist_ok=True)
+                        report_path = report_dir / report_name
+                        report_path.write_text(report_content, encoding="utf-8")
+                        logger.info(f"✅ Reporter: 리포트 저장 완료 (로컬) - {report_path}")
+                else:
+                    # Fallback: 로컬에 저장
+                    report_dir = base_path / "reports"
+                    report_dir.mkdir(parents=True, exist_ok=True)
+                    report_path = report_dir / report_name
+                    report_path.write_text(report_content, encoding="utf-8")
+                    logger.info(f"✅ Reporter: 리포트 저장 완료 (로컬) - {report_path}")
 
                 response = ReporterResponse(
                     status="success",
