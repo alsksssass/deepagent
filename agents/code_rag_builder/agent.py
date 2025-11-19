@@ -11,8 +11,11 @@ from sentence_transformers import SentenceTransformer
 from shared.tools.chromadb_tools import get_chroma_client
 
 from .schemas import CodeRAGBuilderContext, CodeRAGBuilderResponse
-from .tree_sitter_parsers import parser_factory
-from .tree_sitter_chunker import TreeSitterChunker
+from shared.utils.tree_sitter_utils import (
+    extract_functions_and_classes,
+    get_language_from_extension,
+    is_language_supported,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +33,6 @@ class CodeRAGBuilderAgent:
         self.model_name = model_name
         self.model = None
         self.client = None
-        self.tree_sitter_chunker = TreeSitterChunker()
 
     async def run(self, context: CodeRAGBuilderContext) -> CodeRAGBuilderResponse:
         """
@@ -189,12 +191,12 @@ class CodeRAGBuilderAgent:
             chunks = []
             parser_type = self._select_parser(file_path)
             
-            # Tree-sitter: 구조적 파싱 (Python 포함)
+            # Tree-sitter: 구조적 파싱 (실제 AST 기반)
             if parser_type == "tree-sitter":
-                language = parser_factory.get_language_from_file(file_path)
+                language = get_language_from_extension(file_path.suffix)
                 if language:
-                    tree_sitter_chunks = self.tree_sitter_chunker.extract_chunks(
-                        content, file_path, language
+                    tree_sitter_chunks = extract_functions_and_classes(
+                        content, language, max_chunk_lines=200
                     )
                     if tree_sitter_chunks:
                         chunks.extend(tree_sitter_chunks)
@@ -278,18 +280,18 @@ class CodeRAGBuilderAgent:
     def _select_parser(self, file_path: Path) -> str:
         """
         파일 확장자에 따라 최적 파서 선택
-        
+
         우선순위:
-        1. Tree-sitter 지원 언어: Tree-sitter (Python 포함)
+        1. Tree-sitter 지원 언어: Tree-sitter (실제 AST 기반)
         2. 기타: 빈 줄 기준 (폴백)
-        
+
         Returns:
             "tree-sitter" 또는 "blank-line"
         """
-        # Tree-sitter 지원 언어 확인 (Python 포함)
-        if parser_factory.is_supported(file_path):
+        # Tree-sitter 지원 언어 확인
+        if is_language_supported(file_path.suffix):
             return "tree-sitter"
-        
+
         # 기타는 빈 줄 기준
         return "blank-line"
     

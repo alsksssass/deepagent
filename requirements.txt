@@ -19,23 +19,24 @@ sentence-transformers>=3.4.1
 
 # Git Analysis
 pydriller>=2.9
+
+# Tree-sitter Core
 tree-sitter>=0.23.2
-tree-sitter-python>=0.23.6
-# Tree-sitter language parsers
-tree-sitter-javascript>=0.23.0
-tree-sitter-typescript>=0.23.0
-# tree-sitter-tsx: PyPI에 패키지가 없어서 주석 처리
-tree-sitter-java>=0.23.0
-tree-sitter-go>=0.23.0
-tree-sitter-rust>=0.23.0
-tree-sitter-cpp>=0.23.0
-tree-sitter-c>=0.23.0
-tree-sitter-c-sharp>=0.23.0
-tree-sitter-ruby>=0.23.0
-tree-sitter-php>=0.23.0
-# tree-sitter-swift: PyPI에 패키지가 없어서 주석 처리
-# tree-sitter-kotlin: PyPI에 패키지가 없어서 주석 처리
-# Swift/Kotlin 파일은 ImportError 처리로 안전하게 스킵됨
+
+# Tree-sitter Language Parsers (실제 AST 기반 코드 파싱)
+tree-sitter-python>=0.23.6      # Python
+tree-sitter-javascript>=0.23.0  # JavaScript
+tree-sitter-typescript>=0.23.0  # TypeScript, TSX (language_typescript, language_tsx)
+tree-sitter-java>=0.23.0        # Java
+tree-sitter-go>=0.23.0          # Go
+tree-sitter-rust>=0.23.0        # Rust
+tree-sitter-cpp>=0.23.0         # C++
+tree-sitter-c>=0.23.0           # C
+tree-sitter-c-sharp>=0.23.0     # C#
+tree-sitter-ruby>=0.23.0        # Ruby
+tree-sitter-php>=0.23.0         # PHP (language_php)
+# tree-sitter-swift: PyPI에 패키지 없음
+# tree-sitter-kotlin: PyPI에 패키지 없음
 
 # Static Analysis
 radon>=6.0.1
