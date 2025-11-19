@@ -408,8 +408,8 @@ class DeepAgentOrchestrator:
             logger.info("👤 Level 1-4: UserAggregator 실행")
 
             # CommitEvaluator 배치가 저장되었는지 확인
-            batch_dir = store.get_batch_dir("commit_evaluator")
-            has_commit_evaluations = batch_dir.exists() and any(batch_dir.glob("batch_*.json"))
+            batched_agents = store.list_batched_agents()
+            has_commit_evaluations = "commit_evaluator" in batched_agents
 
             if has_commit_evaluations:
                 user_aggregator = UserAggregatorAgent()
@@ -520,8 +520,8 @@ class DeepAgentOrchestrator:
         """
         logger.info("🎉 Finalize: 작업 완료 처리")
 
+        task_uuid = state["task_uuid"]
         base_path = Path(state["base_path"])
-        report_path = base_path / "final_report.md"
 
         # 임시 리포트
         report_content = f"""# 코드 분석 리포트 (Pydantic 기반)
@@ -538,16 +538,49 @@ TodoList: {len(state.get('todo_list', []))}개 작업
 **생성 시간**: {datetime.now().isoformat()}
 """
 
-        report_path.write_text(report_content, encoding="utf-8")
+        # ResultStore를 통해 리포트 저장 (S3 또는 로컬)
+        try:
+            from shared.storage import ResultStore
+            store = ResultStore(task_uuid, base_path)
+            report_path = store.save_report("final_report.md", report_content)
+            logger.info(f"   리포트 저장: {report_path}")
+        except Exception as e:
+            logger.warning(f"⚠️ ResultStore 저장 실패, 로컬에 저장: {e}")
+            # Fallback: 로컬에 저장
+            report_path = base_path / "final_report.md"
+            report_path.write_text(report_content, encoding="utf-8")
+            logger.info(f"   리포트 저장 (로컬): {report_path}")
 
-        logger.info(f"   리포트 저장: {report_path}")
+        # 로그 파일을 S3에 업로드 (작업 완료 시)
+        log_dir = base_path / "logs"
+        if log_dir.exists():
+            try:
+                from shared.storage import ResultStore
+                store = ResultStore(task_uuid, base_path)
+                uploaded_logs = store.upload_log_directory(log_dir)
+                if uploaded_logs:
+                    logger.info(f"   로그 파일 업로드 완료: {len(uploaded_logs)}개 파일")
+            except Exception as e:
+                logger.warning(f"⚠️ 로그 파일 업로드 실패: {e}")
+
+        # 디버그 로그 디렉토리도 S3에 업로드
+        debug_dir = base_path / "debug"
+        if debug_dir.exists():
+            try:
+                from shared.storage import ResultStore
+                store = ResultStore(task_uuid, base_path)
+                # debug 디렉토리를 logs/debug/ 아래에 업로드
+                uploaded_debug = store.upload_log_directory(debug_dir, remote_subdir="debug")
+                if uploaded_debug:
+                    logger.info(f"   디버그 로그 업로드 완료: {len(uploaded_debug)}개 파일")
+            except Exception as e:
+                logger.warning(f"⚠️ 디버그 로그 업로드 실패: {e}")
 
         # 토큰 사용량 전체 집계 출력
         logger.info("")
         TokenTracker.print_summary()
 
         # Task별 로그 핸들러 제거 (메모리 누수 방지)
-        task_uuid = state["task_uuid"]
         root_logger = logging.getLogger()
         handlers_to_remove = [
             h for h in root_logger.handlers

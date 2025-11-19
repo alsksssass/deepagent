@@ -2,6 +2,7 @@
 CommitAnalyzer Agent
 
 Git 커밋을 분석하고 Neo4j에 적재 (Pydantic 스키마 사용, MERGE로 멱등성 보장)
+Repository Isolation 지원: 각 Git repository 데이터를 격리하여 저장
 """
 
 import logging
@@ -10,8 +11,8 @@ from pathlib import Path
 from typing import Any, Optional
 
 from pydriller import Repository
-from neo4j import AsyncGraphDatabase
 
+from shared.graph_db import GraphDBBackend, Neo4jBackend
 from .schemas import CommitAnalyzerContext, CommitAnalyzerResponse
 
 logger = logging.getLogger(__name__)
@@ -24,6 +25,10 @@ class CommitAnalyzerAgent:
     Level 2 병렬 처리:
     - 커밋 마이닝 (PyDriller)
     - Neo4j 적재 (배치 단위, MERGE 사용)
+
+    Repository Isolation:
+    - 각 노드에 Repo_{repo_id} 라벨 자동 추가
+    - 쿼리 시 repo_id로 필터링하여 다른 repository 데이터와 격리
     """
 
     def __init__(
@@ -35,42 +40,41 @@ class CommitAnalyzerAgent:
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
         self.neo4j_password = neo4j_password
-        self.driver = None
+        self.backend: Optional[GraphDBBackend] = None
 
     async def run(self, context: CommitAnalyzerContext) -> CommitAnalyzerResponse:
         """
         커밋 분석 및 Neo4j 적재 실행 (Pydantic 스키마 사용)
+        Repository Isolation 적용: repo_id로 데이터 격리
 
         Args:
-            context: CommitAnalyzerContext (검증된 입력)
+            context: CommitAnalyzerContext (검증된 입력, git_url 포함)
 
         Returns:
             CommitAnalyzerResponse (타입 안전 출력)
         """
         repo_path = context.repo_path
         target_user = context.target_user
+        repo_id = context.repo_id  # Repository Isolation용 ID
 
-        logger.info(f"📊 CommitAnalyzer: {repo_path} 분석 시작")
+        logger.info(f"📊 CommitAnalyzer: {repo_path} 분석 시작 (repo_id: {repo_id})")
 
         try:
-            # Neo4j 드라이버 초기화
-            self.driver = AsyncGraphDatabase.driver(
-                context.neo4j_uri,
-                auth=(context.neo4j_user, context.neo4j_password),
-            )
+            # GraphDBBackend 초기화 (Neo4j)
+            self.backend = Neo4jBackend()
 
-            # Neo4j 초기화 (인덱스, 제약조건)
-            await self._init_neo4j()
+            # Neo4j 초기화 (인덱스, 제약조건) - Repository별로 격리
+            await self._init_neo4j(repo_id)
 
             # Level 2-1: PyDriller로 커밋 마이닝
             commits_data = await self._mine_commits(repo_path, target_user)
 
-            # Level 2-2: Neo4j에 배치 적재 (MERGE 사용)
-            stats = await self._load_to_neo4j(commits_data)
+            # Level 2-2: Neo4j에 배치 적재 (MERGE 사용, Repository Isolation 적용)
+            stats = await self._load_to_neo4j(commits_data, repo_id)
 
             logger.info(
                 f"✅ CommitAnalyzer: {stats['total_commits']}개 커밋, "
-                f"{stats['total_users']}명 유저 적재 완료"
+                f"{stats['total_users']}명 유저 적재 완료 (repo_id: {repo_id})"
             )
 
             return CommitAnalyzerResponse(
@@ -92,33 +96,43 @@ class CommitAnalyzerAgent:
             )
 
         finally:
-            if self.driver:
-                await self.driver.close()
+            if self.backend:
+                await self.backend.close()
 
-    async def _init_neo4j(self):
+    async def _init_neo4j(self, repo_id: str):
         """
-        Neo4j 인덱스 및 제약조건 생성
+        Neo4j 인덱스 및 제약조건 생성 (Repository Isolation 적용)
+
+        Args:
+            repo_id: Repository ID (예: github_user_repo)
         """
-        async with self.driver.session() as session:
-            # User 노드 제약조건
-            await session.run(
-                "CREATE CONSTRAINT user_email IF NOT EXISTS "
-                "FOR (u:User) REQUIRE u.email IS UNIQUE"
-            )
+        # Repository 라벨 생성
+        repo_label = self.backend.get_repo_label(repo_id)
 
-            # Commit 노드 제약조건
-            await session.run(
-                "CREATE CONSTRAINT commit_hash IF NOT EXISTS "
-                "FOR (c:Commit) REQUIRE c.hash IS UNIQUE"
-            )
+        # 제약조건 생성 쿼리 (Repository별로 격리)
+        constraints = [
+            # User 노드: email uniqueness within repository
+            f"CREATE CONSTRAINT user_email_{repo_id.replace('-', '_')} IF NOT EXISTS "
+            f"FOR (u:{repo_label}:User) REQUIRE u.email IS UNIQUE",
 
-            # File 노드 제약조건
-            await session.run(
-                "CREATE CONSTRAINT file_path IF NOT EXISTS "
-                "FOR (f:File) REQUIRE f.path IS UNIQUE"
-            )
+            # Commit 노드: hash uniqueness within repository
+            f"CREATE CONSTRAINT commit_hash_{repo_id.replace('-', '_')} IF NOT EXISTS "
+            f"FOR (c:{repo_label}:Commit) REQUIRE c.hash IS UNIQUE",
 
-            logger.info("✅ Neo4j 인덱스 및 제약조건 생성 완료")
+            # File 노드: path uniqueness within repository
+            f"CREATE CONSTRAINT file_path_{repo_id.replace('-', '_')} IF NOT EXISTS "
+            f"FOR (f:{repo_label}:File) REQUIRE f.path IS UNIQUE",
+        ]
+
+        for constraint_query in constraints:
+            try:
+                await self.backend.execute_query(constraint_query, repo_id=repo_id)
+            except Exception as e:
+                # 제약조건이 이미 존재하는 경우 무시
+                if "already exists" not in str(e).lower():
+                    logger.warning(f"⚠️ 제약조건 생성 실패: {e}")
+
+        logger.info(f"✅ Neo4j 인덱스 및 제약조건 생성 완료 (repo_id: {repo_id})")
 
     async def _mine_commits(
         self, repo_path: str, target_user: Optional[str]
@@ -199,93 +213,101 @@ class CommitAnalyzerAgent:
         logger.info(f"📊 PyDriller: {len(commits_data)}개 커밋 마이닝 완료")
         return commits_data
 
-    async def _load_to_neo4j(self, commits_data: list[dict[str, Any]]) -> dict[str, int]:
+    async def _load_to_neo4j(
+        self, commits_data: list[dict[str, Any]], repo_id: str
+    ) -> dict[str, int]:
         """
         커밋 데이터를 Neo4j에 배치 적재 (MERGE 사용하여 멱등성 보장)
+        Repository Isolation 적용: repo_id로 데이터 격리
 
         Args:
             commits_data: 커밋 데이터 리스트
+            repo_id: Repository ID (예: github_user_repo)
 
         Returns:
             {"total_commits": int, "total_users": int, "total_files": int}
         """
-        async with self.driver.session() as session:
-            # 배치 크기
-            batch_size = 100
-            total_commits = 0
-            users_set = set()
-            files_set = set()
+        # Repository 라벨 생성
+        repo_label = self.backend.get_repo_label(repo_id)
 
-            for i in range(0, len(commits_data), batch_size):
-                batch = commits_data[i : i + batch_size]
+        # 배치 크기
+        batch_size = 100
+        total_commits = 0
+        users_set = set()
+        files_set = set()
 
-                # 배치 처리 쿼리 (MERGE 사용)
-                query = """
-                UNWIND $commits AS commit
+        for i in range(0, len(commits_data), batch_size):
+            batch = commits_data[i : i + batch_size]
 
-                // User 노드 생성/병합
-                MERGE (u:User {email: commit.author_email})
-                ON CREATE SET
-                    u.name = commit.author_name
+            # 배치 처리 쿼리 (MERGE 사용, Repository Isolation 적용)
+            query = f"""
+            UNWIND $commits AS commit
 
-                // Commit 노드 생성/병합 (멱등성 보장)
-                MERGE (c:Commit {hash: commit.hash})
-                ON CREATE SET
-                    c.message = commit.message,
-                    c.author_date = datetime(commit.author_date),
-                    c.committer_date = datetime(commit.committer_date),
-                    c.lines_added = commit.lines_added,
-                    c.lines_deleted = commit.lines_deleted,
-                    c.files_changed = commit.files_changed
-                ON MATCH SET
-                    c.message = commit.message,
-                    c.author_date = datetime(commit.author_date),
-                    c.committer_date = datetime(commit.committer_date),
-                    c.lines_added = commit.lines_added,
-                    c.lines_deleted = commit.lines_deleted,
-                    c.files_changed = commit.files_changed
+            // User 노드 생성/병합 (Repository 라벨 포함)
+            MERGE (u:{repo_label}:User {{email: commit.author_email, repo_id: $repo_id}})
+            ON CREATE SET
+                u.name = commit.author_name
 
-                // User-Commit 관계 생성/병합
-                MERGE (u)-[:COMMITTED]->(c)
+            // Commit 노드 생성/병합 (Repository 라벨 포함, 멱등성 보장)
+            MERGE (c:{repo_label}:Commit {{hash: commit.hash, repo_id: $repo_id}})
+            ON CREATE SET
+                c.message = commit.message,
+                c.author_date = datetime(commit.author_date),
+                c.committer_date = datetime(commit.committer_date),
+                c.lines_added = commit.lines_added,
+                c.lines_deleted = commit.lines_deleted,
+                c.files_changed = commit.files_changed
+            ON MATCH SET
+                c.message = commit.message,
+                c.author_date = datetime(commit.author_date),
+                c.committer_date = datetime(commit.committer_date),
+                c.lines_added = commit.lines_added,
+                c.lines_deleted = commit.lines_deleted,
+                c.files_changed = commit.files_changed
 
-                // File 노드 및 관계
-                WITH c, commit
-                UNWIND commit.modifications AS mod
+            // User-Commit 관계 생성/병합
+            MERGE (u)-[:COMMITTED]->(c)
 
-                MERGE (f:File {path: mod.new_path})
-                ON CREATE SET
-                    f.filename = mod.filename,
-                    f.old_path = mod.old_path,
-                    f.new_path = mod.new_path
+            // File 노드 및 관계
+            WITH c, commit
+            UNWIND commit.modifications AS mod
 
-                // Commit-File 관계 생성/병합 (멱등성 보장)
-                MERGE (c)-[r:MODIFIED]->(f)
-                ON CREATE SET
-                    r.change_type = mod.change_type,
-                    r.added_lines = mod.added_lines,
-                    r.deleted_lines = mod.deleted_lines,
-                    r.complexity = mod.complexity
-                ON MATCH SET
-                    r.change_type = mod.change_type,
-                    r.added_lines = mod.added_lines,
-                    r.deleted_lines = mod.deleted_lines,
-                    r.complexity = mod.complexity
-                """
+            MERGE (f:{repo_label}:File {{path: mod.new_path, repo_id: $repo_id}})
+            ON CREATE SET
+                f.filename = mod.filename,
+                f.old_path = mod.old_path,
+                f.new_path = mod.new_path
 
-                await session.run(query, commits=batch)
+            // Commit-File 관계 생성/병합 (멱등성 보장)
+            MERGE (c)-[r:MODIFIED]->(f)
+            ON CREATE SET
+                r.change_type = mod.change_type,
+                r.added_lines = mod.added_lines,
+                r.deleted_lines = mod.deleted_lines,
+                r.complexity = mod.complexity
+            ON MATCH SET
+                r.change_type = mod.change_type,
+                r.added_lines = mod.added_lines,
+                r.deleted_lines = mod.deleted_lines,
+                r.complexity = mod.complexity
+            """
 
-                total_commits += len(batch)
+            await self.backend.execute_query(
+                query, params={"commits": batch, "repo_id": repo_id}, repo_id=repo_id
+            )
 
-                # 통계 수집
-                for commit in batch:
-                    users_set.add(commit["author_email"])
-                    for mod in commit["modifications"]:
-                        files_set.add(mod["new_path"])
+            total_commits += len(batch)
 
-                logger.info(f"📊 Neo4j: {total_commits}/{len(commits_data)} 커밋 적재 중...")
+            # 통계 수집
+            for commit in batch:
+                users_set.add(commit["author_email"])
+                for mod in commit["modifications"]:
+                    files_set.add(mod["new_path"])
 
-            return {
-                "total_commits": total_commits,
-                "total_users": len(users_set),
-                "total_files": len(files_set),
-            }
+            logger.info(f"📊 Neo4j: {total_commits}/{len(commits_data)} 커밋 적재 중...")
+
+        return {
+            "total_commits": total_commits,
+            "total_users": len(users_set),
+            "total_files": len(files_set),
+        }

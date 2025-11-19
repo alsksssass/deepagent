@@ -13,6 +13,7 @@ from shared.tools.chromadb_tools import get_chroma_client
 from shared.utils.prompt_loader import PromptLoader
 from shared.utils.agent_debug_logger import AgentDebugLogger
 from shared.utils.skill_level_calculator import SkillLevelCalculator
+from shared.storage import ResultStore
 
 from .schemas import (
     UserSkillProfilerContext,
@@ -305,6 +306,7 @@ class UserSkillProfilerAgent:
         code_samples: List[dict[str, Any]],
         persist_dir: str,
         config: HybridConfig,
+        result_store: ResultStore = None,
     ) -> Tuple[List[dict[str, Any]], List[MissingSkillInfo]]:
         """
         Dynamic 2-Tier 하이브리드 매칭
@@ -374,6 +376,17 @@ class UserSkillProfilerAgent:
                     f"{response.processing_time:.2f}s)"
                 )
 
+                # 배치 결과 저장 (ResultStore 사용)
+                if result_store:
+                    try:
+                        result_store.save_batched_result(
+                            agent_name="code_batch_processor",
+                            batch_id=batch_id,
+                            result=response,
+                        )
+                    except Exception as e:
+                        logger.warning(f"⚠️ 배치 {batch_id} 결과 저장 실패: {e}")
+
                 return response
 
             except Exception as e:
@@ -419,11 +432,21 @@ class UserSkillProfilerAgent:
                 ]
             )
 
-            # 재시도 결과로 원본 응답 교체
+            # 재시도 결과로 원본 응답 교체 및 저장
             for i, orig_resp in enumerate(batch_responses):
                 for retry_resp in retry_responses:
                     if orig_resp.batch_id == retry_resp.batch_id:
                         batch_responses[i] = retry_resp
+                        # 재시도 결과도 저장
+                        if result_store:
+                            try:
+                                result_store.save_batched_result(
+                                    agent_name="code_batch_processor",
+                                    batch_id=retry_resp.batch_id,
+                                    result=retry_resp,
+                                )
+                            except Exception as e:
+                                logger.warning(f"⚠️ 재시도 배치 {retry_resp.batch_id} 결과 저장 실패: {e}")
                         break
 
         # 5. 결과 집계

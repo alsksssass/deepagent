@@ -17,15 +17,13 @@ class StorageBackend(str, Enum):
 
 
 class GraphDBBackend(str, Enum):
-    """Graph Database Backend 타입"""
+    """Graph Database Backend 타입 (Neo4j 전용)"""
     NEO4J = "neo4j"
-    NEPTUNE = "neptune"
 
 
 class VectorDBBackend(str, Enum):
-    """Vector Database Backend 타입"""
+    """Vector Database Backend 타입 (ChromaDB 전용)"""
     CHROMADB = "chromadb"
-    PGVECTOR = "pgvector"
 
 
 class Settings(BaseSettings):
@@ -63,31 +61,19 @@ class Settings(BaseSettings):
     # Local 설정
     LOCAL_DATA_DIR: Path = Path("./data")
 
-    # === Graph Database ===
-    GRAPH_DB_BACKEND: GraphDBBackend = GraphDBBackend.NEO4J
-
-    # Neo4j 설정
+    # === Graph Database (Neo4j) ===
+    # 로컬 개발: bolt://localhost:7687
+    # AWS EC2: bolt://ec2-xxx-xxx-xxx-xxx.compute.amazonaws.com:7687
     NEO4J_URI: str = "bolt://localhost:7687"
     NEO4J_USER: str = "neo4j"
     NEO4J_PASSWORD: str = "password"
 
-    # Neptune 설정 (GRAPH_DB_BACKEND=neptune일 때 필수)
-    NEPTUNE_ENDPOINT: str = ""
-    NEPTUNE_PORT: int = 8182
-    NEPTUNE_USE_IAM: bool = True
-
-    # === Vector Database ===
-    VECTOR_DB_BACKEND: VectorDBBackend = VectorDBBackend.CHROMADB
-
-    # ChromaDB 설정
-    CHROMADB_PERSIST_DIR: Path = Path("./data/chroma_db")
-
-    # pgvector 설정 (VECTOR_DB_BACKEND=pgvector일 때 필수)
-    PGVECTOR_HOST: str = ""
-    PGVECTOR_PORT: int = 5432
-    PGVECTOR_DATABASE: str = "deep_agents"
-    PGVECTOR_USER: str = "postgres"
-    PGVECTOR_PASSWORD: str = ""
+    # === Vector Database (ChromaDB) ===
+    # 로컬 개발: http://localhost:8000
+    # AWS EC2: http://ec2-xxx-xxx-xxx-xxx.compute.amazonaws.com:8000
+    CHROMADB_HOST: str = "localhost"
+    CHROMADB_PORT: int = 8000
+    CHROMADB_AUTH_TOKEN: str = ""  # 프로덕션에서는 필수
 
     # === AWS 공통 ===
     AWS_REGION: str = "us-east-1"
@@ -107,19 +93,7 @@ class Settings(BaseSettings):
                     "S3_BUCKET_NAME is required when STORAGE_BACKEND=s3"
                 )
 
-        # Neptune 사용 시 endpoint 필수
-        if self.GRAPH_DB_BACKEND == GraphDBBackend.NEPTUNE:
-            if not self.NEPTUNE_ENDPOINT:
-                raise ValueError(
-                    "NEPTUNE_ENDPOINT is required when GRAPH_DB_BACKEND=neptune"
-                )
 
-        # pgvector 사용 시 host 필수
-        if self.VECTOR_DB_BACKEND == VectorDBBackend.PGVECTOR:
-            if not self.PGVECTOR_HOST:
-                raise ValueError(
-                    "PGVECTOR_HOST is required when VECTOR_DB_BACKEND=pgvector"
-                )
 
     def get_storage_info(self) -> dict:
         """현재 Storage 설정 정보 반환"""
@@ -136,34 +110,20 @@ class Settings(BaseSettings):
             }
 
     def get_graph_db_info(self) -> dict:
-        """현재 Graph DB 설정 정보 반환"""
-        if self.GRAPH_DB_BACKEND == GraphDBBackend.NEPTUNE:
-            return {
-                "backend": "neptune",
-                "endpoint": self.NEPTUNE_ENDPOINT,
-                "port": self.NEPTUNE_PORT,
-            }
-        else:
-            return {
-                "backend": "neo4j",
-                "uri": self.NEO4J_URI,
-                "user": self.NEO4J_USER,
-            }
+        """현재 Graph DB 설정 정보 반환 (Neo4j)"""
+        return {
+            "backend": "neo4j",
+            "uri": self.NEO4J_URI,
+            "user": self.NEO4J_USER,
+        }
 
     def get_vector_db_info(self) -> dict:
-        """현재 Vector DB 설정 정보 반환"""
-        if self.VECTOR_DB_BACKEND == VectorDBBackend.PGVECTOR:
-            return {
-                "backend": "pgvector",
-                "host": self.PGVECTOR_HOST,
-                "port": self.PGVECTOR_PORT,
-                "database": self.PGVECTOR_DATABASE,
-            }
-        else:
-            return {
-                "backend": "chromadb",
-                "persist_dir": str(self.CHROMADB_PERSIST_DIR),
-            }
+        """현재 Vector DB 설정 정보 반환 (ChromaDB)"""
+        return {
+            "backend": "chromadb",
+            "host": self.CHROMADB_HOST,
+            "port": self.CHROMADB_PORT,
+        }
 
 
 # 싱글톤 인스턴스

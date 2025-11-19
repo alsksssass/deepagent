@@ -194,34 +194,15 @@ class UserAggregatorAgent:
             base_path = Path(context.result_store_path).parent
             store = ResultStore(context.task_uuid, base_path)
 
-            # 배치 결과 스트리밍 로드
-            batch_dir = store.get_batch_dir("commit_evaluator")
-            if not batch_dir.exists():
-                logger.warning(f"⚠️ UserAggregator: 배치 디렉토리 없음 - {batch_dir}")
+            # 배치 결과 스트리밍 로드 (S3/로컬 모두 지원)
+            batched_agents = store.list_batched_agents()
+            if "commit_evaluator" not in batched_agents:
+                logger.warning(f"⚠️ UserAggregator: commit_evaluator 배치 결과 없음")
                 return []
 
-            # 배치 파일 목록 가져오기
-            batch_files = sorted(batch_dir.glob("batch_*.json"))
-            if not batch_files:
-                logger.warning(f"⚠️ UserAggregator: 배치 파일 없음")
-                return []
-
-            logger.info(f"📂 UserAggregator: {len(batch_files)}개 배치 파일에서 스트리밍 로드 시작")
-
-            # 배치별로 스트리밍 처리 (메모리 효율성)
-            all_evaluations = []
-            for batch_file in batch_files:
-                import json
-                batch_data = json.loads(batch_file.read_text(encoding="utf-8"))
-                
-                # 배치 데이터가 리스트인 경우
-                if isinstance(batch_data, list):
-                    all_evaluations.extend(batch_data)
-                else:
-                    # 단일 객체인 경우
-                    all_evaluations.append(batch_data)
-                
-                logger.debug(f"   배치 {batch_file.name}: {len(batch_data) if isinstance(batch_data, list) else 1}개 항목 로드")
+            # ResultStore의 load_batched_results를 사용하여 배치 결과 로드 (S3/로컬 모두 지원)
+            logger.info(f"📂 UserAggregator: commit_evaluator 배치 결과 스트리밍 로드 시작")
+            all_evaluations = store.load_batched_results("commit_evaluator")
 
             logger.info(f"✅ UserAggregator: 총 {len(all_evaluations)}개 평가 결과 스트리밍 로드 완료")
             return all_evaluations
