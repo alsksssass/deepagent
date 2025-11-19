@@ -94,7 +94,8 @@ class UserSkillProfilerAgent:
         """
         user = context.user
         task_uuid = context.task_uuid
-        persist_dir = context.persist_dir
+        persist_dir = context.persist_dir  # 스킬 차트용
+        code_persist_dir = context.code_persist_dir or persist_dir  # 코드 컬렉션용
 
         # task_uuid를 인스턴스 변수에 저장 (CodeBatchProcessor에게 전달용)
         if not self.task_uuid:
@@ -121,7 +122,7 @@ class UserSkillProfilerAgent:
 
         try:
             # Level 2-1: 유저 코드 수집 (ChromaDB code collection)
-            user_code_samples = await self._collect_user_code(task_uuid, persist_dir)
+            user_code_samples = await self._collect_user_code(task_uuid, code_persist_dir)
             
             # 중간 단계 로깅
             debug_logger.log_intermediate("code_collection", {
@@ -148,13 +149,13 @@ class UserSkillProfilerAgent:
                 # 하이브리드 매칭: 임베딩 후보 + LLM 판단
                 detected_skills, missing_skills = await self._hybrid_match_parallel(
                     user_code_samples,
-                    persist_dir,
+                    persist_dir,  # 스킬 차트용
                     context.hybrid_config,
                     result_store=result_store,
                 )
             else:
                 # 기존 임베딩 매칭
-                detected_skills = await self._match_skills_parallel(user_code_samples, persist_dir)
+                detected_skills = await self._match_skills_parallel(user_code_samples, persist_dir)  # 스킬 차트용
 
             # Level 2-2.5: 미등록 스킬 로깅
             missing_log_path = None

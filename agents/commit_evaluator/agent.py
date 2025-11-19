@@ -74,12 +74,16 @@ class CommitEvaluatorAgent:
         logger.info(f"📝 CommitEvaluator: {commit_hash[:8]} 평가 시작")
 
         try:
+            # Repository ID 생성 (제약조건이 복합 키이므로 필수)
+            repo_id = context.repo_id
+            
             # Level 3-1: 병렬 데이터 수집
             commit_info, code_contexts = await asyncio.gather(
-                # Neo4j에서 커밋 상세 정보
+                # Neo4j에서 커밋 상세 정보 (repo_id 필수)
                 get_commit_details.ainvoke(
                     {
                         "commit_hash": commit_hash,
+                        "repo_id": repo_id,  # 제약조건이 복합 키이므로 필수
                         "neo4j_uri": context.neo4j_uri,
                         "neo4j_user": context.neo4j_user,
                         "neo4j_password": context.neo4j_password,

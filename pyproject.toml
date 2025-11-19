@@ -24,7 +24,7 @@ botocore = "^1.35.93"
 
 # Database & Storage
 neo4j = "^5.27.0"
-chromadb = "^0.5.23"
+chromadb = "^1.3.4"
 sentence-transformers = "^3.4.1"
 
 # Git Analysis

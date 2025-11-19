@@ -270,6 +270,7 @@ class DeepAgentOrchestrator:
             commit_ctx = CommitAnalyzerContext(
                 task_uuid=task_uuid,
                 repo_path=repo_path,
+                git_url=git_url,  # Repository Isolation용
                 target_user=target_user,
                 result_store_path=str(store.results_dir),
             )
@@ -278,6 +279,15 @@ class DeepAgentOrchestrator:
                 "CHROMADB_PERSIST_DIR",
                 str(self.data_dir / "chroma_db")
             )
+            
+            # 스킬 차트용 ChromaDB 디렉토리: 별도 격리 (전역 공유)
+            from shared.config import settings
+            skill_charts_persist_dir = os.getenv(
+                "SKILL_CHARTS_CHROMADB_DIR",
+                str(settings.SKILL_CHARTS_CHROMADB_DIR)
+            )
+            # 디렉토리 생성
+            Path(skill_charts_persist_dir).mkdir(parents=True, exist_ok=True)
             
             code_rag_ctx = CodeRAGBuilderContext(
                 task_uuid=task_uuid,
@@ -288,7 +298,7 @@ class DeepAgentOrchestrator:
             skill_rag_ctx = SkillChartsRAGBuilderContext(
                 task_uuid=task_uuid,
                 skill_charts_path=self.skill_charts_path,
-                persist_dir=chromadb_persist_dir,
+                persist_dir=skill_charts_persist_dir,  # 스킬 차트용 별도 디렉토리
                 result_store_path=str(store.results_dir),
             )
 
@@ -320,8 +330,13 @@ class DeepAgentOrchestrator:
             else:
                 # Neo4j에서 유저 커밋 목록 가져오기
                 if target_user:
+                    # Repository ID 생성 (제약조건이 복합 키이므로 필수)
+                    from shared.utils.repo_utils import generate_repo_id
+                    repo_id = generate_repo_id(git_url)
+                    
                     user_commits = await get_user_commits.ainvoke({
                         "user_email": target_user,
+                        "repo_id": repo_id,  # 제약조건이 복합 키이므로 필수
                         "limit": 100,
                         "neo4j_uri": self.neo4j_uri,
                         "neo4j_user": self.neo4j_user,
@@ -331,15 +346,22 @@ class DeepAgentOrchestrator:
                 else:
                     # 전체 유저의 경우: 모든 유저의 최근 커밋 샘플링
                     from shared.tools.neo4j_tools import query_graph
+                    from shared.utils.repo_utils import generate_repo_id
 
-                    # 1. 모든 유저 이메일 가져오기
-                    all_users_query = """
+                    # Repository ID 생성 (제약조건이 복합 키이므로 필수)
+                    repo_id = generate_repo_id(git_url)
+
+                    # 1. 모든 유저 이메일 가져오기 (repo_id 필터링)
+                    all_users_query = f"""
                     MATCH (u:User)-[:COMMITTED]->(c:Commit)
+                    WHERE u.repo_id = $repo_id AND c.repo_id = $repo_id
                     RETURN DISTINCT u.email AS email, count(c) AS commit_count
                     ORDER BY commit_count DESC
                     """
                     all_users = await query_graph.ainvoke({
                         "cypher_query": all_users_query,
+                        "parameters": {"repo_id": repo_id},
+                        "repo_id": repo_id,
                         "neo4j_uri": self.neo4j_uri,
                         "neo4j_user": self.neo4j_user,
                         "neo4j_password": self.neo4j_password,
@@ -353,6 +375,7 @@ class DeepAgentOrchestrator:
                         user_email = user_info["email"]
                         user_sample = await get_user_commits.ainvoke({
                             "user_email": user_email,
+                            "repo_id": repo_id,  # 제약조건이 복합 키이므로 필수
                             "limit": 20,
                             "neo4j_uri": self.neo4j_uri,
                             "neo4j_user": self.neo4j_user,
@@ -379,6 +402,7 @@ class DeepAgentOrchestrator:
                             task_uuid=task_uuid,
                             commit_hash=commit["hash"],
                             user=target_user if target_user else commit.get("author_email", ""),
+                            git_url=git_url,  # Repository Isolation용
                             neo4j_uri=self.neo4j_uri,
                             neo4j_user=self.neo4j_user,
                             neo4j_password=self.neo4j_password,
@@ -441,6 +465,13 @@ class DeepAgentOrchestrator:
                     str(self.data_dir / "chroma_db")
                 )
                 
+                # 스킬 차트용 ChromaDB 디렉토리: 별도 격리 (전역 공유)
+                from shared.config import settings
+                skill_charts_persist_dir = os.getenv(
+                    "SKILL_CHARTS_CHROMADB_DIR",
+                    str(settings.SKILL_CHARTS_CHROMADB_DIR)
+                )
+                
                 # target_user가 None이면 "ALL_USERS"로 처리 (UserAggregator와 동일)
                 user_for_skill_profiler = target_user if target_user else "ALL_USERS"
                 
@@ -448,7 +479,8 @@ class DeepAgentOrchestrator:
                 skill_profile_ctx = UserSkillProfilerContext(
                     task_uuid=task_uuid,
                     user=user_for_skill_profiler,
-                    persist_dir=chromadb_persist_dir,
+                    persist_dir=skill_charts_persist_dir,  # 스킬 차트용 별도 디렉토리
+                    code_persist_dir=chromadb_persist_dir,  # 코드 컬렉션용 디렉토리
                     result_store_path=str(store.results_dir),
                 )
                 skill_profile_response = await user_skill_profiler.run(skill_profile_ctx)
