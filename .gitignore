@@ -20,6 +20,7 @@ wheels/
 .installed.cfg
 *.egg
 *.md
+s3:
 # Virtual Environment
 .venv/
 venv/

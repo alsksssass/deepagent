@@ -11,6 +11,7 @@ from pathlib import Path
 from shared.tools.skill_tools import search_skills_by_code, calculate_category_coverage
 from shared.tools.chromadb_tools import get_chroma_client
 from shared.utils.prompt_loader import PromptLoader
+from shared.utils.agent_logging import log_agent_execution
 from shared.utils.agent_debug_logger import AgentDebugLogger
 from shared.utils.skill_level_calculator import SkillLevelCalculator
 
@@ -79,6 +80,7 @@ class UserSkillProfilerAgent:
 
         logger.info(f"✅ UserSkillProfiler: LLM with structured output 초기화 완료 - {model_id}")
 
+    @log_agent_execution(agent_name="user_skill_profiler")
     async def run(self, context: UserSkillProfilerContext) -> UserSkillProfilerResponse:
         """
         사용자 스킬 프로파일 생성
@@ -99,125 +101,125 @@ class UserSkillProfilerAgent:
 
         logger.info(f"🎯 UserSkillProfiler: {user} 스킬 프로파일 생성 시작")
 
-        # 디버깅 로거 초기화
+        # ResultStore 초기화 (배치 결과 저장용)
         base_path = Path(context.result_store_path).parent if context.result_store_path else Path(f"./data/analyze/{task_uuid}")
-        debug_logger = AgentDebugLogger.get_logger(task_uuid, base_path, "user_skill_profiler")
+        result_store = ResultStore(task_uuid, base_path)
         
-        with debug_logger.track_execution():
-            # 요청 로깅
-            debug_logger.log_request(context)
+        # 중간 단계 로깅을 위해 logger 가져오기
+        debug_logger = AgentDebugLogger.get_logger(task_uuid, base_path, "user_skill_profiler")
 
-            # 환경변수에서 하이브리드 설정 로드
-            if context.enable_hybrid and context.hybrid_config is None:
-                context.hybrid_config = HybridConfig.from_env()
-                logger.info(
-                    f"⚙️ 하이브리드 설정 로드: "
-                    f"concurrent={context.hybrid_config.llm_max_concurrent}, "
-                    f"batch={context.hybrid_config.llm_batch_size}, "
-                    f"candidates={context.hybrid_config.skill_candidate_count}"
-                )
+        # 환경변수에서 하이브리드 설정 로드
+        if context.enable_hybrid and context.hybrid_config is None:
+            context.hybrid_config = HybridConfig.from_env()
+            logger.info(
+                f"⚙️ 하이브리드 설정 로드: "
+                f"concurrent={context.hybrid_config.llm_max_concurrent}, "
+                f"batch={context.hybrid_config.llm_batch_size}, "
+                f"candidates={context.hybrid_config.skill_candidate_count}"
+            )
 
-            try:
-                # Level 2-1: 유저 코드 수집 (ChromaDB code collection)
-                user_code_samples = await self._collect_user_code(task_uuid, persist_dir)
-                
-                # 중간 단계 로깅
-                debug_logger.log_intermediate("code_collection", {
-                    "sample_count": len(user_code_samples) if user_code_samples else 0,
-                    "samples_preview": user_code_samples[:3] if user_code_samples else []  # 샘플만
-                })
+        try:
+            # Level 2-1: 유저 코드 수집 (ChromaDB code collection)
+            user_code_samples = await self._collect_user_code(task_uuid, persist_dir)
+            
+            # 중간 단계 로깅
+            debug_logger.log_intermediate("code_collection", {
+                "sample_count": len(user_code_samples) if user_code_samples else 0,
+                "samples_preview": user_code_samples[:3] if user_code_samples else []  # 샘플만
+            })
 
-                if not user_code_samples:
-                    logger.warning(f"⚠️ {user}: 코드 샘플 없음")
-                    response = UserSkillProfilerResponse(
-                        status="failed",
-                        user=user,
-                        skill_profile=SkillProfileData(),
-                        error="No code samples found",
-                    )
-                    debug_logger.log_response(response)
-                    return response
-
-                # Level 2-2: 코드 → 스킬 매칭
-                detected_skills = []
-                missing_skills = []
-
-                if context.enable_hybrid:
-                    # 하이브리드 매칭: 임베딩 후보 + LLM 판단
-                    detected_skills, missing_skills = await self._hybrid_match_parallel(
-                        user_code_samples,
-                        persist_dir,
-                        context.hybrid_config,
-                    )
-                else:
-                    # 기존 임베딩 매칭
-                    detected_skills = await self._match_skills_parallel(user_code_samples, persist_dir)
-
-                # Level 2-2.5: 미등록 스킬 로깅
-                missing_log_path = None
-                if missing_skills and context.result_store_path:
-                    from .missing_skills_logger import MissingSkillsLogger
-
-                    logger_instance = MissingSkillsLogger(context.result_store_path)
-                    missing_log_path = logger_instance.save_missing_skills(
-                        missing_skills,
-                        task_uuid,
-                    )
-                    logger.info(f"📝 미등록 스킬 {len(missing_skills)}개 로그 저장: {missing_log_path}")
-
-                # Level 2-3: 스킬 통계 집계
-                skill_profile_data = await self._aggregate_skill_profile(detected_skills, persist_dir)
-                
-                # 중간 단계 로깅
-                debug_logger.log_intermediate("skill_matching", {
-                    "detected_skills_count": len(detected_skills),
-                    "missing_skills_count": len(missing_skills),
-                })
-                debug_logger.log_intermediate("aggregation", {
-                    "total_skills": skill_profile_data.get("total_skills", 0),
-                    "total_coverage": skill_profile_data.get("total_coverage", 0),
-                })
-
-                # Pydantic 모델로 변환
-                skill_profile = SkillProfileData(**skill_profile_data)
-
-                logger.info(
-                    f"✅ UserSkillProfiler: {user} - "
-                    f"{skill_profile.total_skills}개 스킬 프로파일 완료 "
-                    f"(미등록: {len(missing_skills)}개)"
-                )
-
+            if not user_code_samples:
+                logger.warning(f"⚠️ {user}: 코드 샘플 없음")
                 response = UserSkillProfilerResponse(
-                    status="success",
-                    user=user,
-                    skill_profile=skill_profile,
-                    missing_skills_log_path=missing_log_path,
-                    hybrid_stats=(
-                        {
-                            "total_analyzed": len(user_code_samples),
-                            "skills_found": len(detected_skills),
-                            "missing_skills": len(missing_skills),
-                            "hybrid_enabled": context.enable_hybrid,
-                        }
-                        if context.enable_hybrid
-                        else None
-                    ),
-                )
-                
-                # 최종 응답 로깅
-                debug_logger.log_response(response)
-                return response
-
-            except Exception as e:
-                logger.error(f"❌ UserSkillProfiler: {e}", exc_info=True)
-                error_response = UserSkillProfilerResponse(
                     status="failed",
                     user=user,
                     skill_profile=SkillProfileData(),
-                    error=str(e),
+                    error="No code samples found",
                 )
-                debug_logger.log_response(error_response)
-                return error_response
+                debug_logger.log_response(response)
+                return response
+
+            # Level 2-2: 코드 → 스킬 매칭
+            detected_skills = []
+            missing_skills = []
+
+            if context.enable_hybrid:
+                # 하이브리드 매칭: 임베딩 후보 + LLM 판단
+                detected_skills, missing_skills = await self._hybrid_match_parallel(
+                    user_code_samples,
+                    persist_dir,
+                    context.hybrid_config,
+                    result_store=result_store,
+                )
+            else:
+                # 기존 임베딩 매칭
+                detected_skills = await self._match_skills_parallel(user_code_samples, persist_dir)
+
+            # Level 2-2.5: 미등록 스킬 로깅
+            missing_log_path = None
+            if missing_skills and context.result_store_path:
+                from .missing_skills_logger import MissingSkillsLogger
+
+                logger_instance = MissingSkillsLogger(context.result_store_path)
+                missing_log_path = logger_instance.save_missing_skills(
+                    missing_skills,
+                    task_uuid,
+                )
+                logger.info(f"📝 미등록 스킬 {len(missing_skills)}개 로그 저장: {missing_log_path}")
+
+            # Level 2-3: 스킬 통계 집계
+            skill_profile_data = await self._aggregate_skill_profile(detected_skills, persist_dir)
+            
+            # 중간 단계 로깅
+            debug_logger.log_intermediate("skill_matching", {
+                "detected_skills_count": len(detected_skills),
+                "missing_skills_count": len(missing_skills),
+            })
+            debug_logger.log_intermediate("aggregation", {
+                "total_skills": skill_profile_data.get("total_skills", 0),
+                "total_coverage": skill_profile_data.get("total_coverage", 0),
+            })
+
+            # Pydantic 모델로 변환
+            skill_profile = SkillProfileData(**skill_profile_data)
+
+            logger.info(
+                f"✅ UserSkillProfiler: {user} - "
+                f"{skill_profile.total_skills}개 스킬 프로파일 완료 "
+                f"(미등록: {len(missing_skills)}개)"
+            )
+
+            response = UserSkillProfilerResponse(
+                status="success",
+                user=user,
+                skill_profile=skill_profile,
+                missing_skills_log_path=missing_log_path,
+                hybrid_stats=(
+                    {
+                        "total_analyzed": len(user_code_samples),
+                        "skills_found": len(detected_skills),
+                        "missing_skills": len(missing_skills),
+                        "hybrid_enabled": context.enable_hybrid,
+                    }
+                    if context.enable_hybrid
+                    else None
+                ),
+            )
+            
+            # 최종 응답 로깅 (데코레이터가 자동으로 처리하지만, 중간 단계 로깅을 위해 유지)
+            debug_logger.log_response(response)
+            return response
+
+        except Exception as e:
+            logger.error(f"❌ UserSkillProfiler: {e}", exc_info=True)
+            error_response = UserSkillProfilerResponse(
+                status="failed",
+                user=user,
+                skill_profile=SkillProfileData(),
+                error=str(e),
+            )
+            debug_logger.log_response(error_response)
+            return error_response
 
     async def _collect_user_code(self, task_uuid: str, persist_dir: str) -> list[dict[str, Any]]:
         """
