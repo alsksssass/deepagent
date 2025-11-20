@@ -32,7 +32,6 @@ from agents.reporter import ReporterAgent, ReporterContext
 
 # Agents (Phase 5 마이그레이션 완료)
 from agents.code_rag_builder import CodeRAGBuilderAgent, CodeRAGBuilderContext
-from agents.skill_charts_rag_builder import SkillChartsRAGBuilderAgent, SkillChartsRAGBuilderContext
 from agents.user_skill_profiler import UserSkillProfilerAgent, UserSkillProfilerContext
 
 # Tools (for CommitEvaluator)
@@ -53,7 +52,6 @@ class DeepAgentOrchestrator:
         sonnet_llm: ChatBedrockConverse,
         haiku_llm: ChatBedrockConverse,
         data_dir: Path,
-        skill_charts_path: str,
         neo4j_uri: str | None = None,
         neo4j_user: str | None = None,
         neo4j_password: str | None = None,
@@ -62,7 +60,6 @@ class DeepAgentOrchestrator:
         self.sonnet_llm = sonnet_llm
         self.haiku_llm = haiku_llm
         self.data_dir = data_dir
-        self.skill_charts_path = skill_charts_path
         
         # Neo4j 설정: 환경 변수 우선, 파라미터 전달 시 오버라이드
         self.neo4j_uri = neo4j_uri or os.getenv("NEO4J_URI", "bolt://localhost:7687")
@@ -249,7 +246,7 @@ class DeepAgentOrchestrator:
 
             repo_path = repo_response.repo_path
 
-            # Level 1-2: 병렬 실행 (StaticAnalyzer, CommitAnalyzer, CodeRAGBuilder, SkillChartsRAGBuilder)
+            # Level 1-2: 병렬 실행 (StaticAnalyzer, CommitAnalyzer, CodeRAGBuilder)
             logger.info("📊 Level 1-2: 병렬 분석 시작")
 
             static_analyzer = StaticAnalyzerAgent()
@@ -259,7 +256,6 @@ class DeepAgentOrchestrator:
                 neo4j_password=self.neo4j_password,
             )
             code_rag_builder = CodeRAGBuilderAgent()
-            skill_charts_rag_builder = SkillChartsRAGBuilderAgent()
 
             # Pydantic Context 생성
             static_ctx = StaticAnalyzerContext(
@@ -279,47 +275,29 @@ class DeepAgentOrchestrator:
                 "CHROMADB_PERSIST_DIR",
                 str(self.data_dir / "chroma_db")
             )
-            
-            # 스킬 차트용 ChromaDB 디렉토리: 별도 격리 (전역 공유)
-            from shared.config import settings
-            skill_charts_persist_dir = os.getenv(
-                "SKILL_CHARTS_CHROMADB_DIR",
-                str(settings.SKILL_CHARTS_CHROMADB_DIR)
-            )
-            # 디렉토리 생성
-            Path(skill_charts_persist_dir).mkdir(parents=True, exist_ok=True)
-            
+
             code_rag_ctx = CodeRAGBuilderContext(
                 task_uuid=task_uuid,
                 repo_path=repo_path,
                 persist_dir=chromadb_persist_dir,
                 result_store_path=str(store.results_dir),
             )
-            skill_rag_ctx = SkillChartsRAGBuilderContext(
-                task_uuid=task_uuid,
-                skill_charts_path=self.skill_charts_path,
-                persist_dir=skill_charts_persist_dir,  # 스킬 차트용 별도 디렉토리
-                result_store_path=str(store.results_dir),
-            )
 
-            static_response, commit_response, rag_response, skill_rag_response = await asyncio.gather(
+            static_response, commit_response, rag_response = await asyncio.gather(
                 static_analyzer.run(static_ctx),
                 commit_analyzer.run(commit_ctx),
                 code_rag_builder.run(code_rag_ctx),
-                skill_charts_rag_builder.run(skill_rag_ctx),
             )
 
             # ResultStore에 저장
             store.save_result("static_analyzer", static_response)
             store.save_result("commit_analyzer", commit_response)
             store.save_result("code_rag_builder", rag_response)
-            store.save_result("skill_charts_rag_builder", skill_rag_response)
 
             # Pydantic Response → dict 변환 (기존 호환성을 위해 유지)
             static_result = static_response.model_dump()
             commit_result = commit_response.model_dump()
             rag_result = rag_response.model_dump()
-            skill_rag_result = skill_rag_response.model_dump()
 
             # Level 1-3: CommitEvaluator (병렬)
             logger.info("📝 Level 1-3: CommitEvaluator 실행")
@@ -458,28 +436,25 @@ class DeepAgentOrchestrator:
             # Level 1-4.5: UserSkillProfiler - Pydantic 기반
             logger.info("🎯 Level 1-4.5: UserSkillProfiler 실행")
 
-            if rag_result["status"] == "success" and skill_rag_result["status"] == "success":
-                # ChromaDB persist 디렉토리 재사용
+            # ℹ️ skill_charts는 독립 실행 스크립트(server/skill_charts_builder.py)로 사전 구축됨
+            # ℹ️ get_skill_chroma_client()는 원격 ChromaDB(CHROMADB_HOST)를 사용하므로 persist_dir 불필요
+            if rag_result["status"] == "success":
+                logger.info(f"✅ 코드 RAG 구축 완료: {rag_result['total_chunks']} chunks")
+
+                # ChromaDB persist 디렉토리 (코드 컬렉션용)
                 chromadb_persist_dir = os.getenv(
                     "CHROMADB_PERSIST_DIR",
                     str(self.data_dir / "chroma_db")
                 )
-                
-                # 스킬 차트용 ChromaDB 디렉토리: 별도 격리 (전역 공유)
-                from shared.config import settings
-                skill_charts_persist_dir = os.getenv(
-                    "SKILL_CHARTS_CHROMADB_DIR",
-                    str(settings.SKILL_CHARTS_CHROMADB_DIR)
-                )
-                
+
                 # target_user가 None이면 "ALL_USERS"로 처리 (UserAggregator와 동일)
                 user_for_skill_profiler = target_user if target_user else "ALL_USERS"
-                
+
                 user_skill_profiler = UserSkillProfilerAgent()
                 skill_profile_ctx = UserSkillProfilerContext(
                     task_uuid=task_uuid,
                     user=user_for_skill_profiler,
-                    persist_dir=skill_charts_persist_dir,  # 스킬 차트용 별도 디렉토리
+                    # persist_dir는 기본값 사용 (실제로는 원격 ChromaDB 사용으로 무시됨)
                     code_persist_dir=chromadb_persist_dir,  # 코드 컬렉션용 디렉토리
                     result_store_path=str(store.results_dir),
                 )
@@ -516,7 +491,7 @@ class DeepAgentOrchestrator:
                 "repo_path": repo_path,
                 "static_analysis": static_result,  # Reporter 호환성을 위해 유지
                 "neo4j_ready": commit_response.status == "success",
-                "chromadb_ready": rag_result["status"] == "success" and skill_rag_result["status"] == "success",
+                "chromadb_ready": rag_result["status"] == "success",  # skill_charts는 독립 스크립트로 사전 구축
                 "total_commits": commit_result.get("total_commits", 0),
                 "total_files": static_result.get("loc_stats", {}).get("total_files", 0),
                 "subagent_results": {
@@ -524,7 +499,7 @@ class DeepAgentOrchestrator:
                     "static_analyzer": {"status": static_response.status, "path": "results/static_analyzer.json"},
                     "commit_analyzer": {"status": commit_response.status, "path": "results/commit_analyzer.json"},
                     "code_rag_builder": {"status": rag_response.status, "path": "results/code_rag_builder.json"},
-                    "skill_charts_rag_builder": {"status": skill_rag_response.status, "path": "results/skill_charts_rag_builder.json"},
+                    # skill_charts_rag_builder는 독립 스크립트로 분리됨
                     "user_skill_profiler": {"status": skill_profile_result.get("status", "skipped"), "path": "results/user_skill_profiler.json"},
                     "user_aggregator": {"status": user_agg_result.get("status", "failed"), "path": "results/user_aggregator.json"},
                     "reporter": {"status": report_response.status, "path": "results/reporter.json"},
