@@ -57,6 +57,9 @@ pydantic = "^2.10.4"
 pydantic-settings = "^2.7.1"
 aiofiles = "^25.1.0"
 asyncio = "^3.4.3"
+sqlalchemy = "^2.0.44"
+asyncpg = "^0.30.0"
+greenlet = "^3.2.4"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.4"

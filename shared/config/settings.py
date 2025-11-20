@@ -26,6 +26,11 @@ class VectorDBBackend(str, Enum):
     CHROMADB = "chromadb"
 
 
+class DBBackend(str, Enum):
+    """RDBMS Backend 타입"""
+    POSTGRES = "postgres"
+
+
 class Settings(BaseSettings):
     """Deep Agents 통합 설정
 
@@ -80,6 +85,15 @@ class Settings(BaseSettings):
     # 스킬 차트용: 전역으로 공유되는 스킬 차트 데이터 (격리 필요)
     SKILL_CHARTS_CHROMADB_DIR: Path = Path("./data/chroma_db_skill_charts")
 
+    # === RDBMS (PostgreSQL) ===
+    DB_BACKEND: DBBackend = DBBackend.POSTGRES
+    POSTGRES_HOST: str = "localhost"
+    POSTGRES_PORT: int = 5432
+    POSTGRES_DB: str = "deep_agents"
+    POSTGRES_USER: str = "postgres"
+    POSTGRES_PASSWORD: str = "password"
+    POSTGRES_ECHO: bool = False  # SQL 로그 출력 여부
+
     # === AWS 공통 ===
     AWS_REGION: str = "us-east-1"
     AWS_ACCESS_KEY_ID: Optional[str] = None
@@ -128,6 +142,16 @@ class Settings(BaseSettings):
             "backend": "chromadb",
             "host": self.CHROMADB_HOST,
             "port": self.CHROMADB_PORT,
+        }
+
+    def get_db_info(self) -> dict:
+        """현재 RDBMS 설정 정보 반환"""
+        return {
+            "backend": "postgres",
+            "host": self.POSTGRES_HOST,
+            "port": self.POSTGRES_PORT,
+            "db": self.POSTGRES_DB,
+            "user": self.POSTGRES_USER,
         }
 
 
