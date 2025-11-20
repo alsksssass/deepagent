@@ -216,6 +216,7 @@ class RepoSynthesizerAgent:
                         summaries.append({
                             "git_url": result.get("git_url", ""),
                             "task_uuid": task_uuid,
+                            "base_path": base_path,
                             "status": "success",
                             "total_commits": result.get("total_commits", 0),
                             "total_files": result.get("total_files", 0),
@@ -226,6 +227,7 @@ class RepoSynthesizerAgent:
                         summaries.append({
                             "git_url": result.get("git_url", ""),
                             "task_uuid": task_uuid,
+                            "base_path": base_path,
                             "status": "success",
                             "total_commits": result.get("total_commits", 0),
                             "total_files": result.get("total_files", 0),
@@ -235,6 +237,7 @@ class RepoSynthesizerAgent:
                     summaries.append({
                         "git_url": result.get("git_url", ""),
                         "task_uuid": task_uuid,
+                        "base_path": base_path,
                         "status": "success",
                         "total_commits": result.get("total_commits", 0),
                         "total_files": result.get("total_files", 0),
@@ -408,36 +411,46 @@ class RepoSynthesizerAgent:
                     static_response = store.load_result("static_analyzer", StaticAnalyzerResponse)
                     if static_response:
                         static_dict = static_response.model_dump()
-                        # 핵심 정보만 추출
+                        # 핵심 정보만 추출 (실제 존재하는 필드)
                         repo_data["static_analysis"] = {
                             "loc_stats": static_dict.get("loc_stats", {}),
-                            "complexity_stats": static_dict.get("complexity_stats", {}),
+                            "complexity": static_dict.get("complexity", {}),
                             "type_check": static_dict.get("type_check", {}),
                         }
                 except Exception as e:
                     logger.debug(f"Static analyzer 로드 실패: {e}")
                 
-                # UserAggregator 결과
+                # UserAggregator 결과 (전체 통계)
                 try:
                     user_agg_response = store.load_result("user_aggregator", UserAggregatorResponse)
                     if user_agg_response:
-                        repo_data["user_aggregator"] = user_agg_response.model_dump()
+                        agg_dict = user_agg_response.model_dump()
+                        # aggregate_stats 전체 포함 (품질, 기술, 복잡도 통계)
+                        repo_data["user_aggregator"] = {
+                            "aggregate_stats": agg_dict.get("aggregate_stats", {})
+                        }
                 except Exception as e:
                     logger.debug(f"User aggregator 로드 실패: {e}")
                 
-                # UserSkillProfiler 결과 (핵심 정보만)
+                # UserSkillProfiler 결과 (분석에 핵심적인 필드만)
                 try:
                     skill_profile_response = store.load_result("user_skill_profiler", UserSkillProfilerResponse)
                     if skill_profile_response:
                         skill_dict = skill_profile_response.model_dump()
                         skill_profile_data = skill_dict.get("skill_profile", {})
                         
-                        # 핵심 정보만 추출
+                        # 핵심 정보만 추출 (실제 존재하는 필드)
                         repo_data["skill_profile"] = {
-                            "language_experience": skill_profile_data.get("language_experience", {}),
+                            "total_skills": skill_profile_data.get("total_skills", 0),
+                            "skills_by_level": skill_profile_data.get("skills_by_level", {}),
+                            "skills_by_category": skill_profile_data.get("skills_by_category", {}),
+                            "top_skills": skill_profile_data.get("top_skills", [])[:10],  # 상위 10개만
+                            "total_experience": skill_profile_data.get("total_experience", 0),
+                            "level": skill_profile_data.get("level", {}),
                             "developer_type_coverage": skill_profile_data.get("developer_type_coverage", {}),
-                            "skill_category_coverage": skill_profile_data.get("skill_category_coverage", {}),
-                            "total_skills_identified": skill_profile_data.get("total_skills_identified", 0),
+                            "developer_type_levels": skill_profile_data.get("developer_type_levels", {}),
+                            "category_coverage": skill_profile_data.get("category_coverage", {}),
+                            "total_coverage": skill_profile_data.get("total_coverage", 0),
                         }
                 except Exception as e:
                     logger.debug(f"Skill profiler 로드 실패: {e}")
