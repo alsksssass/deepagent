@@ -108,15 +108,6 @@ async def main_async(args):
     data_dir = Path(os.getenv("DATA_DIR", "./data"))
     data_dir.mkdir(parents=True, exist_ok=True)
 
-    # Skill Charts 경로 설정 (프로젝트 루트 기준)
-    skill_charts_path = os.getenv("SKILL_CHARTS_PATH")
-    if not skill_charts_path:
-        # 프로젝트 루트 기준으로 찾기
-        project_root = Path(__file__).parent
-        skill_charts_path = str(project_root / "skill_charts.csv")
-        if not Path(skill_charts_path).exists():
-            logger.warning(f"⚠️ Skill Charts 파일 없음: {skill_charts_path}")
-
     # Neo4j 설정
     neo4j_uri = os.getenv("NEO4J_URI", "bolt://localhost:7687")
     neo4j_user = os.getenv("NEO4J_USER", "neo4j")
@@ -127,7 +118,6 @@ async def main_async(args):
         sonnet_llm=sonnet_llm,
         haiku_llm=haiku_llm,
         data_dir=data_dir,
-        skill_charts_path=skill_charts_path,
         neo4j_uri=neo4j_uri,
         neo4j_user=neo4j_user,
         neo4j_password=neo4j_password,
