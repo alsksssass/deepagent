@@ -16,6 +16,8 @@ from langchain_aws import ChatBedrockConverse
 
 from core.orchestrator.orchestrator import DeepAgentOrchestrator
 from core.state import AgentState
+from agents.repo_synthesizer import RepoSynthesizerAgent, RepoSynthesizerContext
+from shared.storage import ResultStore
 
 # 로깅 설정
 logging.basicConfig(
@@ -90,6 +92,122 @@ def create_llms() -> tuple[ChatBedrockConverse, ChatBedrockConverse]:
     return sonnet_llm, haiku_llm
 
 
+async def analyze_multiple_repos(
+    orchestrator: DeepAgentOrchestrator,
+    git_urls: list[str],
+    target_user: str | None,
+    data_dir: Path,
+) -> dict:
+    """
+    여러 레포지토리 분석 + 종합 (옵션 1: 최상위 레벨 반복)
+
+    Args:
+        orchestrator: DeepAgentOrchestrator 인스턴스
+        git_urls: Git 레포지토리 URL 리스트
+        target_user: 특정 유저 이메일
+        data_dir: 데이터 디렉토리
+
+    Returns:
+        종합 결과 딕셔너리
+    """
+    logger.info("=" * 60)
+    is_single = len(git_urls) == 1
+    logger.info(f"🚀 {'Single' if is_single else 'Multi'}-Repository Analysis")
+    logger.info("=" * 60)
+    logger.info(f"   레포지토리 수: {len(git_urls)}개")
+    logger.info(f"   Target User: {target_user if target_user else '전체 유저'}")
+    logger.info("")
+
+    # 메인 task UUID 생성 (종합 결과용)
+    import uuid
+    main_task_uuid = str(uuid.uuid4())
+    main_base_path = data_dir / "analyze_multi" / main_task_uuid
+    main_base_path.mkdir(parents=True, exist_ok=True)
+
+    logger.info(f"📂 종합 결과 경로: {main_base_path}")
+    logger.info("")
+
+    # 1. 각 레포지토리 병렬 분석 (각각 setup → plan → execute → finalize)
+    logger.info(f"📦 {len(git_urls)}개 레포지토리 병렬 분석 시작...")
+    logger.info("")
+
+    repo_results = await asyncio.gather(
+        *[orchestrator.run(git_url, target_user) for git_url in git_urls],
+        return_exceptions=True
+    )
+
+    # 결과 정리
+    successful_results = []
+    failed_results = []
+
+    for i, result in enumerate(repo_results):
+        git_url = git_urls[i]
+
+        if isinstance(result, Exception):
+            logger.error(f"❌ {git_url}: {result}")
+            failed_results.append({
+                "git_url": git_url,
+                "error_message": str(result),
+            })
+        else:
+            if result.get("error_message"):
+                logger.error(f"❌ {git_url}: {result.get('error_message')}")
+                failed_results.append({
+                    "git_url": git_url,
+                    "error_message": result.get("error_message"),
+                })
+            else:
+                logger.info(f"✅ {git_url}: 분석 완료")
+                successful_results.append(result)
+
+    logger.info("")
+    logger.info(f"📊 레포지토리 분석 완료: 성공 {len(successful_results)}개, 실패 {len(failed_results)}개")
+    logger.info("")
+
+    # 2. 종합 agent 실행
+    if successful_results:
+        logger.info("🔬 종합 분석 시작...")
+
+        synthesizer = RepoSynthesizerAgent()
+        synthesis_context = RepoSynthesizerContext(
+            task_uuid=main_task_uuid,
+            main_task_uuid=main_task_uuid,
+            main_base_path=str(main_base_path),
+            repo_results=successful_results,
+            target_user=target_user,
+        )
+
+        synthesis_response = await synthesizer.run(synthesis_context)
+
+        logger.info("✅ 종합 분석 완료")
+        logger.info(f"   종합 리포트: {synthesis_response.synthesis_report_path}")
+
+        store = ResultStore(main_task_uuid, main_base_path)
+        store.save_result("repo_synthesizer", synthesis_response)
+
+        return {
+            "main_task_uuid": main_task_uuid,
+            "main_base_path": str(main_base_path),
+            "total_repos": len(git_urls),
+            "successful_repos": len(successful_results),
+            "failed_repos": len(failed_results),
+            "repo_results": successful_results,
+            "failed_results": failed_results,
+            "synthesis": synthesis_response.model_dump(),
+        }
+    else:
+        logger.error("❌ 분석 성공한 레포지토리가 없습니다.")
+        return {
+            "main_task_uuid": main_task_uuid,
+            "main_base_path": str(main_base_path),
+            "total_repos": len(git_urls),
+            "successful_repos": 0,
+            "failed_repos": len(failed_results),
+            "failed_results": failed_results,
+            "error_message": "모든 레포지토리 분석 실패",
+        }
+
+
 async def main_async(args):
     """
     비동기 메인 함수
@@ -123,29 +241,35 @@ async def main_async(args):
         neo4j_password=neo4j_password,
     )
 
-    # 분석 실행
-    final_state = await orchestrator.run(
-        git_url=args.git_url,
+    # 단일/다중 레포 처리 (모두 종합 결과 생성)
+    git_urls = args.git_urls if hasattr(args, 'git_urls') and args.git_urls else [args.git_url]
+
+    # 모든 경우에 analyze_multiple_repos 사용 (1개든 N개든 동일하게 처리)
+    final_result = await analyze_multiple_repos(
+        orchestrator=orchestrator,
+        git_urls=git_urls,
         target_user=args.target_user,
+        data_dir=data_dir,
     )
 
     # 결과 출력
     logger.info("=" * 60)
-    logger.info("📊 분석 완료")
+    logger.info(f"📊 {'Single' if len(git_urls) == 1 else 'Multi'}-Repository 분석 완료")
     logger.info("=" * 60)
 
-    if final_state.get("error_message"):
-        logger.error(f"❌ 에러: {final_state['error_message']}")
+    if final_result.get("error_message"):
+        logger.error(f"❌ 에러: {final_result['error_message']}")
         sys.exit(1)
     else:
-        logger.info(f"✅ 작업 UUID: {final_state['task_uuid']}")
-        logger.info(f"📂 기본 경로: {final_state['base_path']}")
+        logger.info(f"✅ 메인 Task UUID: {final_result['main_task_uuid']}")
+        logger.info(f"📂 종합 결과 경로: {final_result['main_base_path']}")
+        logger.info(f"📦 레포지토리: 성공 {final_result['successful_repos']}개 / 실패 {final_result['failed_repos']}개")
 
-        if final_state.get("final_report_path"):
-            logger.info(f"📄 최종 리포트: {final_state['final_report_path']}")
-
-        if final_state.get("todo_list"):
-            logger.info(f"📋 실행된 작업 수: {len(final_state['todo_list'])}")
+        if final_result.get("synthesis"):
+            synthesis = final_result["synthesis"]
+            logger.info(f"📊 총 커밋: {synthesis.get('total_commits', 0):,}개")
+            logger.info(f"📊 총 파일: {synthesis.get('total_files', 0):,}개")
+            logger.info(f"📄 종합 리포트: {synthesis.get('synthesis_report_path')}")
 
     logger.info("=" * 60)
 
@@ -156,11 +280,18 @@ def main():
     """
     parser = ArgumentParser(description="Deep Agents Code Analysis")
 
-    parser.add_argument(
+    # 단일 레포 또는 다중 레포 지원 (상호 배타적)
+    repo_group = parser.add_mutually_exclusive_group(required=True)
+    repo_group.add_argument(
         "--git-url",
         type=str,
-        required=True,
-        help="분석할 Git 레포지토리 URL (예: https://github.com/user/repo.git)",
+        help="분석할 단일 Git 레포지토리 URL (예: https://github.com/user/repo.git)",
+    )
+    repo_group.add_argument(
+        "--git-urls",
+        type=str,
+        nargs="+",
+        help="분석할 여러 Git 레포지토리 URL (공백으로 구분, 예: https://github.com/user/repo1.git https://github.com/user/repo2.git)",
     )
 
     parser.add_argument(
