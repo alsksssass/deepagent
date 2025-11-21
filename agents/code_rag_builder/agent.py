@@ -8,7 +8,7 @@ import hashlib
 
 import chromadb
 from sentence_transformers import SentenceTransformer
-from shared.tools.chromadb_tools import get_chroma_client
+from shared.tools.chromadb_tools import get_code_chroma_client
 
 from .schemas import CodeRAGBuilderContext, CodeRAGBuilderResponse
 from shared.utils.tree_sitter_utils import (
@@ -46,7 +46,6 @@ class CodeRAGBuilderAgent:
         """
         repo_path = Path(context.repo_path)
         task_uuid = context.task_uuid
-        persist_dir = context.persist_dir
         collection_name = f"code_{task_uuid}"
 
         logger.info(f"🔨 CodeRAGBuilder: {repo_path} RAG 구축 시작")
@@ -58,8 +57,8 @@ class CodeRAGBuilderAgent:
                 None, SentenceTransformer, self.model_name
             )
 
-            # ChromaDB 클라이언트 (싱글톤 사용)
-            self.client = get_chroma_client(persist_dir)
+            # ChromaDB 클라이언트 (task_uuid별 로컬 저장소)
+            self.client = get_code_chroma_client(task_uuid)
 
             # 컬렉션 생성 (기존 것 삭제)
             try:

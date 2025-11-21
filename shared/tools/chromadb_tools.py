@@ -2,9 +2,14 @@
 ChromaDB Tools for Deep Agents
 
 서브에이전트가 사용할 수 있는 ChromaDB 접근 도구
+
+저장소 분리 정책:
+- 스킬차트: 원격 ChromaDB (공유 데이터, 다중 서비스 접근)
+- 코드 RAG: 로컬 ChromaDB (대용량, task별 독립, 빠른 접근)
 """
 
 import logging
+from pathlib import Path
 from typing import Any
 from langchain_core.tools import tool
 import chromadb
@@ -14,26 +19,87 @@ from shared.config.settings import settings as app_settings
 
 logger = logging.getLogger(__name__)
 
-# ChromaDB 클라이언트 (싱글톤)
-_chroma_client: chromadb.ClientAPI | None = None
+# ============================================================
+# 클라이언트 관리 (스킬: 원격, 코드: 로컬)
+# ============================================================
+
+# 스킬차트용 원격 클라이언트 (싱글톤)
+_skill_chroma_client: chromadb.ClientAPI | None = None
+
+# 코드 RAG용 로컬 클라이언트 캐시 (task_uuid별)
+_code_chroma_clients: dict[str, chromadb.ClientAPI] = {}
 
 
-def get_chroma_client() -> chromadb.ClientAPI:
+def get_skill_chroma_client() -> chromadb.ClientAPI:
     """
-    ChromaDB HTTP 클라이언트 가져오기 (싱글톤)
-    
-    마이크로서비스 환경에서는 원격 ChromaDB 서버에 접속합니다.
-    """
-    global _chroma_client
+    스킬차트용 원격 ChromaDB 클라이언트 (싱글톤)
 
-    if _chroma_client is None:
-        logger.info(f"🔧 ChromaDB HTTP 클라이언트 생성: {app_settings.CHROMADB_HOST}:{app_settings.CHROMADB_PORT}")
-        _chroma_client = chromadb.HttpClient(
+    공유 데이터로 원격 서버에 저장됩니다.
+    """
+    global _skill_chroma_client
+
+    if _skill_chroma_client is None:
+        logger.info(f"🔧 스킬차트 ChromaDB (원격): {app_settings.CHROMADB_HOST}:{app_settings.CHROMADB_PORT}")
+        _skill_chroma_client = chromadb.HttpClient(
             host=app_settings.CHROMADB_HOST,
             port=app_settings.CHROMADB_PORT
         )
 
-    return _chroma_client
+    return _skill_chroma_client
+
+
+def get_code_chroma_client(task_uuid: str, base_dir: str | None = None) -> chromadb.ClientAPI:
+    """
+    코드 RAG용 로컬 ChromaDB 클라이언트
+
+    task_uuid별로 독립된 로컬 저장소를 사용합니다.
+
+    Args:
+        task_uuid: 태스크 고유 ID
+        base_dir: 기본 저장 디렉토리
+
+    Returns:
+        PersistentClient for local storage
+    """
+    global _code_chroma_clients
+
+    if task_uuid not in _code_chroma_clients:
+        # 기본 경로: 프로젝트 루트의 data/chroma_db
+        if base_dir is None:
+            base_dir = Path(__file__).parent.parent.parent / "data" / "chroma_db"
+        else:
+            base_dir = Path(base_dir)
+
+        persist_dir = base_dir / task_uuid
+        persist_dir.mkdir(parents=True, exist_ok=True)
+
+        logger.info(f"🔧 코드 RAG ChromaDB (로컬): {persist_dir}")
+        _code_chroma_clients[task_uuid] = chromadb.PersistentClient(
+            path=str(persist_dir)
+        )
+
+    return _code_chroma_clients[task_uuid]
+
+
+def get_chroma_client(persist_dir: str | None = None) -> chromadb.ClientAPI:
+    """
+    하위 호환성을 위한 범용 클라이언트 getter
+
+    - persist_dir 제공: 로컬 PersistentClient (기존 동작 유지)
+    - persist_dir 미제공: 원격 HttpClient (스킬차트용)
+
+    Args:
+        persist_dir: 로컬 저장 경로 (None이면 원격 사용)
+    """
+    if persist_dir:
+        # 로컬 저장소 (기존 code_rag_builder 호환)
+        persist_path = Path(persist_dir)
+        persist_path.mkdir(parents=True, exist_ok=True)
+        logger.info(f"🔧 ChromaDB (로컬): {persist_dir}")
+        return chromadb.PersistentClient(path=str(persist_dir))
+    else:
+        # 원격 서버 (스킬차트)
+        return get_skill_chroma_client()
 
 
 @tool
@@ -43,7 +109,7 @@ async def search_code(
     n_results: int = 5,
 ) -> list[dict[str, Any]]:
     """
-    ChromaDB에서 코드 검색
+    ChromaDB에서 코드 검색 (로컬 저장소 사용)
 
     Args:
         query: 검색 쿼리 (자연어 또는 코드 스니펫)
@@ -63,7 +129,11 @@ async def search_code(
         "src/auth/login.py"
     """
     try:
-        client = get_chroma_client()
+        # collection_name에서 task_uuid 추출 (code_{task_uuid} 형식)
+        task_uuid = collection_name.replace("code_", "") if collection_name.startswith("code_") else collection_name
+
+        # 로컬 클라이언트 사용
+        client = get_code_chroma_client(task_uuid)
         collection = client.get_collection(name=collection_name)
 
         results = collection.query(
@@ -80,7 +150,7 @@ async def search_code(
         ):
             formatted_results.append(
                 {
-                    "file": metadata.get("file_path", "unknown"),
+                    "file": metadata.get("file_path", metadata.get("file", "unknown")),
                     "code": doc,
                     "score": 1.0 - distance,  # 거리 → 유사도 변환
                     "language": metadata.get("language", "unknown"),
@@ -88,11 +158,11 @@ async def search_code(
                 }
             )
 
-        logger.info(f"🔍 ChromaDB 검색: '{query}' - {len(formatted_results)}개 결과")
+        logger.info(f"🔍 코드 검색 (로컬): '{query[:30]}...' - {len(formatted_results)}개 결과")
         return formatted_results
 
     except Exception as e:
-        logger.error(f"❌ ChromaDB 검색 실패: {e}")
+        logger.error(f"❌ 코드 검색 실패: {e}")
         return []
 
 
@@ -135,7 +205,7 @@ async def get_code_context(
     n_results: int = 5,
 ) -> list[dict[str, Any]]:
     """
-    특정 유저의 특정 스킬 관련 코드 컨텍스트 가져오기
+    특정 유저의 특정 스킬 관련 코드 컨텍스트 가져오기 (로컬 저장소)
 
     Args:
         user: 유저 이메일
@@ -154,7 +224,11 @@ async def get_code_context(
         ... )
     """
     try:
-        client = get_chroma_client()
+        # collection_name에서 task_uuid 추출
+        task_uuid = collection_name.replace("code_", "") if collection_name.startswith("code_") else collection_name
+
+        # 로컬 클라이언트 사용
+        client = get_code_chroma_client(task_uuid)
         collection = client.get_collection(name=collection_name)
 
         # 메타데이터 필터링 + 쿼리
@@ -172,7 +246,7 @@ async def get_code_context(
         ):
             formatted_results.append(
                 {
-                    "file": metadata.get("file_path", "unknown"),
+                    "file": metadata.get("file_path", metadata.get("file", "unknown")),
                     "code": doc,
                     "score": 1.0 - distance,
                     "skill": skill,
@@ -180,7 +254,7 @@ async def get_code_context(
                 }
             )
 
-        logger.info(f"🔍 코드 컨텍스트: user={user}, skill={skill} - {len(formatted_results)}개")
+        logger.info(f"🔍 코드 컨텍스트 (로컬): user={user}, skill={skill} - {len(formatted_results)}개")
         return formatted_results
 
     except Exception as e:
@@ -196,7 +270,7 @@ async def query_embeddings(
     n_results: int = 10,
 ) -> list[dict[str, Any]]:
     """
-    고급 벡터 검색 (메타데이터 필터링 포함)
+    고급 벡터 검색 (메타데이터 필터링 포함, 로컬 저장소)
 
     Args:
         query: 검색 쿼리
@@ -215,7 +289,11 @@ async def query_embeddings(
         ... )
     """
     try:
-        client = get_chroma_client()
+        # collection_name에서 task_uuid 추출
+        task_uuid = collection_name.replace("code_", "") if collection_name.startswith("code_") else collection_name
+
+        # 로컬 클라이언트 사용
+        client = get_code_chroma_client(task_uuid)
         collection = client.get_collection(name=collection_name)
 
         results = collection.query(
@@ -232,14 +310,14 @@ async def query_embeddings(
         ):
             formatted_results.append(
                 {
-                    "file": metadata.get("file_path", "unknown"),
+                    "file": metadata.get("file_path", metadata.get("file", "unknown")),
                     "code": doc,
                     "score": 1.0 - distance,
                     "metadata": metadata,
                 }
             )
 
-        logger.info(f"🔍 고급 검색: '{query}' (필터: {filter_metadata}) - {len(formatted_results)}개")
+        logger.info(f"🔍 고급 검색 (로컬): '{query[:30]}...' (필터: {filter_metadata}) - {len(formatted_results)}개")
         return formatted_results
 
     except Exception as e:
