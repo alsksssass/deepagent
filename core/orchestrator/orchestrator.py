@@ -17,7 +17,7 @@ from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver
 
 from core.state import AgentState
-from core.planner.agent import PlannerAgent
+# from core.planner.agent import PlannerAgent
 from shared.storage import ResultStore
 from shared.utils.token_tracker import TokenTracker
 from .config_loader import OrchestratorConfig
@@ -60,7 +60,7 @@ class DeepAgentOrchestrator:
         self.sonnet_llm = sonnet_llm
         self.haiku_llm = haiku_llm
         self.data_dir = data_dir
-        
+
         # Neo4j 설정: 환경 변수 우선, 파라미터 전달 시 오버라이드
         self.neo4j_uri = neo4j_uri or os.getenv("NEO4J_URI", "bolt://localhost:7687")
         self.neo4j_user = neo4j_user or os.getenv("NEO4J_USER", "neo4j")
@@ -70,7 +70,7 @@ class DeepAgentOrchestrator:
         self.config = OrchestratorConfig(config_path)
 
         # Planner
-        self.planner = PlannerAgent(llm=sonnet_llm)
+        # self.planner = PlannerAgent(llm=sonnet_llm)
 
         # LangGraph 워크플로우 생성
         self.workflow = self._create_workflow()
@@ -93,14 +93,15 @@ class DeepAgentOrchestrator:
 
         # 노드 추가
         workflow.add_node("setup", self._setup_node)
-        workflow.add_node("plan", self._plan_node)
+        # workflow.add_node("plan", self._plan_node)
         workflow.add_node("execute", self._execute_node)
         workflow.add_node("finalize", self._finalize_node)
 
         # 엣지 추가
         workflow.set_entry_point("setup")
-        workflow.add_edge("setup", "plan")
-        workflow.add_edge("plan", "execute")
+        # workflow.add_edge("setup", "plan")
+        # workflow.add_edge("plan", "execute")
+        workflow.add_edge("setup", "execute")
         workflow.add_edge("execute", "finalize")
         workflow.add_edge("finalize", END)
 
@@ -170,19 +171,19 @@ class DeepAgentOrchestrator:
         # Task별 로그 디렉토리 생성
         log_dir = base_path / "logs"
         log_dir.mkdir(exist_ok=True)
-        
+
         # Task별 통합 로그 파일 핸들러 추가
         task_log_file = log_dir / "combined.log"
         task_handler = logging.FileHandler(task_log_file, encoding="utf-8")
-        task_handler.setFormatter(logging.Formatter(
-            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-        ))
+        task_handler.setFormatter(
+            logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+        )
         task_handler.setLevel(logging.INFO)
-        
+
         # 루트 로거에 핸들러 추가
         root_logger = logging.getLogger()
         root_logger.addHandler(task_handler)
-        
+
         # Task UUID를 핸들러에 저장 (나중에 제거하기 위해)
         task_handler.task_uuid = task_uuid
 
@@ -272,8 +273,7 @@ class DeepAgentOrchestrator:
             )
             # ChromaDB persist 디렉토리: 환경 변수 우선, 없으면 data_dir/chroma_db
             chromadb_persist_dir = os.getenv(
-                "CHROMADB_PERSIST_DIR",
-                str(self.data_dir / "chroma_db")
+                "CHROMADB_PERSIST_DIR", str(self.data_dir / "chroma_db")
             )
 
             code_rag_ctx = CodeRAGBuilderContext(
@@ -310,16 +310,23 @@ class DeepAgentOrchestrator:
                 if target_user:
                     # Repository ID 생성 (제약조건이 복합 키이므로 필수)
                     from shared.utils.repo_utils import generate_repo_id
+
                     repo_id = generate_repo_id(git_url)
-                    
-                    user_commits = await get_user_commits.ainvoke({
-                        "user_email": target_user,
-                        "repo_id": repo_id,  # 제약조건이 복합 키이므로 필수
-                        "limit": 100,
-                        "neo4j_uri": self.neo4j_uri,
-                        "neo4j_user": self.neo4j_user,
-                        "neo4j_password": self.neo4j_password,
-                    })
+
+                    user_commits = await get_user_commits.ainvoke(
+                        {
+                            "user_email": target_user,
+                            "repo_id": repo_id,  # 제약조건이 복합 키이므로 필수
+                            "limit": 100,
+                            "neo4j_uri": self.neo4j_uri,
+                            "neo4j_user": self.neo4j_user,
+                            "neo4j_password": self.neo4j_password,
+                        }
+                    )
+                    # None 체크
+                    if user_commits is None:
+                        user_commits = []
+                        logger.warning(f"⚠️ 타겟 유저 {target_user}의 커밋을 찾을 수 없습니다.")
                     logger.info(f"🔍 타겟 유저 {target_user}: {len(user_commits)}개 커밋")
                 else:
                     # 전체 유저의 경우: 모든 유저의 최근 커밋 샘플링
@@ -336,14 +343,21 @@ class DeepAgentOrchestrator:
                     RETURN DISTINCT u.email AS email, count(c) AS commit_count
                     ORDER BY commit_count DESC
                     """
-                    all_users = await query_graph.ainvoke({
-                        "cypher_query": all_users_query,
-                        "parameters": {"repo_id": repo_id},
-                        "repo_id": repo_id,
-                        "neo4j_uri": self.neo4j_uri,
-                        "neo4j_user": self.neo4j_user,
-                        "neo4j_password": self.neo4j_password,
-                    })
+                    all_users = await query_graph.ainvoke(
+                        {
+                            "cypher_query": all_users_query,
+                            "parameters": {"repo_id": repo_id},
+                            "repo_id": repo_id,
+                            "neo4j_uri": self.neo4j_uri,
+                            "neo4j_user": self.neo4j_user,
+                            "neo4j_password": self.neo4j_password,
+                        }
+                    )
+
+                    # None 체크
+                    if all_users is None:
+                        all_users = []
+                        logger.warning("⚠️ 유저 목록을 가져올 수 없습니다.")
 
                     logger.info(f"🔍 전체 {len(all_users)}명의 유저 발견")
 
@@ -351,14 +365,19 @@ class DeepAgentOrchestrator:
                     user_commits = []
                     for user_info in all_users:
                         user_email = user_info["email"]
-                        user_sample = await get_user_commits.ainvoke({
-                            "user_email": user_email,
-                            "repo_id": repo_id,  # 제약조건이 복합 키이므로 필수
-                            "limit": 20,
-                            "neo4j_uri": self.neo4j_uri,
-                            "neo4j_user": self.neo4j_user,
-                            "neo4j_password": self.neo4j_password,
-                        })
+                        user_sample = await get_user_commits.ainvoke(
+                            {
+                                "user_email": user_email,
+                                "repo_id": repo_id,  # 제약조건이 복합 키이므로 필수
+                                "limit": 20,
+                                "neo4j_uri": self.neo4j_uri,
+                                "neo4j_user": self.neo4j_user,
+                                "neo4j_password": self.neo4j_password,
+                            }
+                        )
+                        # None 체크
+                        if user_sample is None:
+                            user_sample = []
                         # 각 커밋에 author_email 추가
                         for commit in user_sample:
                             commit["author_email"] = user_email
@@ -388,23 +407,25 @@ class DeepAgentOrchestrator:
                         for commit in batch
                     ]
 
-                    batch_responses = await asyncio.gather(*[
-                        commit_evaluator.run(ctx) for ctx in batch_contexts
-                    ])
+                    batch_responses = await asyncio.gather(
+                        *[commit_evaluator.run(ctx) for ctx in batch_contexts]
+                    )
 
                     # 배치 결과를 ResultStore에 저장 (메모리 효율성: 즉시 저장)
                     batch_id = i // batch_size
                     store.save_batched_result(
                         "commit_evaluator",
                         batch_id,
-                        [resp.model_dump() for resp in batch_responses]
+                        [resp.model_dump() for resp in batch_responses],
                     )
 
                     # 메모리 해제: batch_responses는 더 이상 필요 없음
                     total_evaluated += len(batch_responses)
                     del batch_responses
 
-                    logger.info(f"   {i + len(batch)}/{len(user_commits)} 커밋 평가 완료 (배치 {batch_id} 저장됨)")
+                    logger.info(
+                        f"   {i + len(batch)}/{len(user_commits)} 커밋 평가 완료 (배치 {batch_id} 저장됨)"
+                    )
 
             # Level 1-4: UserAggregator - Pydantic 기반 (스트리밍 처리)
             logger.info("👤 Level 1-4: UserAggregator 실행")
@@ -443,8 +464,7 @@ class DeepAgentOrchestrator:
 
                 # ChromaDB persist 디렉토리 (코드 컬렉션용)
                 chromadb_persist_dir = os.getenv(
-                    "CHROMADB_PERSIST_DIR",
-                    str(self.data_dir / "chroma_db")
+                    "CHROMADB_PERSIST_DIR", str(self.data_dir / "chroma_db")
                 )
 
                 # target_user가 None이면 "ALL_USERS"로 처리 (UserAggregator와 동일)
@@ -479,7 +499,7 @@ class DeepAgentOrchestrator:
                 base_path=str(base_path),
                 git_url=git_url,
                 static_analysis={},  # ResultStore에서 로드하므로 빈 dict
-                user_aggregate={},   # ResultStore에서 로드하므로 빈 dict
+                user_aggregate={},  # ResultStore에서 로드하므로 빈 dict
                 result_store_path=str(store.results_dir),
             )
             report_response = await reporter.run(reporter_ctx)
@@ -491,17 +511,37 @@ class DeepAgentOrchestrator:
                 "repo_path": repo_path,
                 "static_analysis": static_result,  # Reporter 호환성을 위해 유지
                 "neo4j_ready": commit_response.status == "success",
-                "chromadb_ready": rag_result["status"] == "success",  # skill_charts는 독립 스크립트로 사전 구축
+                "chromadb_ready": (
+                    rag_result["status"] == "success"
+                ),  # skill_charts는 독립 스크립트로 사전 구축
                 "total_commits": commit_result.get("total_commits", 0),
                 "total_files": static_result.get("loc_stats", {}).get("total_files", 0),
                 "subagent_results": {
-                    "repo_cloner": {"status": repo_response.status, "path": "results/repo_cloner.json"},
-                    "static_analyzer": {"status": static_response.status, "path": "results/static_analyzer.json"},
-                    "commit_analyzer": {"status": commit_response.status, "path": "results/commit_analyzer.json"},
-                    "code_rag_builder": {"status": rag_response.status, "path": "results/code_rag_builder.json"},
+                    "repo_cloner": {
+                        "status": repo_response.status,
+                        "path": "results/repo_cloner.json",
+                    },
+                    "static_analyzer": {
+                        "status": static_response.status,
+                        "path": "results/static_analyzer.json",
+                    },
+                    "commit_analyzer": {
+                        "status": commit_response.status,
+                        "path": "results/commit_analyzer.json",
+                    },
+                    "code_rag_builder": {
+                        "status": rag_response.status,
+                        "path": "results/code_rag_builder.json",
+                    },
                     # skill_charts_rag_builder는 독립 스크립트로 분리됨
-                    "user_skill_profiler": {"status": skill_profile_result.get("status", "skipped"), "path": "results/user_skill_profiler.json"},
-                    "user_aggregator": {"status": user_agg_result.get("status", "failed"), "path": "results/user_aggregator.json"},
+                    "user_skill_profiler": {
+                        "status": skill_profile_result.get("status", "skipped"),
+                        "path": "results/user_skill_profiler.json",
+                    },
+                    "user_aggregator": {
+                        "status": user_agg_result.get("status", "failed"),
+                        "path": "results/user_aggregator.json",
+                    },
                     "reporter": {"status": report_response.status, "path": "results/reporter.json"},
                 },
                 "final_report_path": report_result.get("report_path"),
@@ -512,7 +552,8 @@ class DeepAgentOrchestrator:
         except Exception as e:
             logger.error(f"❌ Execute 노드 에러: {e}")
             import traceback
-            traceback.print_exc()
+
+            logger.error(f"상세 Traceback:\n{traceback.format_exc()}")
             return {
                 "error_message": str(e),
                 "updated_at": datetime.now().isoformat(),
@@ -539,7 +580,6 @@ class DeepAgentOrchestrator:
 
 ## 실행 결과
 
-TodoList: {len(state.get('todo_list', []))}개 작업
 서브에이전트 결과: {state.get('subagent_results', {})}
 
 **생성 시간**: {datetime.now().isoformat()}
@@ -548,6 +588,7 @@ TodoList: {len(state.get('todo_list', []))}개 작업
         # ResultStore를 통해 리포트 저장 (S3 또는 로컬)
         try:
             from shared.storage import ResultStore
+
             store = ResultStore(task_uuid, base_path)
             report_path = store.save_report("final_report.md", report_content)
             logger.info(f"   리포트 저장: {report_path}")
@@ -563,6 +604,7 @@ TodoList: {len(state.get('todo_list', []))}개 작업
         if log_dir.exists():
             try:
                 from shared.storage import ResultStore
+
                 store = ResultStore(task_uuid, base_path)
                 uploaded_logs = store.upload_log_directory(log_dir)
                 if uploaded_logs:
@@ -575,6 +617,7 @@ TodoList: {len(state.get('todo_list', []))}개 작업
         if debug_dir.exists():
             try:
                 from shared.storage import ResultStore
+
                 store = ResultStore(task_uuid, base_path)
                 # debug 디렉토리를 logs/debug/ 아래에 업로드
                 uploaded_debug = store.upload_log_directory(debug_dir, remote_subdir="debug")
@@ -590,8 +633,7 @@ TodoList: {len(state.get('todo_list', []))}개 작업
         # Task별 로그 핸들러 제거 (메모리 누수 방지)
         root_logger = logging.getLogger()
         handlers_to_remove = [
-            h for h in root_logger.handlers
-            if hasattr(h, 'task_uuid') and h.task_uuid == task_uuid
+            h for h in root_logger.handlers if hasattr(h, 'task_uuid') and h.task_uuid == task_uuid
         ]
         for handler in handlers_to_remove:
             handler.close()

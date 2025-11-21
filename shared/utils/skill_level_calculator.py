@@ -168,7 +168,7 @@ class SkillLevelCalculator:
         """
         try:
             # ChromaDB에서 전체 스킬 조회
-            client = get_chroma_client(persist_dir)
+            client = get_chroma_client()
             collection = client.get_collection(name="skill_charts")
 
             # 전체 스킬 메타데이터 가져오기

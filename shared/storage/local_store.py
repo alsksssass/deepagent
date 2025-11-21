@@ -53,7 +53,11 @@ class LocalStorageBackend(StorageBackend):
         file_path = self.results_dir / f"{agent_name}.json"
 
         try:
-            json_content = result.model_dump_json(indent=2, ensure_ascii=False)
+            json_content = None
+            if isinstance(result, BaseResponse):
+                json_content = result.model_dump_json(indent=2, ensure_ascii=False)
+            else:
+                json_content = json.dumps(result, ensure_ascii=False)
             file_path.write_text(json_content, encoding="utf-8")
 
             logger.info(f"💾 결과 저장 (Local): {agent_name} → {file_path}")
@@ -75,7 +79,10 @@ class LocalStorageBackend(StorageBackend):
         try:
             json_content = file_path.read_text(encoding="utf-8")
             data = json.loads(json_content)
-            result = result_class(**data)
+            if result_class is not None:
+                result = result_class(**data)
+            else:
+                result = data
 
             logger.debug(f"📂 결과 로드 (Local): {agent_name} ← {file_path}")
             return result
