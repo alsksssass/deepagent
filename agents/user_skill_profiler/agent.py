@@ -9,7 +9,7 @@ import chromadb
 
 from pathlib import Path
 from shared.tools.skill_tools import search_skills_by_code, calculate_category_coverage
-from shared.tools.chromadb_tools import get_chroma_client
+from shared.tools.chromadb_tools import get_code_chroma_client
 from shared.utils.prompt_loader import PromptLoader
 from shared.utils.agent_logging import log_agent_execution
 from shared.utils.agent_debug_logger import AgentDebugLogger
@@ -223,7 +223,7 @@ class UserSkillProfilerAgent:
             debug_logger.log_response(error_response)
             return error_response
 
-    async def _collect_user_code(self, task_uuid: str, persist_dir: str) -> list[dict[str, Any]]:
+    async def _collect_user_code(self, task_uuid: str, persist_dir: str = None) -> list[dict[str, Any]]:
         """
         ChromaDB code collection에서 유저 코드 샘플 수집
 
@@ -231,8 +231,8 @@ class UserSkillProfilerAgent:
             코드 샘플 리스트 (각 샘플은 {"code": str, "file": str, "line_start": int, "line_end": int})
         """
         try:
-            # ChromaDB 클라이언트 (싱글톤 사용)
-            client = get_chroma_client(persist_dir)
+            # ChromaDB 클라이언트 (task_uuid별 로컬 저장소)
+            client = get_code_chroma_client(task_uuid)
 
             collection_name = f"code_{task_uuid}"
             collection = client.get_collection(name=collection_name)
