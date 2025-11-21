@@ -91,15 +91,7 @@ def get_chroma_client(persist_dir: str | None = None) -> chromadb.ClientAPI:
     Args:
         persist_dir: 로컬 저장 경로 (None이면 원격 사용)
     """
-    if persist_dir:
-        # 로컬 저장소 (기존 code_rag_builder 호환)
-        persist_path = Path(persist_dir)
-        persist_path.mkdir(parents=True, exist_ok=True)
-        logger.info(f"🔧 ChromaDB (로컬): {persist_dir}")
-        return chromadb.PersistentClient(path=str(persist_dir))
-    else:
-        # 원격 서버 (스킬차트)
-        return get_skill_chroma_client()
+    return get_skill_chroma_client()
 
 
 @tool

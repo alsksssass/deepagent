@@ -171,6 +171,7 @@ class UserSkillProfilerAgent:
 
             # Level 2-3: 스킬 통계 집계
             skill_profile_data = await self._aggregate_skill_profile(detected_skills, persist_dir)
+            logger.info(f"전체 스킬 정보 json 저장: {result_store.save_result("total_skill", detected_skills)}")
             
             # 중간 단계 로깅
             debug_logger.log_intermediate("skill_matching", {
@@ -578,7 +579,7 @@ class UserSkillProfilerAgent:
                 "total": cat_data["total"],
                 "percentage": int(cat_data["percentage"]),  # float → int 변환
             }
-
+        
         # 레벨링 시스템 계산
         total_experience = SkillLevelCalculator.calculate_total_experience(skills)
         level_info = SkillLevelCalculator.calculate_level(total_experience)

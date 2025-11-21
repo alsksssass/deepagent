@@ -3,6 +3,7 @@
 import logging
 import asyncio
 import json
+import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from datetime import datetime
@@ -12,6 +13,7 @@ from langchain_core.messages import SystemMessage, HumanMessage
 from shared.storage import ResultStore
 from shared.utils.prompt_loader import PromptLoader
 from shared.utils.token_tracker import TokenTracker
+from shared.utils.skill_level_calculator import SkillLevelCalculator
 from .schemas import (
     RepoSynthesizerContext,
     RepoSynthesizerResponse,
@@ -79,15 +81,13 @@ class RepoSynthesizerAgent:
             logger.info(f"   총 커밋: {total_commits}, 총 파일: {total_files}")
             logger.info(f"   성공: {successful}개, 실패: {failed}개")
 
-            # 3. target_user가 지정된 경우 UserAnalysisResult 생성
-            user_analysis_result = None
-            if context.target_user:
-                user_analysis_result = await self._generate_user_analysis_result(
-                    context.repo_results,
-                    context.target_user,
-                    context.main_task_uuid,
-                    context.main_base_path,
-                )
+            # 3. UserAnalysisResult 생성
+            user_analysis_result = await self._generate_user_analysis_result(
+                context.repo_results,
+                context.main_task_uuid,
+                context.main_base_path,
+            )
+            context.user_analysis_result = user_analysis_result
 
             # 4. LLM 종합 분석 및 개선 방향 제시
             llm_analysis = await self._generate_llm_analysis(
@@ -112,41 +112,63 @@ class RepoSynthesizerAgent:
                 llm_analysis=llm_analysis,
             )
 
-            # 6. UserAnalysisResult의 markdown, level, tech_stack, 언어별 정보 업데이트
+            # 6. UserAnalysisResult의 markdown, 언어별 정보 업데이트
             if user_analysis_result:
                 user_analysis_result.markdown = report_content
-                
-                # LLM이 생성한 level 정보를 UserAnalysisResult에도 삽입
-                if llm_analysis and llm_analysis.level:
-                    user_analysis_result.level = llm_analysis.level
-                    logger.info(f"   UserAnalysisResult.level 업데이트 완료: level={llm_analysis.level.get('level', 0)}")
-                
-                # LLM이 생성한 tech_stack을 UserAnalysisResult에도 삽입
-                if llm_analysis and llm_analysis.tech_stack:
-                    user_analysis_result.tech_stack = llm_analysis.tech_stack
-                    logger.info(f"   UserAnalysisResult.tech_stack 업데이트 완료: {len(llm_analysis.tech_stack)}개 기술")
                 
                 # LLM이 생성한 언어별 정보를 UserAnalysisResult에 동적 필드로 삽입
                 if llm_analysis:
                     for attr_name in dir(llm_analysis):
                         if not attr_name.startswith('_') and attr_name not in [
-                            'overall_assessment', 'strengths', 'improvement_recommendations',
-                            'role_suitability', 'level', 'tech_stack', 'model_config',
-                            'model_fields', 'model_computed_fields', 'model_dump', 'model_dump_json',
-                            'model_validate', 'model_validate_json', 'model_copy', 'model_post_init',
-                            'model_json_schema', 'model_parametrized_name', 'model_rebuild', 'model_fields_set'
+                            'overall_assessment',
+                            'strengths',
+                            'improvement_recommendations',
+                            'role_suitability',
+                            'model_config',
+                            'model_fields',
+                            'model_computed_fields',
+                            'model_dump',
+                            'model_dump_json',
+                            'model_validate',
+                            'model_validate_json',
+                            'model_copy',
+                            'model_post_init',
+                            'model_json_schema',
+                            'model_parametrized_name',
+                            'model_rebuild',
+                            'model_fields_set'
                         ]:
                             attr_value = getattr(llm_analysis, attr_name, None)
-                            # LanguageInfo 타입인지 확인 (dict with stack, level, exp)
-                            if isinstance(attr_value, dict) and all(k in attr_value for k in ['stack', 'level', 'exp']):
+                            # LanguageInfo 타입인지 확인
+                            if isinstance(attr_value, dict) and all(
+                                k in attr_value
+                                for k in ['stack', 'level', 'exp']
+                            ):
                                 lang_info = LanguageInfo(**attr_value)
-                                setattr(user_analysis_result, attr_name, lang_info)
-                                logger.info(f"   UserAnalysisResult.{attr_name} 업데이트 완료")
+                                setattr(
+                                    user_analysis_result,
+                                    attr_name,
+                                    lang_info
+                                )
+                                logger.info(
+                                    f"   UserAnalysisResult.{attr_name} "
+                                    f"업데이트 완료"
+                                )
                             elif isinstance(attr_value, LanguageInfo):
-                                setattr(user_analysis_result, attr_name, attr_value)
-                                logger.info(f"   UserAnalysisResult.{attr_name} 업데이트 완료")
+                                setattr(
+                                    user_analysis_result,
+                                    attr_name,
+                                    attr_value
+                                )
+                                logger.info(
+                                    f"   UserAnalysisResult.{attr_name} "
+                                    f"업데이트 완료"
+                                )
                 
-                logger.info("   UserAnalysisResult.markdown에 전체 리포트 내용 업데이트 완료")
+                logger.info(
+                    "   UserAnalysisResult.markdown에 "
+                    "전체 리포트 내용 업데이트 완료"
+                )
 
             # 7. 리포트 저장
             main_store = ResultStore(context.main_task_uuid, Path(context.main_base_path))
@@ -171,6 +193,8 @@ class RepoSynthesizerAgent:
 
         except Exception as e:
             logger.error(f"❌ RepoSynthesizer 실패: {e}", exc_info=True)
+            import traceback
+            logger.error(f"상세 Traceback:\n{traceback.format_exc()}")
             return RepoSynthesizerResponse(
                 status="failed",
                 error=str(e),
@@ -293,6 +317,7 @@ class RepoSynthesizerAgent:
                 "repo_summaries": repo_summaries_text,
                 "repo_json_data": repo_json_data,
                 "user_analysis_result": user_analysis_text if user_analysis_text else "없음",
+                
             }
             
             # 프롬프트 생성 (json_schema 변수 자동 주입)
@@ -517,7 +542,6 @@ class RepoSynthesizerAgent:
     async def _generate_user_analysis_result(
         self,
         repo_results: List[Dict[str, Any]],
-        target_user: str,
         main_task_uuid: str,
         main_base_path: str,
     ) -> Optional[UserAnalysisResult]:
@@ -530,7 +554,8 @@ class RepoSynthesizerAgent:
         try:
             # 모든 레포지토리에서 데이터 수집
             all_quality_scores = []  # 품질 점수 리스트
-            all_developer_type_coverage = {}  # 역할별 커버리지
+            all_skills = []  # 모든 레포의 스킬 데이터 (중복 포함)
+            all_tech_stack = set()  # 전체 기술 스택 (중복 제거용)
             
             for result in repo_results:
                 if result.get("error_message"):
@@ -545,6 +570,9 @@ class RepoSynthesizerAgent:
                 try:
                     store = ResultStore(task_uuid, Path(base_path))
                     
+                    all_skills += store.load_result("total_skill", None)
+                    
+                    
                     # 1. UserAggregator 결과에서 품질 점수 수집
                     user_agg_response = store.load_result("user_aggregator", UserAggregatorResponse)
                     user_agg = user_agg_response.model_dump() if user_agg_response else None
@@ -554,18 +582,18 @@ class RepoSynthesizerAgent:
                         if avg_score is not None:
                             all_quality_scores.append(avg_score)
                     
-                    # 2. UserSkillProfiler 결과에서 역할별 커버리지 수집
+                    # 2. UserSkillProfiler 결과에서 스킬 데이터 수집
                     skill_profile_response = store.load_result("user_skill_profiler", UserSkillProfilerResponse)
                     skill_profile = skill_profile_response.model_dump() if skill_profile_response else None
                     
                     if skill_profile and skill_profile.get("skill_profile"):
-                        dev_type_coverage = skill_profile["skill_profile"].get("developer_type_coverage", {})
-                        for role, coverage_data in dev_type_coverage.items():
-                            if role not in all_developer_type_coverage:
-                                all_developer_type_coverage[role] = []
-                            percentage = coverage_data.get("percentage", 0)
-                            if percentage is not None:
-                                all_developer_type_coverage[role].append(percentage)
+                        # top_skills에서 스킬 정보 추출
+                        top_skills = skill_profile["skill_profile"].get("top_skills", [])
+                        for skill in top_skills:
+                            # 기술 스택 추가 (중복 제거)
+                            skill_category = skill.get("category", "")
+                            if skill_category:
+                                all_tech_stack.add(skill_category)
                 
                 except Exception as e:
                     logger.warning(f"⚠️ 레포지토리 {task_uuid} 데이터 수집 실패: {e}")
@@ -573,28 +601,54 @@ class RepoSynthesizerAgent:
             
             # 데이터 집계
             logger.info(f"   품질 점수: {len(all_quality_scores)}개")
-            logger.info(f"   역할 커버리지: {list(all_developer_type_coverage.keys())}")
+            logger.info(f"   수집된 스킬: {len(all_skills)}개 (중복 포함)")
+            logger.info(f"   고유 기술 스택: {len(all_tech_stack)}개")
             
             # 1. clean_code 점수 계산 (평균)
             clean_code_score = 0.0
             if all_quality_scores:
                 clean_code_score = sum(all_quality_scores) / len(all_quality_scores)
             
-            # 2. role 퍼센트 계산 (각 역할별 평균)
-            role_percentages = {}
-            for role, percentages in all_developer_type_coverage.items():
-                if percentages:
-                    role_percentages[role] = int(sum(percentages) / len(percentages))
+            # 2. SkillLevelCalculator로 정확한 레벨 계산
+            total_experience = SkillLevelCalculator.calculate_total_experience(all_skills)
+            logger.info(f"   모든 스킬: {all_skills}")
+            level_info = SkillLevelCalculator.calculate_level(total_experience)
             
-            # UserAnalysisResult 생성 (기본 정보만, 언어별 정보는 LLM이 생성하여 나중에 삽입)
+            logger.info(f"   총 경험치: {total_experience:,} EXP")
+            logger.info(f"   레벨: {level_info['level']} ({level_info['level_name']})")
+            
+            # 3. 개발자 타입별 커버리지 및 레벨 계산
+            chromadb_persist_dir = os.getenv(
+                "CHROMADB_PERSIST_DIR", str(Path(main_base_path).parent.parent / "chroma_db_skill_charts")
+            )
+            developer_type_coverage = await SkillLevelCalculator.calculate_developer_type_coverage(
+                all_skills, chromadb_persist_dir
+            )
+            
+            # developer_type_coverage가 None이거나 비어있을 경우 처리
+            if developer_type_coverage is None:
+                developer_type_coverage = {}
+                logger.warning("⚠️ 개발자 타입별 커버리지 계산 실패, 빈 dict 사용")
+            
+            # 4. role 퍼센트 계산
+            role_percentages = {}
+            for role, coverage_data in developer_type_coverage.items():
+                percentage = coverage_data.get("percentage", 0)
+                role_percentages[role] = float(percentage)
+            
+            logger.info(f"   역할별 커버리지: {list(role_percentages.keys())}")
+            
+            # UserAnalysisResult 생성
             result = UserAnalysisResult(
-                python=LanguageInfo(),  # 빈 초기값, LLM이 채움
+                python=LanguageInfo(),  # 빈 초기값 (언어별 정보는 LLM이 채움)
                 clean_code=round(clean_code_score, 2),
                 role=role_percentages,
                 markdown="",  # 나중에 전체 리포트로 채움
+                level=level_info,  # 정확한 레벨 정보
+                tech_stack=sorted(list(all_tech_stack)) if all_tech_stack else [],  # 전체 기술 스택
             )
             
-            logger.info(f"✅ UserAnalysisResult 기본 생성 완료 (언어별 정보는 LLM이 생성 예정)")
+            logger.info(f"✅ UserAnalysisResult 생성 완료 (정확한 레벨 계산)")
             return result
             
         except Exception as e:
@@ -638,31 +692,41 @@ class RepoSynthesizerAgent:
 """
 
         # target_user가 있고 user_analysis_result가 있으면 추가
-        if target_user and user_analysis_result:
+        if user_analysis_result:
+            # 레벨 정보 먼저 표시 (UserAnalysisResult에서 가져옴)
+            if user_analysis_result.level:
+                level_info = user_analysis_result.level
+                report += "## 🎯 개발자 레벨\n\n"
+                report += f"**레벨**: {level_info.get('level', 0)}\n"
+                report += (
+                    f"**총 경험치**: "
+                    f"{level_info.get('experience', 0):,}\n"
+                )
+                report += (
+                    f"**현재 레벨 경험치**: "
+                    f"{level_info.get('current_level_exp', 0):,} / "
+                    f"{level_info.get('next_level_exp', 0):,}\n"
+                )
+                report += (
+                    f"**진행률**: "
+                    f"{level_info.get('progress_percentage', 0):.1f}%\n\n"
+                )
+            
+            # 기술 스택 표시 (UserAnalysisResult에서 가져옴)
+            if user_analysis_result.tech_stack and len(user_analysis_result.tech_stack) > 0:
+                report += "기술 스택\n\n"
+                # 5개씩 줄바꾸어 표시
+                for i in range(0, len(user_analysis_result.tech_stack), 5):
+                    chunk = user_analysis_result.tech_stack[i:i+5]
+                    report += f"`{'` · `'.join(chunk)}`\n"
+                report += "\n"
+            
             report += user_analysis_result.markdown
             report += "\n---\n\n"
 
         # LLM 분석 결과 추가
         if llm_analysis:
             report += "## 🤖 LLM 종합 분석 및 개선 방향\n\n"
-            
-            # 레벨 정보 (최상단 표시)
-            if llm_analysis.level:
-                level_info = llm_analysis.level
-                report += "### 🎯 개발자 레벨\n\n"
-                report += f"**레벨**: {level_info.get('level', 0)}\n"
-                report += f"**총 경험치**: {level_info.get('experience', 0):,}\n"
-                report += f"**현재 레벨 경험치**: {level_info.get('current_level_exp', 0):,} / {level_info.get('next_level_exp', 0):,}\n"
-                report += f"**진행률**: {level_info.get('progress_percentage', 0):.1f}%\n\n"
-            
-            # 기술 스택 (레벨 다음 표시)
-            if llm_analysis.tech_stack:
-                report += "### 🛠️ 기술 스택\n\n"
-                # 5개씩 줄바꿈하여 표시
-                for i in range(0, len(llm_analysis.tech_stack), 5):
-                    chunk = llm_analysis.tech_stack[i:i+5]
-                    report += f"`{'` · `'.join(chunk)}`\n"
-                report += "\n"
             
             report += f"### 종합 평가\n\n{llm_analysis.overall_assessment}\n\n"
             
