@@ -61,6 +61,10 @@ class Settings(BaseSettings):
     # Local 설정
     LOCAL_DATA_DIR: Path = Path("./data")
 
+    # === State Backend ===
+    STATE_BACKEND: str = "local"  # local or dynamodb
+    DYNAMODB_STATE_TABLE: str = "deep-agents-state"
+
     # === Graph Database (Neo4j) ===
     # 로컬 개발: bolt://localhost:7687
     # AWS EC2: bolt://ec2-xxx-xxx-xxx-xxx.compute.amazonaws.com:7687

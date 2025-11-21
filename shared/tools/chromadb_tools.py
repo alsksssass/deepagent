@@ -10,26 +10,30 @@ from langchain_core.tools import tool
 import chromadb
 from chromadb.config import Settings
 
+from shared.config.settings import settings as app_settings
+
 logger = logging.getLogger(__name__)
 
-# ChromaDB 클라이언트 (싱글톤 - persist_dir별로 관리)
-_chroma_clients: dict[str, chromadb.ClientAPI] = {}
+# ChromaDB 클라이언트 (싱글톤)
+_chroma_client: chromadb.ClientAPI | None = None
 
 
-def get_chroma_client(persist_dir: str) -> chromadb.ClientAPI:
+def get_chroma_client() -> chromadb.ClientAPI:
     """
-    ChromaDB 클라이언트 가져오기 (싱글톤 - persist_dir별로 캐싱)
-
-    여러 persist_dir를 사용하는 경우 각각 별도 클라이언트 유지
+    ChromaDB HTTP 클라이언트 가져오기 (싱글톤)
+    
+    마이크로서비스 환경에서는 원격 ChromaDB 서버에 접속합니다.
     """
-    global _chroma_clients
+    global _chroma_client
 
-    # persist_dir별로 클라이언트 캐싱
-    if persist_dir not in _chroma_clients:
-        logger.info(f"🔧 ChromaDB 클라이언트 생성: {persist_dir}")
-        _chroma_clients[persist_dir] = chromadb.PersistentClient(path=persist_dir)
+    if _chroma_client is None:
+        logger.info(f"🔧 ChromaDB HTTP 클라이언트 생성: {app_settings.CHROMADB_HOST}:{app_settings.CHROMADB_PORT}")
+        _chroma_client = chromadb.HttpClient(
+            host=app_settings.CHROMADB_HOST,
+            port=app_settings.CHROMADB_PORT
+        )
 
-    return _chroma_clients[persist_dir]
+    return _chroma_client
 
 
 @tool
@@ -37,7 +41,6 @@ async def search_code(
     query: str,
     collection_name: str,
     n_results: int = 5,
-    persist_dir: str = "./data/chroma_db",
 ) -> list[dict[str, Any]]:
     """
     ChromaDB에서 코드 검색
@@ -46,7 +49,6 @@ async def search_code(
         query: 검색 쿼리 (자연어 또는 코드 스니펫)
         collection_name: ChromaDB 컬렉션 이름 (예: "code_{task_uuid}")
         n_results: 반환할 결과 수
-        persist_dir: ChromaDB 저장 디렉토리
 
     Returns:
         검색 결과 리스트 [{"file": str, "code": str, "score": float}, ...]
@@ -61,7 +63,7 @@ async def search_code(
         "src/auth/login.py"
     """
     try:
-        client = get_chroma_client(persist_dir)
+        client = get_chroma_client()
         collection = client.get_collection(name=collection_name)
 
         results = collection.query(
@@ -99,7 +101,6 @@ async def find_similar_code(
     code_snippet: str,
     collection_name: str,
     n_results: int = 3,
-    persist_dir: str = "./data/chroma_db",
 ) -> list[dict[str, Any]]:
     """
     유사한 코드 패턴 찾기
@@ -108,7 +109,6 @@ async def find_similar_code(
         code_snippet: 비교할 코드 스니펫
         collection_name: ChromaDB 컬렉션 이름
         n_results: 반환할 결과 수
-        persist_dir: ChromaDB 저장 디렉토리
 
     Returns:
         유사 코드 리스트
@@ -124,7 +124,6 @@ async def find_similar_code(
         query=code_snippet,
         collection_name=collection_name,
         n_results=n_results,
-        persist_dir=persist_dir,
     )
 
 
@@ -134,7 +133,6 @@ async def get_code_context(
     skill: str,
     collection_name: str,
     n_results: int = 5,
-    persist_dir: str = "./data/chroma_db",
 ) -> list[dict[str, Any]]:
     """
     특정 유저의 특정 스킬 관련 코드 컨텍스트 가져오기
@@ -144,7 +142,6 @@ async def get_code_context(
         skill: 스킬 이름 (예: "React", "Django", "PostgreSQL")
         collection_name: ChromaDB 컬렉션 이름
         n_results: 반환할 결과 수
-        persist_dir: ChromaDB 저장 디렉토리
 
     Returns:
         관련 코드 컨텍스트 리스트
@@ -157,7 +154,7 @@ async def get_code_context(
         ... )
     """
     try:
-        client = get_chroma_client(persist_dir)
+        client = get_chroma_client()
         collection = client.get_collection(name=collection_name)
 
         # 메타데이터 필터링 + 쿼리
@@ -197,7 +194,6 @@ async def query_embeddings(
     collection_name: str,
     filter_metadata: dict[str, Any] | None = None,
     n_results: int = 10,
-    persist_dir: str = "./data/chroma_db",
 ) -> list[dict[str, Any]]:
     """
     고급 벡터 검색 (메타데이터 필터링 포함)
@@ -207,7 +203,6 @@ async def query_embeddings(
         collection_name: ChromaDB 컬렉션 이름
         filter_metadata: 메타데이터 필터 (예: {"language": "python", "user": "user@example.com"})
         n_results: 반환할 결과 수
-        persist_dir: ChromaDB 저장 디렉토리
 
     Returns:
         필터링된 검색 결과
@@ -220,7 +215,7 @@ async def query_embeddings(
         ... )
     """
     try:
-        client = get_chroma_client(persist_dir)
+        client = get_chroma_client()
         collection = client.get_collection(name=collection_name)
 
         results = collection.query(
