@@ -371,3 +371,37 @@ class AnalysisDBWriter:
             )
             result = await session.execute(stmt)
             return list(result.scalars().all())
+
+    async def get_user_access_token(self, user_id: UUID) -> Optional[str]:
+        """
+        사용자의 Git 액세스 토큰 조회
+
+        Args:
+            user_id: 사용자 UUID
+
+        Returns:
+            access_token 문자열 또는 None (토큰이 없거나 사용자가 없는 경우)
+        """
+        try:
+            async with self._get_session() as session:
+                # users 테이블에서 access_token 조회
+                # SQLAlchemy Core를 사용하여 직접 쿼리 (모델이 없을 수 있음)
+                from sqlalchemy import text
+                
+                stmt = text("SELECT access_token FROM users WHERE id = :user_id")
+                result = await session.execute(stmt, {"user_id": str(user_id)})
+                row = result.fetchone()
+                
+                if row and row[0]:
+                    token = row[0]
+                    # 토큰 마스킹하여 로그 출력 (보안)
+                    masked_token = f"{token[:4]}...{token[-4:]}" if len(token) > 8 else "****"
+                    logger.debug(f"✅ 사용자 {user_id}의 액세스 토큰 조회 성공: {masked_token}")
+                    return token
+                else:
+                    logger.debug(f"ℹ️  사용자 {user_id}의 액세스 토큰이 없습니다")
+                    return None
+        except Exception as e:
+            # users 테이블이 없거나 오류 발생 시 None 반환 (퍼블릭 레포 시도)
+            logger.warning(f"⚠️  액세스 토큰 조회 실패 (사용자 {user_id}): {e}")
+            return None
