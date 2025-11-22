@@ -56,6 +56,8 @@ class DeepAgentOrchestrator:
         neo4j_user: str | None = None,
         neo4j_password: str | None = None,
         config_path: Path | None = None,
+        user_id: uuid.UUID | None = None,
+        db_writer: Any | None = None,
     ):
         self.sonnet_llm = sonnet_llm
         self.haiku_llm = haiku_llm
@@ -65,6 +67,10 @@ class DeepAgentOrchestrator:
         self.neo4j_uri = neo4j_uri or os.getenv("NEO4J_URI", "bolt://localhost:7687")
         self.neo4j_user = neo4j_user or os.getenv("NEO4J_USER", "neo4j")
         self.neo4j_password = neo4j_password or os.getenv("NEO4J_PASSWORD", "password")
+
+        # DB Writer (옵셔널: Batch 모드에서만 사용)
+        self.user_id = user_id
+        self.db_writer = db_writer
 
         # Orchestrator 설정 로드
         self.config = OrchestratorConfig(config_path)
@@ -161,6 +167,7 @@ class DeepAgentOrchestrator:
 
         작업 디렉토리 생성 및 기본 경로 설정
         Task별 로그 파일 핸들러 추가
+        DB 레코드 생성 (PROCESSING 상태)
         """
         logger.info("⚙️  Setup: 작업 초기화")
 
@@ -189,6 +196,26 @@ class DeepAgentOrchestrator:
 
         logger.info(f"   작업 경로: {base_path}")
         logger.info(f"   로그 파일: {task_log_file}")
+
+        # DB Writer가 있으면 빈 레코드 생성 (PROCESSING 상태)
+        if self.db_writer and self.user_id:
+            try:
+                from shared.graph_db import AnalysisStatus
+
+                git_url = state["git_url"]
+                task_uuid_obj = uuid.UUID(task_uuid)
+
+                await self.db_writer.save_repository_analysis(
+                    user_id=self.user_id,
+                    repository_url=git_url,
+                    result={},  # 빈 결과
+                    task_uuid=task_uuid_obj,
+                    status=AnalysisStatus.PROCESSING,
+                    error_message=None
+                )
+                logger.info(f"📊 DB 레코드 생성 완료: {task_uuid} (PROCESSING)")
+            except Exception as e:
+                logger.warning(f"⚠️ DB 레코드 생성 실패: {e}")
 
         return {
             "base_path": str(base_path),
@@ -565,6 +592,7 @@ class DeepAgentOrchestrator:
 
         결과 저장 및 리포트 생성
         Task별 로그 핸들러 제거
+        DB 결과 업데이트 (COMPLETED 또는 FAILED)
         """
         logger.info("🎉 Finalize: 작업 완료 처리")
 
@@ -639,6 +667,34 @@ class DeepAgentOrchestrator:
             handler.close()
             root_logger.removeHandler(handler)
             logger.debug(f"   로그 핸들러 제거: {task_uuid}")
+
+        # DB Writer가 있으면 결과 업데이트
+        if self.db_writer and self.user_id:
+            try:
+                from shared.graph_db import AnalysisStatus
+                from shared.storage import ResultStore
+
+                # ResultStore에서 user_aggregator 결과 로드
+                store = ResultStore(task_uuid, base_path)
+                user_agg_result = store.load_result("user_aggregator")
+
+                # 에러 여부 확인
+                has_error = state.get("error_message") is not None
+                status = AnalysisStatus.FAILED if has_error else AnalysisStatus.COMPLETED
+                error_message = state.get("error_message")
+
+                task_uuid_obj = uuid.UUID(task_uuid)
+
+                # DB 업데이트
+                await self.db_writer.update_repository_result(
+                    task_uuid=task_uuid_obj,
+                    result=user_agg_result if user_agg_result else {},
+                    status=status,
+                    error_message=error_message
+                )
+                logger.info(f"📊 DB 결과 업데이트 완료: {task_uuid} ({status.value})")
+            except Exception as e:
+                logger.warning(f"⚠️ DB 결과 업데이트 실패: {e}")
 
         return {
             "final_report_path": str(report_path),

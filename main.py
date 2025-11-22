@@ -274,14 +274,170 @@ async def main_async(args):
     logger.info("=" * 60)
 
 
+async def main_batch_mode():
+    """
+    AWS Batch 모드 메인 함수
+
+    환경 변수에서 설정을 읽어 단일/다중 레포지토리 분석 실행
+    - USER_ID: 사용자 UUID (필수)
+    - GIT_URLS: Git 레포지토리 URL (필수, 쉼표 구분으로 다중 레포 지원)
+      예: "https://github.com/user/repo1" (단일)
+      예: "https://github.com/user/repo1,https://github.com/user/repo2" (다중)
+    - TARGET_USER: 특정 유저 이메일 (옵셔널)
+    """
+    logger.info("==" * 30)
+    logger.info("🚀 Deep Agents Batch Mode")
+    logger.info("==" * 30)
+
+    # 환경 변수 로드
+    load_environment()
+
+    # 필수 환경 변수 검증
+    user_id_str = os.getenv("USER_ID")
+    git_urls_str = os.getenv("GIT_URLS")
+
+    if not user_id_str:
+        logger.error("❌ USER_ID 환경 변수가 설정되지 않았습니다")
+        sys.exit(1)
+
+    if not git_urls_str:
+        logger.error("❌ GIT_URLS 환경 변수가 설정되지 않았습니다")
+        sys.exit(1)
+
+    # UUID 변환
+    try:
+        user_id = uuid.UUID(user_id_str)
+    except ValueError as e:
+        logger.error(f"❌ USER_ID 형식이 올바르지 않습니다: {user_id_str}")
+        sys.exit(1)
+
+    # Git URLs 파싱 (쉼표로 구분)
+    git_urls = [url.strip() for url in git_urls_str.split(",") if url.strip()]
+
+    if not git_urls:
+        logger.error("❌ GIT_URLS가 비어있습니다")
+        sys.exit(1)
+
+    # 옵셔널 환경 변수
+    target_user = os.getenv("TARGET_USER")
+    is_multi_repo = len(git_urls) > 1
+
+    logger.info(f"📋 Batch 설정:")
+    logger.info(f"   USER_ID: {user_id}")
+    logger.info(f"   모드: {'다중 레포지토리' if is_multi_repo else '단일 레포지토리'}")
+    logger.info(f"   레포지토리 수: {len(git_urls)}개")
+    for i, url in enumerate(git_urls, 1):
+        logger.info(f"   [{i}] {url}")
+    logger.info(f"   TARGET_USER: {target_user if target_user else '전체 유저'}")
+    logger.info("")
+
+    # LLM 생성
+    sonnet_llm, haiku_llm = create_llms()
+
+    # 데이터 디렉토리 설정
+    data_dir = Path(os.getenv("DATA_DIR", "./data"))
+    data_dir.mkdir(parents=True, exist_ok=True)
+
+    # Neo4j 설정
+    neo4j_uri = os.getenv("NEO4J_URI", "bolt://localhost:7687")
+    neo4j_user = os.getenv("NEO4J_USER", "neo4j")
+    neo4j_password = os.getenv("NEO4J_PASSWORD", "password")
+
+    # AnalysisDBWriter 초기화
+    logger.info("🔧 AnalysisDBWriter 초기화 중...")
+    try:
+        from shared.graph_db import AnalysisDBWriter
+
+        db_writer = await AnalysisDBWriter.initialize(
+            echo=False,
+            create_tables=False  # 프로덕션에서는 테이블이 이미 존재
+        )
+        logger.info("✅ DB Writer 초기화 완료\n")
+    except Exception as e:
+        logger.error(f"❌ DB Writer 초기화 실패: {e}")
+        sys.exit(1)
+
+    # Orchestrator 생성 (DB Writer 포함)
+    orchestrator = DeepAgentOrchestrator(
+        sonnet_llm=sonnet_llm,
+        haiku_llm=haiku_llm,
+        data_dir=data_dir,
+        neo4j_uri=neo4j_uri,
+        neo4j_user=neo4j_user,
+        neo4j_password=neo4j_password,
+        user_id=user_id,
+        db_writer=db_writer,
+    )
+
+    # 단일/다중 레포지토리 분석 실행
+    try:
+        if is_multi_repo:
+            # 다중 레포지토리: analyze_multiple_repos 사용
+            logger.info(f"🚀 다중 레포지토리 분석 시작: {len(git_urls)}개")
+            final_result = await analyze_multiple_repos(
+                orchestrator=orchestrator,
+                git_urls=git_urls,
+                target_user=target_user,
+                data_dir=data_dir,
+            )
+        else:
+            # 단일 레포지토리: orchestrator.run 사용
+            logger.info(f"🚀 단일 레포지토리 분석 시작")
+            final_result = await orchestrator.run(
+                git_url=git_urls[0],
+                target_user=target_user,
+            )
+
+        # 결과 출력
+        logger.info("==" * 30)
+        logger.info("📊 Batch 분석 완료")
+        logger.info("==" * 30)
+
+        if final_result.get("error_message"):
+            logger.error(f"❌ 에러: {final_result['error_message']}")
+            sys.exit(1)
+        else:
+            if is_multi_repo:
+                # 다중 레포 결과
+                logger.info(f"✅ Main Task UUID: {final_result.get('main_task_uuid')}")
+                logger.info(f"📂 Main Base Path: {final_result.get('main_base_path')}")
+                logger.info(f"📦 성공: {final_result.get('successful_repos', 0)}개 / 실패: {final_result.get('failed_repos', 0)}개")
+                if final_result.get("synthesis"):
+                    synthesis = final_result["synthesis"]
+                    logger.info(f"📊 총 커밋: {synthesis.get('total_commits', 0):,}개")
+                    logger.info(f"📊 총 파일: {synthesis.get('total_files', 0):,}개")
+            else:
+                # 단일 레포 결과
+                logger.info(f"✅ Task UUID: {final_result['task_uuid']}")
+                logger.info(f"📂 Base Path: {final_result['base_path']}")
+                logger.info(f"📊 총 커밋: {final_result.get('total_commits', 0):,}개")
+                logger.info(f"📊 총 파일: {final_result.get('total_files', 0):,}개")
+            logger.info("==" * 30)
+
+    except Exception as e:
+        logger.exception(f"❌ Batch 실행 중 예외 발생: {e}")
+        sys.exit(1)
+
+    finally:
+        # DB Writer 종료
+        await AnalysisDBWriter.close()
+
+
 def main():
     """
     동기 메인 함수 (CLI 진입점)
     """
     parser = ArgumentParser(description="Deep Agents Code Analysis")
 
-    # 단일 레포 또는 다중 레포 지원 (상호 배타적)
-    repo_group = parser.add_mutually_exclusive_group(required=True)
+    # Batch 모드 플래그 추가
+    parser.add_argument(
+        "--batch-mode",
+        action="store_true",
+        help="AWS Batch 모드로 실행 (환경 변수에서 설정 읽기)",
+    )
+
+    # 단일 레포 또는 다중 레포 지원 (상호 배타적, batch-mode가 아닐 때만 필수)
+    repo_group = parser.add_mutually_exclusive_group(required=False)
     repo_group.add_argument(
         "--git-url",
         type=str,
@@ -317,15 +473,31 @@ def main():
     # 로그 디렉토리 생성
     Path("logs").mkdir(exist_ok=True)
 
-    # 비동기 실행
-    try:
-        asyncio.run(main_async(args))
-    except KeyboardInterrupt:
-        logger.info("\n⚠️  사용자에 의해 중단됨")
-        sys.exit(0)
-    except Exception as e:
-        logger.exception(f"❌ 예외 발생: {e}")
-        sys.exit(1)
+    # Batch 모드 분기
+    if args.batch_mode:
+        logger.info("🔄 Batch 모드로 실행")
+        try:
+            asyncio.run(main_batch_mode())
+        except KeyboardInterrupt:
+            logger.info("\n⚠️  사용자에 의해 중단됨")
+            sys.exit(0)
+        except Exception as e:
+            logger.exception(f"❌ Batch 모드 예외 발생: {e}")
+            sys.exit(1)
+    else:
+        # 일반 모드에서는 git-url 또는 git-urls가 필수
+        if not args.git_url and not args.git_urls:
+            parser.error("--git-url 또는 --git-urls 중 하나는 필수입니다 (--batch-mode가 아닌 경우)")
+
+        # 비동기 실행
+        try:
+            asyncio.run(main_async(args))
+        except KeyboardInterrupt:
+            logger.info("\n⚠️  사용자에 의해 중단됨")
+            sys.exit(0)
+        except Exception as e:
+            logger.exception(f"❌ 예외 발생: {e}")
+            sys.exit(1)
 
 
 if __name__ == "__main__":
