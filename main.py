@@ -369,24 +369,15 @@ async def main_batch_mode():
         db_writer=db_writer,
     )
 
-    # 단일/다중 레포지토리 분석 실행
+    # 단일/다중 레포지토리 분석 실행 (모두 analyze_multiple_repos로 통합)
     try:
-        if is_multi_repo:
-            # 다중 레포지토리: analyze_multiple_repos 사용
-            logger.info(f"🚀 다중 레포지토리 분석 시작: {len(git_urls)}개")
-            final_result = await analyze_multiple_repos(
-                orchestrator=orchestrator,
-                git_urls=git_urls,
-                target_user=target_user,
-                data_dir=data_dir,
-            )
-        else:
-            # 단일 레포지토리: orchestrator.run 사용
-            logger.info(f"🚀 단일 레포지토리 분석 시작")
-            final_result = await orchestrator.run(
-                git_url=git_urls[0],
-                target_user=target_user,
-            )
+        logger.info(f"🚀 레포지토리 분석 시작: {len(git_urls)}개")
+        final_result = await analyze_multiple_repos(
+            orchestrator=orchestrator,
+            git_urls=git_urls,
+            target_user=target_user,
+            data_dir=data_dir,
+        )
 
         # 결과 출력
         logger.info("==" * 30)
@@ -397,21 +388,14 @@ async def main_batch_mode():
             logger.error(f"❌ 에러: {final_result['error_message']}")
             sys.exit(1)
         else:
-            if is_multi_repo:
-                # 다중 레포 결과
-                logger.info(f"✅ Main Task UUID: {final_result.get('main_task_uuid')}")
-                logger.info(f"📂 Main Base Path: {final_result.get('main_base_path')}")
-                logger.info(f"📦 성공: {final_result.get('successful_repos', 0)}개 / 실패: {final_result.get('failed_repos', 0)}개")
-                if final_result.get("synthesis"):
-                    synthesis = final_result["synthesis"]
-                    logger.info(f"📊 총 커밋: {synthesis.get('total_commits', 0):,}개")
-                    logger.info(f"📊 총 파일: {synthesis.get('total_files', 0):,}개")
-            else:
-                # 단일 레포 결과
-                logger.info(f"✅ Task UUID: {final_result['task_uuid']}")
-                logger.info(f"📂 Base Path: {final_result['base_path']}")
-                logger.info(f"📊 총 커밋: {final_result.get('total_commits', 0):,}개")
-                logger.info(f"📊 총 파일: {final_result.get('total_files', 0):,}개")
+            # 통합된 결과 출력 (단일/다중 모두 동일한 형식)
+            logger.info(f"✅ Main Task UUID: {final_result.get('main_task_uuid')}")
+            logger.info(f"📂 Main Base Path: {final_result.get('main_base_path')}")
+            logger.info(f"📦 성공: {final_result.get('successful_repos', 0)}개 / 실패: {final_result.get('failed_repos', 0)}개")
+            if final_result.get("synthesis"):
+                synthesis = final_result["synthesis"]
+                logger.info(f"📊 총 커밋: {synthesis.get('total_commits', 0):,}개")
+                logger.info(f"📊 총 파일: {synthesis.get('total_files', 0):,}개")
             logger.info("==" * 30)
 
     except Exception as e:

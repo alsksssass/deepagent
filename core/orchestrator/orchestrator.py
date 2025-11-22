@@ -156,10 +156,48 @@ class DeepAgentOrchestrator:
 
         # 워크플로우 실행
         config = {"configurable": {"thread_id": initial_state["task_uuid"]}}
-        final_state = await self.app.ainvoke(initial_state, config=config)
 
-        logger.info("✅ Deep Agents 분석 완료")
-        return final_state
+        try:
+            final_state = await self.app.ainvoke(initial_state, config=config)
+            logger.info("✅ Deep Agents 분석 완료")
+            return final_state
+        except Exception as e:
+            # 워크플로우 외부에서 예외 발생 시 DB FAILED 업데이트
+            logger.exception(f"❌ 워크플로우 실행 중 예외 발생: {e}")
+
+            if self.db_writer and self.user_id:
+                try:
+                    from shared.graph_db import AnalysisStatus
+
+                    task_uuid_obj = uuid.UUID(initial_state["task_uuid"])
+
+                    # 기존 레코드가 있으면 FAILED로 업데이트
+                    existing = await self.db_writer.get_repository_analysis(task_uuid_obj)
+                    if existing:
+                        await self.db_writer.update_repository_result(
+                            task_uuid=task_uuid_obj,
+                            result={},
+                            status=AnalysisStatus.FAILED,
+                            error_message=str(e)
+                        )
+                        logger.info(f"📊 DB FAILED 업데이트 완료: {initial_state['task_uuid']}")
+                    else:
+                        # 레코드가 없으면 생성 (setup_node 실패 시)
+                        await self.db_writer.save_repository_analysis(
+                            user_id=self.user_id,
+                            repository_url=git_url,
+                            result={},
+                            task_uuid=task_uuid_obj,
+                            status=AnalysisStatus.FAILED,
+                            error_message=str(e)
+                        )
+                        logger.info(f"📊 DB FAILED 레코드 생성 완료: {initial_state['task_uuid']}")
+                except Exception as db_err:
+                    logger.warning(f"⚠️ DB FAILED 업데이트 실패: {db_err}")
+
+            # 에러 정보를 포함한 상태 반환
+            initial_state["error_message"] = str(e)
+            return initial_state
 
     async def _setup_node(self, state: AgentState) -> dict[str, Any]:
         """
@@ -205,15 +243,21 @@ class DeepAgentOrchestrator:
                 git_url = state["git_url"]
                 task_uuid_obj = uuid.UUID(task_uuid)
 
-                await self.db_writer.save_repository_analysis(
-                    user_id=self.user_id,
-                    repository_url=git_url,
-                    result={},  # 빈 결과
-                    task_uuid=task_uuid_obj,
-                    status=AnalysisStatus.PROCESSING,
-                    error_message=None
-                )
-                logger.info(f"📊 DB 레코드 생성 완료: {task_uuid} (PROCESSING)")
+                # 기존 레코드 확인 (중복 방지)
+                existing = await self.db_writer.get_repository_analysis(task_uuid_obj)
+                if existing:
+                    logger.info(f"📊 기존 DB 레코드 재사용: {task_uuid} (상태: {existing.status.value})")
+                else:
+                    # 새 레코드 생성
+                    await self.db_writer.save_repository_analysis(
+                        user_id=self.user_id,
+                        repository_url=git_url,
+                        result={},  # 빈 결과
+                        task_uuid=task_uuid_obj,
+                        status=AnalysisStatus.PROCESSING,
+                        error_message=None
+                    )
+                    logger.info(f"📊 DB 레코드 생성 완료: {task_uuid} (PROCESSING)")
             except Exception as e:
                 logger.warning(f"⚠️ DB 레코드 생성 실패: {e}")
 
