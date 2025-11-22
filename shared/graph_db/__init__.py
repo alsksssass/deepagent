@@ -3,11 +3,15 @@ Graph Database utilities for Deep Agents
 
 그래프 데이터베이스 추상화 레이어 (Neo4j 전용)
 Neptune은 비용 문제로 제외, EC2 Docker Neo4j 사용
+
+분석 결과 저장을 위한 SQLAlchemy 모델 및 DB Writer 포함
 """
 
 from shared.config import settings
 from .base import GraphDBBackend
 from .neo4j_backend import Neo4jBackend
+from .models import Base, RepositoryAnalysis, Analysis, AnalysisStatus
+from .db_writer import AnalysisDBWriter
 
 
 def create_graph_db_backend() -> GraphDBBackend:
@@ -34,4 +38,9 @@ __all__ = [
     "GraphDBBackend",
     "Neo4jBackend",
     "create_graph_db_backend",
+    "Base",
+    "RepositoryAnalysis",
+    "Analysis",
+    "AnalysisStatus",
+    "AnalysisDBWriter",
 ]
