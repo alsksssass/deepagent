@@ -171,7 +171,15 @@ class UserSkillProfilerAgent:
 
             # Level 2-3: 스킬 통계 집계
             skill_profile_data = await self._aggregate_skill_profile(detected_skills, persist_dir)
-            logger.info(f"전체 스킬 정보 json 저장: {result_store.save_result("total_skill", detected_skills)}")
+
+            # detected_skills를 JSON으로 저장 (Pydantic 모델이 아니므로 직접 JSON 저장)
+            import json
+            total_skill_path = result_store.result_dir / "total_skill.json"
+            total_skill_path.write_text(
+                json.dumps(detected_skills, indent=2, ensure_ascii=False),
+                encoding='utf-8'
+            )
+            logger.info(f"전체 스킬 정보 json 저장: {total_skill_path}")
             
             # 중간 단계 로깅
             debug_logger.log_intermediate("skill_matching", {

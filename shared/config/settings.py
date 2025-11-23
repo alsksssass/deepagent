@@ -8,6 +8,8 @@ from enum import Enum
 from pathlib import Path
 from typing import Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import model_validator
+import os
 
 
 class StorageBackend(str, Enum):
@@ -68,16 +70,22 @@ class Settings(BaseSettings):
     # === Graph Database (Neo4j) ===
     # 로컬 개발: bolt://localhost:7687
     # AWS EC2: bolt://ec2-xxx-xxx-xxx-xxx.compute.amazonaws.com:7687
-    NEO4J_URI: str = "bolt://localhost:7687"
+    # 동적 설정: STORAGE_BACKEND=s3이면 프라이빗 IP, local이면 공개 IP
+    NEO4J_URI: Optional[str] = None
     NEO4J_USER: str = "neo4j"
     NEO4J_PASSWORD: str = "password"
 
     # === Vector Database (ChromaDB) ===
     # 로컬 개발: http://localhost:8000
     # AWS EC2: http://ec2-xxx-xxx-xxx-xxx.compute.amazonaws.com:8000
-    CHROMADB_HOST: str = "localhost"
+    # 동적 설정: STORAGE_BACKEND=s3이면 프라이빗 IP, local이면 공개 IP
+    CHROMADB_HOST: Optional[str] = None
     CHROMADB_PORT: int = 8000
     CHROMADB_AUTH_TOKEN: str = ""  # 프로덕션에서는 필수
+    
+    # EC2 IP 주소 (동적 설정용)
+    EC2_PUBLIC_IP: str = "13.125.186.57"
+    EC2_PRIVATE_IP: str = "172.31.41.218"
     
     # ChromaDB Persist 디렉토리
     # 코드 RAG용: 일반적으로 작업별로 생성 (code_{task_uuid})
@@ -85,9 +93,53 @@ class Settings(BaseSettings):
     SKILL_CHARTS_CHROMADB_DIR: Path = Path("./data/chroma_db_skill_charts")
 
     # === AWS 공통 ===
-    AWS_REGION: str = "us-east-1"
+    # 기본 AWS 리전 (S3, ECR, Batch 등)
+    AWS_REGION: str = "ap-northeast-2"
     AWS_ACCESS_KEY_ID: Optional[str] = None
     AWS_SECRET_ACCESS_KEY: Optional[str] = None
+
+    @model_validator(mode='after')
+    def set_dynamic_ips(self):
+        """
+        STORAGE_BACKEND에 따라 동적으로 IP 주소 설정
+        - STORAGE_BACKEND=s3: 배치 모드 → 프라이빗 IP 사용
+        - STORAGE_BACKEND=local: 로컬 모드 → 공개 IP 사용
+        """
+        # 환경 변수에서 명시적으로 설정된 경우 우선 사용
+        neo4j_uri_env = os.getenv("NEO4J_URI")
+        chromadb_host_env = os.getenv("CHROMADB_HOST")
+        
+        # NEO4J_URI 동적 설정
+        if self.NEO4J_URI is None and neo4j_uri_env is None:
+            if self.STORAGE_BACKEND == StorageBackend.S3:
+                # 배치 모드: 프라이빗 IP 사용
+                self.NEO4J_URI = f"bolt://{self.EC2_PRIVATE_IP}:7687"
+            else:
+                # 로컬 모드: 공개 IP 사용
+                self.NEO4J_URI = f"bolt://{self.EC2_PUBLIC_IP}:7687"
+        elif neo4j_uri_env:
+            # 환경 변수에서 명시적으로 설정된 경우
+            self.NEO4J_URI = neo4j_uri_env
+        elif self.NEO4J_URI is None:
+            # 기본값 (localhost)
+            self.NEO4J_URI = "bolt://localhost:7687"
+        
+        # CHROMADB_HOST 동적 설정
+        if self.CHROMADB_HOST is None and chromadb_host_env is None:
+            if self.STORAGE_BACKEND == StorageBackend.S3:
+                # 배치 모드: 프라이빗 IP 사용
+                self.CHROMADB_HOST = self.EC2_PRIVATE_IP
+            else:
+                # 로컬 모드: 공개 IP 사용
+                self.CHROMADB_HOST = self.EC2_PUBLIC_IP
+        elif chromadb_host_env:
+            # 환경 변수에서 명시적으로 설정된 경우
+            self.CHROMADB_HOST = chromadb_host_env
+        elif self.CHROMADB_HOST is None:
+            # 기본값 (localhost)
+            self.CHROMADB_HOST = "localhost"
+        
+        return self
 
     def validate_backend_requirements(self):
         """백엔드별 필수 설정 검증

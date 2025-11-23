@@ -5,7 +5,7 @@ RepoCloner Pydantic schemas
 """
 
 from pydantic import BaseModel, Field, field_validator
-from typing import Optional
+from typing import Optional, Any
 from pathlib import Path
 from shared.schemas.common import BaseContext, BaseResponse
 
@@ -18,6 +18,8 @@ class RepoClonerContext(BaseContext):
     """
     git_url: str = Field(..., description="Git 레포지토리 URL (SSH 또는 HTTPS)")
     base_path: str = Field(..., description="클론할 기본 경로")
+    user_id: Optional[str] = Field(None, description="사용자 UUID (액세스 토큰 조회용, 옵셔널)")
+    db_writer: Optional[Any] = Field(None, description="AnalysisDBWriter 인스턴스 (토큰 조회용, 옵셔널)")
 
     @field_validator("git_url")
     def validate_git_url(cls, v):

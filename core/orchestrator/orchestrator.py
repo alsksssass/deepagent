@@ -27,7 +27,7 @@ from agents.repo_cloner import RepoClonerAgent, RepoClonerContext
 from agents.static_analyzer import StaticAnalyzerAgent, StaticAnalyzerContext
 from agents.commit_analyzer import CommitAnalyzerAgent, CommitAnalyzerContext
 from agents.commit_evaluator import CommitEvaluatorAgent, CommitEvaluatorContext
-from agents.user_aggregator import UserAggregatorAgent, UserAggregatorContext
+from agents.user_aggregator import UserAggregatorAgent, UserAggregatorContext, UserAggregatorResponse
 from agents.reporter import ReporterAgent, ReporterContext
 
 # Agents (Phase 5 마이그레이션 완료)
@@ -63,10 +63,11 @@ class DeepAgentOrchestrator:
         self.haiku_llm = haiku_llm
         self.data_dir = data_dir
 
-        # Neo4j 설정: 환경 변수 우선, 파라미터 전달 시 오버라이드
-        self.neo4j_uri = neo4j_uri or os.getenv("NEO4J_URI", "bolt://localhost:7687")
-        self.neo4j_user = neo4j_user or os.getenv("NEO4J_USER", "neo4j")
-        self.neo4j_password = neo4j_password or os.getenv("NEO4J_PASSWORD", "password")
+        # Neo4j 설정: 파라미터 우선, 환경 변수, Settings 순서
+        from shared.config import settings
+        self.neo4j_uri = neo4j_uri or os.getenv("NEO4J_URI") or settings.NEO4J_URI
+        self.neo4j_user = neo4j_user or os.getenv("NEO4J_USER", settings.NEO4J_USER)
+        self.neo4j_password = neo4j_password or os.getenv("NEO4J_PASSWORD", settings.NEO4J_PASSWORD)
 
         # DB Writer (옵셔널: Batch 모드에서만 사용)
         self.user_id = user_id
@@ -304,6 +305,8 @@ class DeepAgentOrchestrator:
                 git_url=git_url,
                 base_path=str(base_path),
                 result_store_path=str(store.results_dir),
+                user_id=str(self.user_id) if self.user_id else None,
+                db_writer=self.db_writer,
             )
             repo_response = await repo_cloner.run(repo_ctx)
 
@@ -720,7 +723,7 @@ class DeepAgentOrchestrator:
 
                 # ResultStore에서 user_aggregator 결과 로드
                 store = ResultStore(task_uuid, base_path)
-                user_agg_result = store.load_result("user_aggregator")
+                user_agg_result = store.load_result("user_aggregator", UserAggregatorResponse)
 
                 # 에러 여부 확인
                 has_error = state.get("error_message") is not None

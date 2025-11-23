@@ -11,6 +11,7 @@ from pathlib import Path
 from argparse import ArgumentParser
 from dotenv import load_dotenv
 import os
+import uuid
 
 from langchain_aws import ChatBedrockConverse
 
@@ -43,8 +44,6 @@ def load_environment():
     logger.debug(f"🔧 TOKENIZERS_PARALLELISM={os.getenv('TOKENIZERS_PARALLELISM')}")
 
     required_vars = [
-        "AWS_ACCESS_KEY_ID",
-        "AWS_SECRET_ACCESS_KEY",
         "AWS_BEDROCK_MODEL_ID_SONNET",
         "AWS_BEDROCK_MODEL_ID_HAIKU",
     ]
@@ -66,27 +65,30 @@ def create_llms() -> tuple[ChatBedrockConverse, ChatBedrockConverse]:
     Returns:
         (sonnet_llm, haiku_llm)
     """
-    region = os.getenv("AWS_DEFAULT_REGION", "us-east-1")
+    # Bedrock은 us-east-1 리전 사용 (모델 지원이 가장 많음)
+    bedrock_region = os.getenv("AWS_BEDROCK_REGION", "us-east-1")
     sonnet_model_id = os.getenv("AWS_BEDROCK_MODEL_ID_SONNET")
     haiku_model_id = os.getenv("AWS_BEDROCK_MODEL_ID_HAIKU")
 
     logger.info(f"🤖 LLM 초기화")
-    logger.info(f"   Region: {region}")
+    logger.info(f"   Bedrock Region: {bedrock_region}")
     logger.info(f"   Sonnet: {sonnet_model_id}")
     logger.info(f"   Haiku: {haiku_model_id}")
 
     sonnet_llm = ChatBedrockConverse(
         model=sonnet_model_id,
-        region_name=region,
+        region_name=bedrock_region,
         temperature=0.0,
         max_tokens=4096,
+        timeout=1800.0,  # 30분 타임아웃 (1800초)
     )
 
     haiku_llm = ChatBedrockConverse(
         model=haiku_model_id,
-        region_name=region,
+        region_name=bedrock_region,
         temperature=0.0,
         max_tokens=4096,
+        timeout=1800.0,  # 30분 타임아웃 (1800초)
     )
 
     return sonnet_llm, haiku_llm
@@ -226,10 +228,11 @@ async def main_async(args):
     data_dir = Path(os.getenv("DATA_DIR", "./data"))
     data_dir.mkdir(parents=True, exist_ok=True)
 
-    # Neo4j 설정
-    neo4j_uri = os.getenv("NEO4J_URI", "bolt://localhost:7687")
-    neo4j_user = os.getenv("NEO4J_USER", "neo4j")
-    neo4j_password = os.getenv("NEO4J_PASSWORD", "password")
+    # Neo4j 설정 (Settings를 통해 동적 IP 설정 적용)
+    from shared.config import settings
+    neo4j_uri = os.getenv("NEO4J_URI") or settings.NEO4J_URI
+    neo4j_user = os.getenv("NEO4J_USER", settings.NEO4J_USER)
+    neo4j_password = os.getenv("NEO4J_PASSWORD", settings.NEO4J_PASSWORD)
 
     # Orchestrator 생성
     orchestrator = DeepAgentOrchestrator(
@@ -338,10 +341,11 @@ async def main_batch_mode():
     data_dir = Path(os.getenv("DATA_DIR", "./data"))
     data_dir.mkdir(parents=True, exist_ok=True)
 
-    # Neo4j 설정
-    neo4j_uri = os.getenv("NEO4J_URI", "bolt://localhost:7687")
-    neo4j_user = os.getenv("NEO4J_USER", "neo4j")
-    neo4j_password = os.getenv("NEO4J_PASSWORD", "password")
+    # Neo4j 설정 (Settings를 통해 동적 IP 설정 적용)
+    from shared.config import settings
+    neo4j_uri = os.getenv("NEO4J_URI") or settings.NEO4J_URI
+    neo4j_user = os.getenv("NEO4J_USER", settings.NEO4J_USER)
+    neo4j_password = os.getenv("NEO4J_PASSWORD", settings.NEO4J_PASSWORD)
 
     # AnalysisDBWriter 초기화
     logger.info("🔧 AnalysisDBWriter 초기화 중...")
@@ -397,6 +401,10 @@ async def main_batch_mode():
                 logger.info(f"📊 총 커밋: {synthesis.get('total_commits', 0):,}개")
                 logger.info(f"📊 총 파일: {synthesis.get('total_files', 0):,}개")
             logger.info("==" * 30)
+
+            # 성공 완료 시 명시적 종료
+            logger.info("✅ Batch 작업 정상 완료")
+            sys.exit(0)
 
     except Exception as e:
         logger.exception(f"❌ Batch 실행 중 예외 발생: {e}")
