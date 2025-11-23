@@ -22,7 +22,7 @@ echo "   Image: $IMAGE_NAME:$IMAGE_TAG"
 echo ""
 
 docker build \
-    --platform linux/amd64 \
+    --platform linux/arm64 \
     --tag $IMAGE_NAME:$IMAGE_TAG \
     --file Dockerfile \
     .
