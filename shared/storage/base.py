@@ -242,3 +242,19 @@ class StorageBackend(ABC):
             저장된 경로 (local: Path string, S3: s3://bucket/key)
         """
         pass
+
+    @abstractmethod
+    def load_debug_file(self, relative_path: str) -> str:
+        """
+        디버그 파일 로드
+
+        Args:
+            relative_path: 상대 경로 (예: "total_skill.json")
+
+        Returns:
+            파일 내용 (문자열)
+
+        Raises:
+            FileNotFoundError: 파일이 존재하지 않을 때
+        """
+        pass

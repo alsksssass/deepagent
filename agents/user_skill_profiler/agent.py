@@ -174,11 +174,9 @@ class UserSkillProfilerAgent:
 
             # detected_skills를 JSON으로 저장 (Pydantic 모델이 아니므로 직접 JSON 저장)
             import json
-            total_skill_path = result_store.result_dir / "total_skill.json"
-            total_skill_path.write_text(
-                json.dumps(detected_skills, indent=2, ensure_ascii=False),
-                encoding='utf-8'
-            )
+            # S3/로컬 호환성을 위해 backend의 save_debug_file 사용
+            total_skill_content = json.dumps(detected_skills, indent=2, ensure_ascii=False)
+            total_skill_path = result_store.backend.save_debug_file("total_skill.json", total_skill_content)
             logger.info(f"전체 스킬 정보 json 저장: {total_skill_path}")
             
             # 중간 단계 로깅

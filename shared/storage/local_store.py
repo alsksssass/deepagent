@@ -297,3 +297,12 @@ class LocalStorageBackend(StorageBackend):
             file_path.write_text(content, encoding="utf-8")
         
         return str(file_path)
+
+    def load_debug_file(self, relative_path: str) -> str:
+        """디버그 파일 로드 (로컬)"""
+        file_path = self.base_path_obj / relative_path
+        
+        if not file_path.exists():
+            raise FileNotFoundError(f"디버그 파일을 찾을 수 없습니다: {relative_path} ({file_path})")
+        
+        return file_path.read_text(encoding="utf-8")

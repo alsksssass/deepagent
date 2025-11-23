@@ -447,3 +447,20 @@ class S3StorageBackend(StorageBackend):
         except ClientError as e:
             logger.error(f"❌ 디버그 파일 저장 실패 ({relative_path}): {e}")
             raise
+
+    def load_debug_file(self, relative_path: str) -> str:
+        """디버그 파일을 S3에서 로드"""
+        key = self._get_s3_key(self.base_prefix, relative_path)
+        
+        try:
+            response = self.s3_client.get_object(Bucket=self.bucket_name, Key=key)
+            content = response["Body"].read().decode("utf-8")
+            logger.debug(f"📂 디버그 파일 로드 (S3): {relative_path} → s3://{self.bucket_name}/{key}")
+            return content
+            
+        except ClientError as e:
+            error_code = e.response.get("Error", {}).get("Code", "")
+            if error_code == "NoSuchKey":
+                raise FileNotFoundError(f"디버그 파일을 찾을 수 없습니다: {relative_path} (s3://{self.bucket_name}/{key})")
+            logger.error(f"❌ 디버그 파일 로드 실패 ({relative_path}): {e}")
+            raise

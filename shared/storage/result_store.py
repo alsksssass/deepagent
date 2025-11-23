@@ -347,3 +347,18 @@ class ResultStore:
         """
         return self.backend.save_debug_file(relative_path, content)
 
+    def load_debug_file(self, relative_path: str) -> str:
+        """
+        디버그 파일 로드
+
+        Args:
+            relative_path: 상대 경로 (예: "total_skill.json")
+
+        Returns:
+            파일 내용 (문자열)
+
+        Raises:
+            FileNotFoundError: 파일이 존재하지 않을 때
+        """
+        return self.backend.load_debug_file(relative_path)
+
