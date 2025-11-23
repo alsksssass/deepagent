@@ -46,6 +46,7 @@ class RepositoryAnalysis(Base):
     error_message = Column(String, nullable=True)
 
     task_uuid = Column(PGUUID(as_uuid=True), nullable=True, index=True)
+    main_task_uuid = Column(PGUUID(as_uuid=True), nullable=True, index=True)  # 멀티 분석 시 종합 분석과 연결
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
@@ -57,7 +58,7 @@ class Analysis(Base):
     """
     모든 분석이 끝난 후 종합 분석 결과를 저장하는 테이블
 
-    UserAnalysisResult 결과를 JSON으로 저장
+    RepoSynthesizerResponse 결과를 JSON으로 저장
 
     Note: user_id는 UUID 타입이지만 FK 제약조건 없음 (users 테이블 미존재 시 대응)
     """
@@ -66,11 +67,12 @@ class Analysis(Base):
     id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     user_id = Column(PGUUID(as_uuid=True), nullable=False, index=True)  # FK 제약조건 제거
     repository_url = Column(String, index=True, nullable=False)  # 대표 레포지토리 URL
-    result = Column(JSON, nullable=True)  # UserAnalysisResult 형태의 JSON
+    result = Column(JSON, nullable=True)  # RepoSynthesizerResponse 형태의 JSON
 
     status = Column(SQLEnum(AnalysisStatus), default=AnalysisStatus.PROCESSING, nullable=False)
     error_message = Column(String, nullable=True)
 
+    main_task_uuid = Column(PGUUID(as_uuid=True), nullable=False, index=True)  # 종합 분석 식별자 (각 레포 분석과 연결)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 

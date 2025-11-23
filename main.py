@@ -205,6 +205,31 @@ async def analyze_multiple_repos(
         store = ResultStore(main_task_uuid, main_base_path)
         store.save_result("repo_synthesizer", synthesis_response)
 
+        # 종합 분석 결과 DB 저장
+        if orchestrator.db_writer and orchestrator.user_id:
+            try:
+                from shared.graph_db import AnalysisStatus
+                import uuid as uuid_module
+
+                # 대표 레포지토리 URL (첫 번째 성공한 레포)
+                representative_url = (
+                    successful_results[0].get("git_url") 
+                    if successful_results and successful_results[0].get("git_url")
+                    else git_urls[0]
+                )
+
+                await orchestrator.db_writer.save_final_analysis(
+                    user_id=orchestrator.user_id,
+                    repository_url=representative_url,
+                    result=synthesis_response.model_dump(),  # RepoSynthesizerResponse
+                    main_task_uuid=uuid_module.UUID(main_task_uuid),
+                    status=AnalysisStatus.COMPLETED,
+                    error_message=None
+                )
+                logger.info(f"📊 종합 분석 결과 DB 저장 완료: {main_task_uuid}")
+            except Exception as e:
+                logger.warning(f"⚠️ 종합 분석 결과 DB 저장 실패: {e}")
+
         return {
             "main_task_uuid": main_task_uuid,
             "main_base_path": str(main_base_path),

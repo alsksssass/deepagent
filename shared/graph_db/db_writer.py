@@ -171,6 +171,7 @@ class AnalysisDBWriter:
         repository_url: str,
         result: dict,  # UserAggregatorResponse.model_dump()
         task_uuid: UUID,
+        main_task_uuid: Optional[UUID] = None,  # 멀티 분석 시 종합 분석과 연결
         status: AnalysisStatus = AnalysisStatus.COMPLETED,
         error_message: Optional[str] = None
     ) -> RepositoryAnalysis:
@@ -181,7 +182,8 @@ class AnalysisDBWriter:
             user_id: 사용자 UUID
             repository_url: 레포지토리 URL
             result: UserAggregatorResponse.model_dump() 결과
-            task_uuid: 작업 UUID
+            task_uuid: 작업 UUID (레포별)
+            main_task_uuid: 메인 작업 UUID (종합 분석용, 옵셔널)
             status: 분석 상태
             error_message: 에러 메시지 (실패 시)
 
@@ -195,6 +197,7 @@ class AnalysisDBWriter:
                     repository_url=repository_url,
                     result=result,
                     task_uuid=task_uuid,
+                    main_task_uuid=main_task_uuid,
                     status=status,
                     error_message=error_message
                 )
@@ -213,7 +216,8 @@ class AnalysisDBWriter:
         self,
         user_id: UUID,
         repository_url: str,  # 대표 레포지토리 URL
-        result: dict,  # UserAnalysisResult.model_dump()
+        result: dict,  # RepoSynthesizerResponse.model_dump() 결과
+        main_task_uuid: UUID,  # 종합 분석 식별자
         status: AnalysisStatus = AnalysisStatus.COMPLETED,
         error_message: Optional[str] = None
     ) -> Analysis:
@@ -223,7 +227,8 @@ class AnalysisDBWriter:
         Args:
             user_id: 사용자 UUID
             repository_url: 대표 레포지토리 URL
-            result: UserAnalysisResult.model_dump() 결과
+            result: RepoSynthesizerResponse.model_dump() 결과
+            main_task_uuid: 메인 작업 UUID (종합 분석용, 필수)
             status: 분석 상태
             error_message: 에러 메시지 (실패 시)
 
@@ -236,6 +241,7 @@ class AnalysisDBWriter:
                     user_id=user_id,
                     repository_url=repository_url,
                     result=result,
+                    main_task_uuid=main_task_uuid,
                     status=status,
                     error_message=error_message
                 )
@@ -291,6 +297,7 @@ class AnalysisDBWriter:
         self,
         task_uuid: UUID,
         result: dict,
+        main_task_uuid: Optional[UUID] = None,  # 업데이트 시 main_task_uuid 추가 가능
         status: AnalysisStatus = AnalysisStatus.COMPLETED,
         error_message: Optional[str] = None
     ) -> bool:
@@ -300,6 +307,7 @@ class AnalysisDBWriter:
         Args:
             task_uuid: 작업 UUID
             result: UserAggregatorResponse.model_dump() 결과
+            main_task_uuid: 메인 작업 UUID (업데이트 시 추가, 옵셔널)
             status: 새로운 상태 (기본값: COMPLETED)
             error_message: 에러 메시지 (실패 시)
 
@@ -317,6 +325,8 @@ class AnalysisDBWriter:
 
                 if repo_analysis:
                     repo_analysis.result = result
+                    if main_task_uuid is not None:  # main_task_uuid가 제공되면 업데이트
+                        repo_analysis.main_task_uuid = main_task_uuid
                     repo_analysis.status = status
                     repo_analysis.error_message = error_message
                     await session.commit()

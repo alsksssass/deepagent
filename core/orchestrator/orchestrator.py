@@ -286,6 +286,11 @@ class DeepAgentOrchestrator:
 
                 git_url = state["git_url"]
                 task_uuid_obj = uuid.UUID(task_uuid)
+                
+                # main_task_uuid 추출 (멀티 분석 시)
+                main_task_uuid_obj = None
+                if state.get("_main_task_uuid"):
+                    main_task_uuid_obj = uuid.UUID(state["_main_task_uuid"])
 
                 # 기존 레코드 확인 (중복 방지)
                 existing = await self.db_writer.get_repository_analysis(task_uuid_obj)
@@ -298,10 +303,11 @@ class DeepAgentOrchestrator:
                         repository_url=git_url,
                         result={},  # 빈 결과
                         task_uuid=task_uuid_obj,
+                        main_task_uuid=main_task_uuid_obj,  # 멀티 분석 시 종합 분석과 연결
                         status=AnalysisStatus.PROCESSING,
                         error_message=None
                     )
-                    logger.info(f"📊 DB 레코드 생성 완료: {task_uuid} (PROCESSING)")
+                    logger.info(f"📊 DB 레코드 생성 완료: {task_uuid} (PROCESSING, main_task: {main_task_uuid_obj})")
             except Exception as e:
                 logger.warning(f"⚠️ DB 레코드 생성 실패: {e}")
 
@@ -804,15 +810,21 @@ class DeepAgentOrchestrator:
                 error_message = state.get("error_message")
 
                 task_uuid_obj = uuid.UUID(task_uuid)
+                
+                # main_task_uuid 추출 (멀티 분석 시)
+                main_task_uuid_obj = None
+                if state.get("_main_task_uuid"):
+                    main_task_uuid_obj = uuid.UUID(state["_main_task_uuid"])
 
                 # DB 업데이트
                 await self.db_writer.update_repository_result(
                     task_uuid=task_uuid_obj,
-                    result=user_agg_result if user_agg_result else {},
+                    result=user_agg_result.model_dump() if user_agg_result else {},
+                    main_task_uuid=main_task_uuid_obj,  # 멀티 분석 시 종합 분석과 연결
                     status=status,
                     error_message=error_message
                 )
-                logger.info(f"📊 DB 결과 업데이트 완료: {task_uuid} ({status.value})")
+                logger.info(f"📊 DB 결과 업데이트 완료: {task_uuid} ({status.value}, main_task: {main_task_uuid_obj})")
             except Exception as e:
                 logger.warning(f"⚠️ DB 결과 업데이트 실패: {e}")
 
