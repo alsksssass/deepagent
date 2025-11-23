@@ -80,7 +80,7 @@ def create_llms() -> tuple[ChatBedrockConverse, ChatBedrockConverse]:
         region_name=bedrock_region,
         temperature=0.0,
         max_tokens=4096,
-        timeout=1800.0,  # 30분 타임아웃 (1800초)
+        # timeout 파라미터는 Bedrock Converse API에서 지원하지 않음
     )
 
     haiku_llm = ChatBedrockConverse(
@@ -88,7 +88,7 @@ def create_llms() -> tuple[ChatBedrockConverse, ChatBedrockConverse]:
         region_name=bedrock_region,
         temperature=0.0,
         max_tokens=4096,
-        timeout=1800.0,  # 30분 타임아웃 (1800초)
+        # timeout 파라미터는 Bedrock Converse API에서 지원하지 않음
     )
 
     return sonnet_llm, haiku_llm
