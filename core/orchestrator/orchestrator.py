@@ -142,9 +142,11 @@ class DeepAgentOrchestrator:
         # 초기 상태
         initial_state: AgentState = {
             "task_uuid": str(uuid.uuid4()),
+            "main_task_uuid": main_task_uuid,  # 멀티 분석 모드
             "git_url": git_url,
             "target_user": target_user,
             "base_path": "",
+            "main_base_path": str(main_base_path) if main_base_path else None,  # 멀티 분석 모드
             "repo_path": None,
             "static_analysis": None,
             "neo4j_ready": False,
@@ -160,11 +162,6 @@ class DeepAgentOrchestrator:
             "total_files": 0,
             "elapsed_time": 0.0,
         }
-        
-        # 멀티 분석 모드 정보를 상태에 추가 (내부 사용)
-        if main_task_uuid and main_base_path:
-            initial_state["_main_task_uuid"] = main_task_uuid
-            initial_state["_main_base_path"] = str(main_base_path)
 
         # 워크플로우 실행
         config = {"configurable": {"thread_id": initial_state["task_uuid"]}}
@@ -223,10 +220,16 @@ class DeepAgentOrchestrator:
 
         task_uuid = state["task_uuid"]
         
-        # 멀티 분석 모드인지 확인
-        main_task_uuid = state.get("_main_task_uuid")
-        main_base_path = state.get("_main_base_path")
-        is_multi_analysis = bool(main_task_uuid and main_base_path)
+        # 모든 분석은 멀티 분석 모드로 통일
+        main_task_uuid = state.get("main_task_uuid")
+        main_base_path = state.get("main_base_path")
+        
+        # main_task_uuid가 없으면 생성 (하위 호환성)
+        if not main_task_uuid:
+            import uuid
+            main_task_uuid = str(uuid.uuid4())
+            state["main_task_uuid"] = main_task_uuid
+            logger.warning(f"⚠️ main_task_uuid가 없어 자동 생성: {main_task_uuid}")
         
         # shared/storage의 create_storage_backend를 사용하여 경로 생성
         from shared.storage import create_storage_backend
@@ -235,8 +238,8 @@ class DeepAgentOrchestrator:
         backend = create_storage_backend(
             task_uuid=task_uuid,
             base_path=None,  # 자동 생성
-            is_multi_analysis=is_multi_analysis,
-            main_task_uuid=main_task_uuid if is_multi_analysis else None,
+            is_multi_analysis=True,  # 항상 멀티 분석 모드
+            main_task_uuid=main_task_uuid,
         )
         
         # base_path 추출 (로컬/S3 환경에 맞게)
@@ -248,8 +251,7 @@ class DeepAgentOrchestrator:
             base_path = backend.base_path
             logger.info(f"   S3 경로: s3://{backend.bucket_name}/{base_path}")
         
-        if is_multi_analysis:
-            logger.info(f"   멀티 분석 모드: {main_task_uuid}")
+        logger.info(f"   멀티 분석 모드: {main_task_uuid}")
 
         # Task별 로그 디렉토리 생성 (로컬 환경에서만)
         if isinstance(backend, LocalStorageBackend):
@@ -279,6 +281,9 @@ class DeepAgentOrchestrator:
         logger.info(f"   작업 경로: {base_path}")
         logger.info(f"   로그 파일: {task_log_file}")
 
+        # state에 base_path 업데이트 (멀티 분석 모드 경로로 확정)
+        state["base_path"] = str(base_path)
+
         # DB Writer가 있으면 빈 레코드 생성 (PROCESSING 상태)
         if self.db_writer and self.user_id:
             try:
@@ -288,9 +293,7 @@ class DeepAgentOrchestrator:
                 task_uuid_obj = uuid.UUID(task_uuid)
                 
                 # main_task_uuid 추출 (멀티 분석 시)
-                main_task_uuid_obj = None
-                if state.get("_main_task_uuid"):
-                    main_task_uuid_obj = uuid.UUID(state["_main_task_uuid"])
+                main_task_uuid_obj = state.get("main_task_uuid")
 
                 # 기존 레코드 확인 (중복 방지)
                 existing = await self.db_writer.get_repository_analysis(task_uuid_obj)
@@ -339,6 +342,7 @@ class DeepAgentOrchestrator:
 
         try:
             task_uuid = state["task_uuid"]
+            main_task_uuid = state.get("main_task_uuid")  # state에서 main_task_uuid 가져오기
             base_path = Path(state["base_path"])
             git_url = state["git_url"]
             target_user = state.get("target_user")
@@ -351,6 +355,7 @@ class DeepAgentOrchestrator:
             repo_cloner = RepoClonerAgent()
             repo_ctx = RepoClonerContext(
                 task_uuid=task_uuid,
+                main_task_uuid=main_task_uuid,
                 git_url=git_url,
                 base_path=str(base_path),
                 result_store_path=str(store.results_dir),
@@ -384,11 +389,13 @@ class DeepAgentOrchestrator:
             # Pydantic Context 생성
             static_ctx = StaticAnalyzerContext(
                 task_uuid=task_uuid,
+                main_task_uuid=main_task_uuid,
                 repo_path=repo_path,
                 result_store_path=str(store.results_dir),
             )
             commit_ctx = CommitAnalyzerContext(
                 task_uuid=task_uuid,
+                main_task_uuid=main_task_uuid,
                 repo_path=repo_path,
                 git_url=git_url,  # Repository Isolation용
                 target_user=target_user,
@@ -401,6 +408,7 @@ class DeepAgentOrchestrator:
 
             code_rag_ctx = CodeRAGBuilderContext(
                 task_uuid=task_uuid,
+                main_task_uuid=main_task_uuid,
                 repo_path=repo_path,
                 persist_dir=chromadb_persist_dir,
                 result_store_path=str(store.results_dir),
@@ -550,6 +558,7 @@ class DeepAgentOrchestrator:
                     batch_contexts = [
                         CommitEvaluatorContext(
                             task_uuid=task_uuid,
+                            main_task_uuid=main_task_uuid,
                             commit_hash=commit["hash"],
                             user=target_user if target_user else commit.get("author_email", ""),
                             git_url=git_url,  # Repository Isolation용
@@ -592,6 +601,7 @@ class DeepAgentOrchestrator:
                 # UserAggregator가 ResultStore에서 스트리밍으로 로드하므로 commit_evaluations 전달 불필요
                 user_agg_ctx = UserAggregatorContext(
                     task_uuid=task_uuid,
+                    main_task_uuid=main_task_uuid,
                     user=target_user,  # None이면 전체 유저 (validator에서 허용)
                     commit_evaluations=None,  # ResultStore에서 스트리밍 로드
                     result_store_path=str(store.results_dir),
@@ -626,6 +636,7 @@ class DeepAgentOrchestrator:
                 user_skill_profiler = UserSkillProfilerAgent()
                 skill_profile_ctx = UserSkillProfilerContext(
                     task_uuid=task_uuid,
+                    main_task_uuid=main_task_uuid,
                     user=user_for_skill_profiler,
                     # persist_dir는 기본값 사용 (실제로는 원격 ChromaDB 사용으로 무시됨)
                     code_persist_dir=chromadb_persist_dir,  # 코드 컬렉션용 디렉토리
@@ -649,6 +660,7 @@ class DeepAgentOrchestrator:
             # Reporter는 ResultStore에서 직접 로드하므로 dict 전달 불필요 (하위 호환성을 위해 빈 dict 전달)
             reporter_ctx = ReporterContext(
                 task_uuid=task_uuid,
+                main_task_uuid=main_task_uuid,
                 base_path=str(base_path),
                 git_url=git_url,
                 static_analysis={},  # ResultStore에서 로드하므로 빈 dict
@@ -812,14 +824,12 @@ class DeepAgentOrchestrator:
                 task_uuid_obj = uuid.UUID(task_uuid)
                 
                 # main_task_uuid 추출 (멀티 분석 시)
-                main_task_uuid_obj = None
-                if state.get("_main_task_uuid"):
-                    main_task_uuid_obj = uuid.UUID(state["_main_task_uuid"])
+                main_task_uuid_obj = state.get("main_task_uuid")
 
                 # DB 업데이트
                 await self.db_writer.update_repository_result(
                     task_uuid=task_uuid_obj,
-                    result=user_agg_result.model_dump() if user_agg_result else {},
+                    result={"content" :report_content},
                     main_task_uuid=main_task_uuid_obj,  # 멀티 분석 시 종합 분석과 연결
                     status=status,
                     error_message=error_message

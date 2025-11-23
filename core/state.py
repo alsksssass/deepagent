@@ -17,11 +17,13 @@ class AgentState(TypedDict, total=False):
 
     # 작업 식별자
     task_uuid: str  # 작업 고유 UUID
+    main_task_uuid: Optional[str]  # 멀티 레포지토리 분석 시 메인 작업 UUID
     git_url: str  # 분석할 Git 레포지토리 URL
     target_user: Optional[str]  # 특정 유저 이메일 (None이면 전체 분석)
 
     # 경로 정보
     base_path: str  # 작업 기본 경로 (./data/analyze/{task_uuid})
+    main_base_path: Optional[str]  # 멀티 레포지토리 분석 시 메인 경로
     repo_path: Optional[str]  # 클론된 레포지토리 경로
 
     # 정적 분석 결과
