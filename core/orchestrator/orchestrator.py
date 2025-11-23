@@ -118,6 +118,8 @@ class DeepAgentOrchestrator:
         self,
         git_url: str,
         target_user: str | None = None,
+        main_task_uuid: str | None = None,
+        main_base_path: str | Path | None = None,
     ) -> AgentState:
         """
         전체 분석 파이프라인 실행
@@ -125,6 +127,8 @@ class DeepAgentOrchestrator:
         Args:
             git_url: Git 레포지토리 URL
             target_user: 특정 유저 이메일 (None이면 전체 분석)
+            main_task_uuid: 멀티 분석 시 메인 task UUID (None이면 단일 분석)
+            main_base_path: 멀티 분석 시 메인 base path (None이면 단일 분석)
 
         Returns:
             AgentState: 최종 상태
@@ -132,6 +136,8 @@ class DeepAgentOrchestrator:
         logger.info("🚀 Deep Agents 분석 시작 (Pydantic 기반)")
         logger.info(f"   Git URL: {git_url}")
         logger.info(f"   Target User: {target_user if target_user else '전체 유저'}")
+        if main_task_uuid:
+            logger.info(f"   멀티 분석 모드: {main_task_uuid}")
 
         # 초기 상태
         initial_state: AgentState = {
@@ -154,6 +160,11 @@ class DeepAgentOrchestrator:
             "total_files": 0,
             "elapsed_time": 0.0,
         }
+        
+        # 멀티 분석 모드 정보를 상태에 추가 (내부 사용)
+        if main_task_uuid and main_base_path:
+            initial_state["_main_task_uuid"] = main_task_uuid
+            initial_state["_main_base_path"] = str(main_base_path)
 
         # 워크플로우 실행
         config = {"configurable": {"thread_id": initial_state["task_uuid"]}}
@@ -211,15 +222,47 @@ class DeepAgentOrchestrator:
         logger.info("⚙️  Setup: 작업 초기화")
 
         task_uuid = state["task_uuid"]
-        base_path = self.data_dir / "analyze" / task_uuid
-        base_path.mkdir(parents=True, exist_ok=True)
+        
+        # 멀티 분석 모드인지 확인
+        main_task_uuid = state.get("_main_task_uuid")
+        main_base_path = state.get("_main_base_path")
+        is_multi_analysis = bool(main_task_uuid and main_base_path)
+        
+        # shared/storage의 create_storage_backend를 사용하여 경로 생성
+        from shared.storage import create_storage_backend
+        from shared.storage.local_store import LocalStorageBackend
+        
+        backend = create_storage_backend(
+            task_uuid=task_uuid,
+            base_path=None,  # 자동 생성
+            is_multi_analysis=is_multi_analysis,
+            main_task_uuid=main_task_uuid if is_multi_analysis else None,
+        )
+        
+        # base_path 추출 (로컬/S3 환경에 맞게)
+        if isinstance(backend, LocalStorageBackend):
+            base_path = Path(backend.base_path)
+            base_path.mkdir(parents=True, exist_ok=True)
+        else:
+            # S3 환경: base_path는 문자열로 관리
+            base_path = backend.base_path
+            logger.info(f"   S3 경로: s3://{backend.bucket_name}/{base_path}")
+        
+        if is_multi_analysis:
+            logger.info(f"   멀티 분석 모드: {main_task_uuid}")
 
-        # Task별 로그 디렉토리 생성
-        log_dir = base_path / "logs"
-        log_dir.mkdir(exist_ok=True)
-
+        # Task별 로그 디렉토리 생성 (로컬 환경에서만)
+        if isinstance(backend, LocalStorageBackend):
+            log_dir = base_path / "logs"
+            log_dir.mkdir(exist_ok=True)
+            task_log_file = log_dir / "combined.log"
+        else:
+            # S3 환경: 로컬 임시 디렉토리 사용
+            import tempfile
+            log_dir = Path(tempfile.mkdtemp(prefix=f"deep-agents-logs-{task_uuid}-"))
+            task_log_file = log_dir / "combined.log"
+        
         # Task별 통합 로그 파일 핸들러 추가
-        task_log_file = log_dir / "combined.log"
         task_handler = logging.FileHandler(task_log_file, encoding="utf-8")
         task_handler.setFormatter(
             logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -373,15 +416,45 @@ class DeepAgentOrchestrator:
             commit_result = commit_response.model_dump()
             rag_result = rag_response.model_dump()
 
-            # Level 1-3: CommitEvaluator (병렬)
-            logger.info("📝 Level 1-3: CommitEvaluator 실행")
-
+            # CommitAnalyzer 실패 시 작업 종료
             if commit_response.status != "success":
-                logger.warning("CommitAnalyzer 실패, CommitEvaluator 스킵")
-                commit_evaluations = []
-            else:
-                # Neo4j에서 유저 커밋 목록 가져오기
-                if target_user:
+                error_msg = f"CommitAnalyzer 실패: {commit_result.get('error', 'Unknown error')}"
+                logger.error(f"❌ {error_msg}")
+                logger.error("❌ 작업을 종료합니다.")
+                return {
+                    "error_message": error_msg,
+                    "static_analysis": static_result,
+                    "neo4j_ready": False,
+                    "chromadb_ready": rag_result.get("status") == "success",
+                    "total_commits": 0,
+                    "total_files": static_result.get("loc_stats", {}).get("total_files", 0),
+                    "subagent_results": {
+                        "repo_cloner": {
+                            "status": "success",
+                            "path": "results/repo_cloner.json",
+                        },
+                        "static_analyzer": {
+                            "status": static_response.status,
+                            "path": "results/static_analyzer.json",
+                        },
+                        "commit_analyzer": {
+                            "status": commit_response.status,
+                            "path": "results/commit_analyzer.json",
+                        },
+                        "code_rag_builder": {
+                            "status": rag_response.status,
+                            "path": "results/code_rag_builder.json",
+                        },
+                    },
+                    "updated_at": datetime.now().isoformat(),
+                }
+
+            # Level 1-3: CommitEvaluator (병렬) - CommitAnalyzer 성공 시에만 실행
+            logger.info("📝 Level 1-3: CommitEvaluator 실행")
+            commit_evaluations = []
+            
+            # Neo4j에서 유저 커밋 목록 가져오기
+            if target_user:
                     # Repository ID 생성 (제약조건이 복합 키이므로 필수)
                     from shared.utils.repo_utils import generate_repo_id
 
@@ -402,69 +475,69 @@ class DeepAgentOrchestrator:
                         user_commits = []
                         logger.warning(f"⚠️ 타겟 유저 {target_user}의 커밋을 찾을 수 없습니다.")
                     logger.info(f"🔍 타겟 유저 {target_user}: {len(user_commits)}개 커밋")
-                else:
-                    # 전체 유저의 경우: 모든 유저의 최근 커밋 샘플링
-                    from shared.tools.neo4j_tools import query_graph
-                    from shared.utils.repo_utils import generate_repo_id
+            else:
+                # 전체 유저의 경우: 모든 유저의 최근 커밋 샘플링
+                from shared.tools.neo4j_tools import query_graph
+                from shared.utils.repo_utils import generate_repo_id
 
-                    # Repository ID 생성 (제약조건이 복합 키이므로 필수)
-                    repo_id = generate_repo_id(git_url)
+                # Repository ID 생성 (제약조건이 복합 키이므로 필수)
+                repo_id = generate_repo_id(git_url)
 
-                    # 1. 모든 유저 이메일 가져오기 (repo_id 필터링)
-                    all_users_query = f"""
-                    MATCH (u:User)-[:COMMITTED]->(c:Commit)
-                    WHERE u.repo_id = $repo_id AND c.repo_id = $repo_id
-                    RETURN DISTINCT u.email AS email, count(c) AS commit_count
-                    ORDER BY commit_count DESC
-                    """
-                    all_users = await query_graph.ainvoke(
+                # 1. 모든 유저 이메일 가져오기 (repo_id 필터링)
+                all_users_query = f"""
+                MATCH (u:User)-[:COMMITTED]->(c:Commit)
+                WHERE u.repo_id = $repo_id AND c.repo_id = $repo_id
+                RETURN DISTINCT u.email AS email, count(c) AS commit_count
+                ORDER BY commit_count DESC
+                """
+                all_users = await query_graph.ainvoke(
+                    {
+                        "cypher_query": all_users_query,
+                        "parameters": {"repo_id": repo_id},
+                        "repo_id": repo_id,
+                        "neo4j_uri": self.neo4j_uri,
+                        "neo4j_user": self.neo4j_user,
+                        "neo4j_password": self.neo4j_password,
+                    }
+                )
+
+                # None 체크
+                if all_users is None:
+                    all_users = []
+                    logger.warning("⚠️ 유저 목록을 가져올 수 없습니다.")
+
+                logger.info(f"🔍 전체 {len(all_users)}명의 유저 발견")
+
+                # 2. 각 유저의 최근 커밋 샘플링 (유저당 최대 20개)
+                user_commits = []
+                for user_info in all_users:
+                    user_email = user_info["email"]
+                    user_sample = await get_user_commits.ainvoke(
                         {
-                            "cypher_query": all_users_query,
-                            "parameters": {"repo_id": repo_id},
-                            "repo_id": repo_id,
+                            "user_email": user_email,
+                            "repo_id": repo_id,  # 제약조건이 복합 키이므로 필수
+                            "limit": 20,
                             "neo4j_uri": self.neo4j_uri,
                             "neo4j_user": self.neo4j_user,
                             "neo4j_password": self.neo4j_password,
                         }
                     )
-
                     # None 체크
-                    if all_users is None:
-                        all_users = []
-                        logger.warning("⚠️ 유저 목록을 가져올 수 없습니다.")
+                    if user_sample is None:
+                        user_sample = []
+                    # 각 커밋에 author_email 추가
+                    for commit in user_sample:
+                        commit["author_email"] = user_email
+                    user_commits.extend(user_sample)
 
-                    logger.info(f"🔍 전체 {len(all_users)}명의 유저 발견")
+                logger.info(f"🔍 전체 샘플링: {len(user_commits)}개 커밋 (유저당 최대 20개)")
 
-                    # 2. 각 유저의 최근 커밋 샘플링 (유저당 최대 20개)
-                    user_commits = []
-                    for user_info in all_users:
-                        user_email = user_info["email"]
-                        user_sample = await get_user_commits.ainvoke(
-                            {
-                                "user_email": user_email,
-                                "repo_id": repo_id,  # 제약조건이 복합 키이므로 필수
-                                "limit": 20,
-                                "neo4j_uri": self.neo4j_uri,
-                                "neo4j_user": self.neo4j_user,
-                                "neo4j_password": self.neo4j_password,
-                            }
-                        )
-                        # None 체크
-                        if user_sample is None:
-                            user_sample = []
-                        # 각 커밋에 author_email 추가
-                        for commit in user_sample:
-                            commit["author_email"] = user_email
-                        user_commits.extend(user_sample)
+            # CommitEvaluator 병렬 실행 (설정에서 배치 크기 가져오기) - Pydantic 기반
+            commit_evaluator = CommitEvaluatorAgent(llm=self.haiku_llm)
+            total_evaluated = 0  # 통계용 카운터만 유지
 
-                    logger.info(f"🔍 전체 샘플링: {len(user_commits)}개 커밋 (유저당 최대 20개)")
-
-                # CommitEvaluator 병렬 실행 (설정에서 배치 크기 가져오기) - Pydantic 기반
-                commit_evaluator = CommitEvaluatorAgent(llm=self.haiku_llm)
-                total_evaluated = 0  # 통계용 카운터만 유지
-
-                batch_size = self.config.commit_evaluator_batch_size
-                for i in range(0, len(user_commits), batch_size):
+            batch_size = self.config.commit_evaluator_batch_size
+            for i in range(0, len(user_commits), batch_size):
                     batch = user_commits[i : i + batch_size]
 
                     # Pydantic Context 생성

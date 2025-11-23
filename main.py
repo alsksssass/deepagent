@@ -122,9 +122,18 @@ async def analyze_multiple_repos(
 
     # 메인 task UUID 생성 (종합 결과용)
     import uuid
+    from shared.storage import create_storage_backend
+    from shared.config import settings
+    
     main_task_uuid = str(uuid.uuid4())
-    main_base_path = data_dir / "analyze_multi" / main_task_uuid
-    main_base_path.mkdir(parents=True, exist_ok=True)
+    
+    # shared/storage를 통해 메인 경로 생성
+    if settings.STORAGE_BACKEND.value == "local":
+        main_base_path = data_dir / "analyze_multi" / main_task_uuid
+        main_base_path.mkdir(parents=True, exist_ok=True)
+    else:  # S3
+        # S3 환경: 문자열 경로만 관리
+        main_base_path = f"analyze_multi/{main_task_uuid}"
 
     logger.info(f"📂 종합 결과 경로: {main_base_path}")
     logger.info("")
@@ -133,8 +142,17 @@ async def analyze_multiple_repos(
     logger.info(f"📦 {len(git_urls)}개 레포지토리 병렬 분석 시작...")
     logger.info("")
 
+    # 멀티 분석 모드: 각 레포 결과를 analyze_multi/{main_task_uuid}/repos/{repo_task_uuid}/에 저장
     repo_results = await asyncio.gather(
-        *[orchestrator.run(git_url, target_user) for git_url in git_urls],
+        *[
+            orchestrator.run(
+                git_url, 
+                target_user,
+                main_task_uuid=main_task_uuid,
+                main_base_path=main_base_path
+            ) 
+            for git_url in git_urls
+        ],
         return_exceptions=True
     )
 
