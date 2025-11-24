@@ -137,9 +137,42 @@ export USER_ID
 export GIT_URLS
 export TARGET_USER
 
+# TASK_IDS와 MAIN_TASK_ID가 없으면 자동 생성 및 DB 레코드 생성
+if [ -z "$TASK_IDS" ] || [ -z "$MAIN_TASK_ID" ]; then
+    echo ""
+    echo "📋 TASK_IDS 또는 MAIN_TASK_ID가 없어 자동 생성 및 DB 레코드 생성 중..."
+    echo ""
+    
+    # create_test_tasks.py 실행
+    TASK_OUTPUT=$(python3 "$SCRIPT_DIR/create_test_tasks.py" \
+        --user-id "$USER_ID" \
+        --git-urls "$GIT_URLS" \
+        --export 2>&1)
+    
+    if [ $? -ne 0 ]; then
+        echo "❌ Task 생성 실패:"
+        echo "$TASK_OUTPUT"
+        exit 1
+    fi
+    
+    # 환경변수 추출
+    MAIN_TASK_ID=$(echo "$TASK_OUTPUT" | grep "export MAIN_TASK_ID=" | sed "s/export MAIN_TASK_ID='\(.*\)'/\1/")
+    TASK_IDS=$(echo "$TASK_OUTPUT" | grep "export TASK_IDS=" | sed "s/export TASK_IDS='\(.*\)'/\1/")
+    
+    export MAIN_TASK_ID
+    export TASK_IDS
+    
+    echo "$TASK_OUTPUT"
+    echo ""
+    echo "✅ Task 생성 완료"
+    echo ""
+fi
+
 echo "📋 실행 설정:"
 echo "   User ID: $USER_ID"
 echo "   Git URLs: $GIT_URLS"
+echo "   Task IDs: $TASK_IDS"
+echo "   Main Task ID: $MAIN_TASK_ID"
 echo "   Target User: ${TARGET_USER:-전체 유저}"
 echo "   Storage Backend: $STORAGE_BACKEND"
 if [ "$STORAGE_BACKEND" = "s3" ]; then
@@ -205,6 +238,8 @@ echo ""
 ENV_ARGS=(
     -e USER_ID="$USER_ID"
     -e GIT_URLS="$GIT_URLS"
+    -e TASK_IDS="$TASK_IDS"
+    -e MAIN_TASK_ID="$MAIN_TASK_ID"
     -e TARGET_USER="$TARGET_USER"
     -e AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID"
     -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY"

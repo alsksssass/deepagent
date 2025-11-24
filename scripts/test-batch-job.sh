@@ -46,9 +46,33 @@ TEST_USER_ID="00000000-0000-0000-0000-000000000001"
 TEST_GIT_URL="git@github.com:smj53/david.git,git@github.com:alsksssass/david.git"
 TEST_TARGET_USER=""
 
+# TASK_IDS와 MAIN_TASK_ID 자동 생성 및 DB 레코드 생성
+echo "📋 테스트용 Task 생성 및 DB 레코드 생성 중..."
+echo ""
+
+TASK_OUTPUT=$(python3 "$SCRIPT_DIR/create_test_tasks.py" \
+    --user-id "$TEST_USER_ID" \
+    --git-urls "$TEST_GIT_URL" \
+    --export 2>&1)
+
+if [ $? -ne 0 ]; then
+    echo "❌ Task 생성 실패:"
+    echo "$TASK_OUTPUT"
+    exit 1
+fi
+
+# 환경변수 추출
+TEST_MAIN_TASK_ID=$(echo "$TASK_OUTPUT" | grep "export MAIN_TASK_ID=" | sed "s/export MAIN_TASK_ID='\(.*\)'/\1/")
+TEST_TASK_IDS=$(echo "$TASK_OUTPUT" | grep "export TASK_IDS=" | sed "s/export TASK_IDS='\(.*\)'/\1/")
+
+echo "$TASK_OUTPUT"
+echo ""
+
 echo "🧪 테스트 Job 정보:"
 echo "   User ID: $TEST_USER_ID (테스트용 UUID)"
 echo "   Git URL: $TEST_GIT_URL"
+echo "   Task IDs: $TEST_TASK_IDS (테스트용 UUID)"
+echo "   Main Task ID: $TEST_MAIN_TASK_ID (테스트용 UUID)"
 echo "   Target User: ${TEST_TARGET_USER:-전체 유저}"
 echo ""
 echo "📋 환경 변수 확인:"
@@ -72,7 +96,7 @@ echo ""
 
 # Job 제출
 if [ -f "scripts/submit-batch-job.sh" ]; then
-    JOB_OUTPUT=$(./scripts/submit-batch-job.sh "$TEST_USER_ID" "$TEST_GIT_URL" 2>&1)
+    JOB_OUTPUT=$(./scripts/submit-batch-job.sh "$TEST_USER_ID" "$TEST_GIT_URL" "$TEST_TARGET_USER" "$TEST_TASK_IDS" "$TEST_MAIN_TASK_ID" 2>&1)
     echo "$JOB_OUTPUT"
     
     # Job ID 추출
