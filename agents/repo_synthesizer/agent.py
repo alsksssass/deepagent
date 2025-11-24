@@ -570,7 +570,19 @@ class RepoSynthesizerAgent:
                 try:
                     store = ResultStore(task_uuid, Path(base_path))
                     
-                    all_skills += store.load_result("total_skill", None)
+                    # total_skill.json 로드 (일반 JSON 파일)
+                    try:
+                        import json
+                        total_skill_content = store.load_debug_file("total_skill.json")
+                        total_skill_data = json.loads(total_skill_content)
+                        if isinstance(total_skill_data, list):
+                            all_skills += total_skill_data
+                        else:
+                            logger.debug(f"total_skill.json이 리스트 형식이 아님: {type(total_skill_data)}")
+                    except FileNotFoundError:
+                        logger.debug(f"total_skill.json 파일 없음: {task_uuid}")
+                    except Exception as e:
+                        logger.debug(f"total_skill.json 로드 실패: {e}")
                     
                     
                     # 1. UserAggregator 결과에서 품질 점수 수집

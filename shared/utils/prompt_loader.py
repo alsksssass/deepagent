@@ -148,9 +148,10 @@ class PromptLoader:
         # YAML에서 모델 설정 로드 (선택적)
         model_config = prompts.get("model_config", {})
         
-        # 우선순위: 환경 변수 > YAML model_config > 기본값
+        # 우선순위: AWS_BEDROCK_REGION > YAML model_config > 기본값
+        # Bedrock은 us-east-1 리전 사용 (모델 지원이 가장 많음)
         region = (
-            os.getenv("AWS_DEFAULT_REGION") or 
+            os.getenv("AWS_BEDROCK_REGION") or 
             model_config.get("region") or 
             "us-east-1"
         )

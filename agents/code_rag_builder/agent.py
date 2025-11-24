@@ -52,9 +52,10 @@ class CodeRAGBuilderAgent:
 
         try:
             # 임베딩 모델 로드 (동기)
+            # device="cpu"를 명시하여 meta tensor 오류 방지
             loop = asyncio.get_event_loop()
             self.model = await loop.run_in_executor(
-                None, SentenceTransformer, self.model_name
+                None, lambda: SentenceTransformer(self.model_name, device="cpu")
             )
 
             # ChromaDB 클라이언트 (task_uuid별 로컬 저장소)

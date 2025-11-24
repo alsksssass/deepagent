@@ -104,7 +104,13 @@ class UserSkillProfilerAgent:
         logger.info(f"🎯 UserSkillProfiler: {user} 스킬 프로파일 생성 시작")
 
         # ResultStore 초기화 (배치 결과 저장용)
-        base_path = Path(context.result_store_path).parent if context.result_store_path else Path(f"./data/analyze/{task_uuid}")
+        if context.result_store_path:
+            base_path = Path(context.result_store_path).parent
+        else:
+            # result_store_path가 없으면 main_task_uuid 사용
+            main_task_uuid = context.main_task_uuid or task_uuid
+            logger.warning(f"⚠️ result_store_path가 없어 기본 경로 생성: analyze_multi/{main_task_uuid}/repos/{task_uuid}")
+            base_path = Path(f"./data/analyze_multi/{main_task_uuid}/repos/{task_uuid}")
         result_store = ResultStore(task_uuid, base_path)
         
         # 중간 단계 로깅을 위해 logger 가져오기
@@ -171,7 +177,13 @@ class UserSkillProfilerAgent:
 
             # Level 2-3: 스킬 통계 집계
             skill_profile_data = await self._aggregate_skill_profile(detected_skills, persist_dir)
-            logger.info(f"전체 스킬 정보 json 저장: {result_store.save_result("total_skill", detected_skills)}")
+
+            # detected_skills를 JSON으로 저장 (Pydantic 모델이 아니므로 직접 JSON 저장)
+            import json
+            # S3/로컬 호환성을 위해 backend의 save_debug_file 사용
+            total_skill_content = json.dumps(detected_skills, indent=2, ensure_ascii=False)
+            total_skill_path = result_store.backend.save_debug_file("total_skill.json", total_skill_content)
+            logger.info(f"전체 스킬 정보 json 저장: {total_skill_path}")
             
             # 중간 단계 로깅
             debug_logger.log_intermediate("skill_matching", {

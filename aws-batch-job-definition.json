@@ -1,0 +1,162 @@
+{
+  "jobDefinitionName": "deep-agents-job",
+  "type": "container",
+  "platformCapabilities": ["FARGATE"],
+  "containerProperties": {
+    "image": "712111072528.dkr.ecr.ap-northeast-2.amazonaws.com/deep-agents:latest",
+    "jobRoleArn": "arn:aws:iam::712111072528:role/DeepAgentsBatchRole",
+    "executionRoleArn": "arn:aws:iam::712111072528:role/DeepAgentsBatchRole",
+    "resourceRequirements": [
+      {
+        "type": "VCPU",
+        "value": "4"
+      },
+      {
+        "type": "MEMORY",
+        "value": "16384"
+      }
+    ],
+    "environment": [
+      {
+        "name": "AWS_DEFAULT_REGION",
+        "value": "ap-northeast-2"
+      },
+      {
+        "name": "AWS_REGION",
+        "value": "ap-northeast-2"
+      },
+      {
+        "name": "AWS_BEDROCK_REGION",
+        "value": "us-east-1"
+      },
+      {
+        "name": "AWS_BEDROCK_MODEL_ID_SONNET",
+        "value": "us.anthropic.claude-3-5-sonnet-20241022-v2:0"
+      },
+      {
+        "name": "AWS_BEDROCK_MODEL_ID_HAIKU",
+        "value": "us.anthropic.claude-3-haiku-20240307-v1:0"
+      },
+      {
+        "name": "STORAGE_BACKEND",
+        "value": "s3"
+      },
+      {
+        "name": "S3_BUCKET_NAME",
+        "value": "amazon-sagemaker-712111072528-ap-northeast-2-ac414db573cc"
+      },
+      {
+        "name": "S3_REGION",
+        "value": "ap-northeast-2"
+      },
+      {
+        "name": "S3_LIFECYCLE_DAYS",
+        "value": "30"
+      },
+      {
+        "name": "LOCAL_DATA_DIR",
+        "value": "./data"
+      },
+      {
+        "name": "GRAPH_DB_BACKEND",
+        "value": "neo4j"
+      },
+      {
+        "name": "NEO4J_URI",
+        "value": "bolt://172.31.41.218:7687"
+      },
+      {
+        "name": "NEO4J_USER",
+        "value": "neo4j"
+      },
+      {
+        "name": "NEO4J_PASSWORD",
+        "value": "password"
+      },
+      {
+        "name": "VECTOR_DB_BACKEND",
+        "value": "chromadb"
+      },
+      {
+        "name": "CHROMADB_HOST",
+        "value": "172.31.41.218"
+      },
+      {
+        "name": "CHROMADB_PORT",
+        "value": "8000"
+      },
+      {
+        "name": "CHROMADB_PERSIST_DIR",
+        "value": "./data/chroma_db"
+      },
+      {
+        "name": "CHROMADB_AUTH_TOKEN",
+        "value": ""
+      },
+      {
+        "name": "TOKENIZERS_PARALLELISM",
+        "value": "false"
+      },
+      {
+        "name": "ENABLE_DEBUG_LOGGING",
+        "value": "true"
+      },
+      {
+        "name": "ENABLE_SUBAGENT_DEBUG_LOGGING",
+        "value": "true"
+      },
+      {
+        "name": "POSTGRES_HOST",
+        "value": "sesami.chques8mawha.ap-northeast-2.rds.amazonaws.com"
+      },
+      {
+        "name": "POSTGRES_PORT",
+        "value": "5432"
+      },
+      {
+        "name": "POSTGRES_DB",
+        "value": "sesami"
+      },
+      {
+        "name": "POSTGRES_USER",
+        "value": "sesami"
+      },
+      {
+        "name": "POSTGRES_PASSWORD",
+        "value": "AsSeDIsPqOdQWE"
+      },
+      {
+        "name": "POSTGRES_ECHO",
+        "value": "false"
+      },
+      {
+        "name": "DATA_DIR",
+        "value": "/app/data"
+      },
+      {
+        "name": "LOG_LEVEL",
+        "value": "INFO"
+      },
+      {
+        "name": "PYTHONUNBUFFERED",
+        "value": "1"
+      }
+    ],
+    "runtimePlatform": {
+      "cpuArchitecture": "ARM64",
+      "operatingSystemFamily": "LINUX"
+    },
+    "networkConfiguration": {
+      "assignPublicIp": "ENABLED"
+    },
+    "logConfiguration": {
+      "logDriver": "awslogs",
+      "options": {
+        "awslogs-group": "/aws/batch/deep-agents",
+        "awslogs-region": "ap-northeast-2",
+        "awslogs-stream-prefix": "deep-agents",
+        "awslogs-create-group": "true"
+      }
+    }
+  }
+}

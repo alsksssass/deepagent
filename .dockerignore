@@ -1,0 +1,97 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.pyright/
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Data directories (분석 결과는 포함하지 않음)
+data/
+logs/
+*.log
+
+# Test files
+test_*.py
+test_*.sh
+*_test.py
+tests/
+.coverage
+htmlcov/
+
+# Documentation
+*.md
+docs/
+*.txt
+!requirements.txt
+
+# Docker
+Dockerfile*
+.dockerignore
+docker-compose*.yml
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Environment files (보안)
+.env
+.env.*
+*.pem
+*.key
+*.crt
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+.cache/
+
+# Neo4j local data
+neo4j_data/
+
+# ChromaDB local data
+chroma_data/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Node modules (혹시 있을 경우)
+node_modules/
+
+# 기타
+*.sqlite
+*.db

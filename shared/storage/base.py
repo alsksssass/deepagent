@@ -28,7 +28,7 @@ class StorageBackend(ABC):
 
         Args:
             task_uuid: 작업 고유 UUID
-            base_path: 기본 경로 (local: "./data/analyze/{uuid}", S3: "s3://bucket/analyze/{uuid}")
+            base_path: 기본 경로 (local: "./data/analyze_multi/{main_task_uuid}/repos/{task_uuid}", S3: "analyze_multi/{main_task_uuid}/repos/{task_uuid}")
         """
         self.task_uuid = task_uuid
         self.base_path = str(base_path)
@@ -240,5 +240,21 @@ class StorageBackend(ABC):
 
         Returns:
             저장된 경로 (local: Path string, S3: s3://bucket/key)
+        """
+        pass
+
+    @abstractmethod
+    def load_debug_file(self, relative_path: str) -> str:
+        """
+        디버그 파일 로드
+
+        Args:
+            relative_path: 상대 경로 (예: "total_skill.json")
+
+        Returns:
+            파일 내용 (문자열)
+
+        Raises:
+            FileNotFoundError: 파일이 존재하지 않을 때
         """
         pass

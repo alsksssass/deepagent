@@ -8,8 +8,8 @@ ResultStore - 에이전트 결과 저장 및 관리
 - STORAGE_BACKEND=s3: AWS S3
 
 구조:
-    Local: data/analyze/{task_uuid}/
-    S3: s3://bucket/analyze/{task_uuid}/
+    Local: data/analyze_multi/{main_task_uuid}/repos/{task_uuid}/
+    S3: s3://bucket/analyze_multi/{main_task_uuid}/repos/{task_uuid}/
     ├── results/
     │   ├── repo_cloner.json
     │   ├── static_analyzer.json
@@ -55,7 +55,7 @@ class ResultStore:
 
         Args:
             task_uuid: 작업 고유 UUID
-            base_path: 작업 기본 경로 (예: Path("./data/analyze/{task_uuid}") 또는 "analyze/{task_uuid}")
+            base_path: 작업 기본 경로 (예: Path("./data/analyze_multi/{main_task_uuid}/repos/{task_uuid}") 또는 "analyze_multi/{main_task_uuid}/repos/{task_uuid}")
         """
         self.task_uuid = task_uuid
         self.base_path = Path(base_path) if isinstance(base_path, Path) else base_path
@@ -71,7 +71,7 @@ class ResultStore:
             # S3의 경우 results 디렉토리 경로 문자열 반환
             # get_batch_dir("")로 results 디렉토리 경로 얻기
             batch_dir = self.backend.get_batch_dir("")
-            # s3://bucket/analyze/task_uuid/results/ -> s3://bucket/analyze/task_uuid/results
+            # s3://bucket/analyze_multi/{main_task_uuid}/repos/{task_uuid}/results/ -> s3://bucket/analyze_multi/{main_task_uuid}/repos/{task_uuid}/results
             self.results_dir = batch_dir.rstrip("/")
 
         logger.debug(f"📦 ResultStore 초기화: {type(self.backend).__name__} - {self.results_dir}")
@@ -92,11 +92,11 @@ class ResultStore:
             저장된 파일 경로 (로컬: Path, S3: s3://bucket/key 문자열)
 
         Example:
-            >>> store = ResultStore("task-123", Path("./data/analyze/task-123"))
+            >>> store = ResultStore("task-123", Path("./data/analyze_multi/main-456/repos/task-123"))
             >>> response = RepoClonerResponse(status="success", repo_path="/path/to/repo")
             >>> file_path = store.save_result("repo_cloner", response)
             >>> print(file_path)
-            Path("./data/analyze/task-123/results/repo_cloner.json")
+            Path("./data/analyze_multi/main-456/repos/task-123/results/repo_cloner.json")
         """
         saved_path = self.backend.save_result(agent_name, result)
         
@@ -126,7 +126,7 @@ class ResultStore:
 
         Example:
             >>> from agents.repo_cloner import RepoClonerResponse
-            >>> store = ResultStore("task-123", Path("./data/analyze/task-123"))
+            >>> store = ResultStore("task-123", Path("./data/analyze_multi/main-456/repos/task-123"))
             >>> result = store.load_result("repo_cloner", RepoClonerResponse)
             >>> print(result.repo_path)
             "/path/to/repo"
@@ -151,11 +151,11 @@ class ResultStore:
             저장된 파일 경로 (로컬: Path, S3: s3://bucket/key 문자열)
 
         Example:
-            >>> store = ResultStore("task-123", Path("./data/analyze/task-123"))
+            >>> store = ResultStore("task-123", Path("./data/analyze_multi/main-456/repos/task-123"))
             >>> batch_results = [CommitEvaluatorResponse(...) for _ in range(100)]
             >>> file_path = store.save_batched_result("commit_evaluator", 0, batch_results)
             >>> print(file_path)
-            Path("./data/analyze/task-123/results/commit_evaluator/batch_0000.json")
+            Path("./data/analyze_multi/main-456/repos/task-123/results/commit_evaluator/batch_0000.json")
         """
         saved_path = self.backend.save_batched_result(agent_name, batch_id, result)
         
@@ -181,7 +181,7 @@ class ResultStore:
 
         Example:
             >>> from agents.commit_evaluator import CommitEvaluatorResponse
-            >>> store = ResultStore("task-123", Path("./data/analyze/task-123"))
+            >>> store = ResultStore("task-123", Path("./data/analyze_multi/main-456/repos/task-123"))
             >>> batches = store.load_batched_results("commit_evaluator", CommitEvaluatorResponse)
             >>> print(len(batches))
             10
@@ -199,7 +199,7 @@ class ResultStore:
             결과 파일 경로 (로컬: Path, S3: s3://bucket/key 문자열)
 
         Example:
-            >>> store = ResultStore("task-123", Path("./data/analyze/task-123"))
+            >>> store = ResultStore("task-123", Path("./data/analyze_multi/main-456/repos/task-123"))
             >>> path = store.get_result_path("static_analyzer")
             >>> if isinstance(path, Path) and path.exists():
             ...     data = json.loads(path.read_text(encoding="utf-8"))
@@ -232,7 +232,7 @@ class ResultStore:
             에이전트 이름 리스트
 
         Example:
-            >>> store = ResultStore("task-123", Path("./data/analyze/task-123"))
+            >>> store = ResultStore("task-123", Path("./data/analyze_multi/main-456/repos/task-123"))
             >>> results = store.list_available_results()
             >>> print(results)
             ["repo_cloner", "static_analyzer", "commit_analyzer"]
@@ -247,7 +247,7 @@ class ResultStore:
             배치 저장된 에이전트 이름 리스트
 
         Example:
-            >>> store = ResultStore("task-123", Path("./data/analyze/task-123"))
+            >>> store = ResultStore("task-123", Path("./data/analyze_multi/main-456/repos/task-123"))
             >>> batched = store.list_batched_agents()
             >>> print(batched)
             ["commit_evaluator"]
@@ -346,4 +346,19 @@ class ResultStore:
             저장된 경로 (로컬: Path string, S3: s3://bucket/key 문자열)
         """
         return self.backend.save_debug_file(relative_path, content)
+
+    def load_debug_file(self, relative_path: str) -> str:
+        """
+        디버그 파일 로드
+
+        Args:
+            relative_path: 상대 경로 (예: "total_skill.json")
+
+        Returns:
+            파일 내용 (문자열)
+
+        Raises:
+            FileNotFoundError: 파일이 존재하지 않을 때
+        """
+        return self.backend.load_debug_file(relative_path)
 

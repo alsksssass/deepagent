@@ -22,7 +22,7 @@ class LocalStorageBackend(StorageBackend):
     로컬 파일시스템 기반 스토리지 백엔드
 
     구조:
-        data/analyze/{task_uuid}/
+        data/analyze_multi/{main_task_uuid}/repos/{task_uuid}/
         ├── results/
         │   ├── repo_cloner.json
         │   ├── static_analyzer.json
@@ -39,7 +39,7 @@ class LocalStorageBackend(StorageBackend):
 
         Args:
             task_uuid: 작업 고유 UUID
-            base_path: 기본 경로 (예: "./data/analyze/{task_uuid}")
+            base_path: 기본 경로 (예: "./data/analyze_multi/{main_task_uuid}/repos/{task_uuid}")
         """
         super().__init__(task_uuid, base_path)
         self.base_path_obj = Path(base_path)
@@ -297,3 +297,12 @@ class LocalStorageBackend(StorageBackend):
             file_path.write_text(content, encoding="utf-8")
         
         return str(file_path)
+
+    def load_debug_file(self, relative_path: str) -> str:
+        """디버그 파일 로드 (로컬)"""
+        file_path = self.base_path_obj / relative_path
+        
+        if not file_path.exists():
+            raise FileNotFoundError(f"디버그 파일을 찾을 수 없습니다: {relative_path} ({file_path})")
+        
+        return file_path.read_text(encoding="utf-8")
