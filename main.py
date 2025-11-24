@@ -30,6 +30,10 @@ logging.basicConfig(
     ],
 )
 
+# langchain_aws의 불필요한 INFO 로그 제거
+logging.getLogger("langchain_aws.chat_models.bedrock_converse").setLevel(logging.WARNING)
+logging.getLogger("langchain_aws").setLevel(logging.WARNING)
+
 logger = logging.getLogger(__name__)
 
 

@@ -28,11 +28,11 @@ from agents.static_analyzer import StaticAnalyzerAgent, StaticAnalyzerContext
 from agents.commit_analyzer import CommitAnalyzerAgent, CommitAnalyzerContext
 from agents.commit_evaluator import CommitEvaluatorAgent, CommitEvaluatorContext
 from agents.user_aggregator import UserAggregatorAgent, UserAggregatorContext, UserAggregatorResponse
-from agents.reporter import ReporterAgent, ReporterContext
+from agents.reporter import ReporterAgent, ReporterContext, ReporterResponse
 
 # Agents (Phase 5 마이그레이션 완료)
 from agents.code_rag_builder import CodeRAGBuilderAgent, CodeRAGBuilderContext
-from agents.user_skill_profiler import UserSkillProfilerAgent, UserSkillProfilerContext
+from agents.user_skill_profiler import UserSkillProfilerAgent, UserSkillProfilerContext, UserSkillProfilerResponse
 
 # Tools (for CommitEvaluator)
 from shared.tools.neo4j_tools import get_user_commits
@@ -592,7 +592,11 @@ class DeepAgentOrchestrator:
                     result_store_path=str(store.results_dir),
                 )
                 user_agg_response = await user_aggregator.run(user_agg_ctx)
-                store.save_result("user_aggregator", user_agg_response)
+                logger.info(f"💾 user_aggregator.json 저장 시작: task_uuid={task_uuid}")
+                logger.info(f"   ResultStore base_path: {store.base_path}")
+                logger.info(f"   ResultStore results_dir: {store.results_dir}")
+                saved_path = store.save_result("user_aggregator", user_agg_response)
+                logger.info(f"   ✅ user_aggregator.json 저장 완료: {saved_path}")
                 user_agg_result = user_agg_response.model_dump()
             else:
                 user_agg_result = {
@@ -628,7 +632,11 @@ class DeepAgentOrchestrator:
                     result_store_path=str(store.results_dir),
                 )
                 skill_profile_response = await user_skill_profiler.run(skill_profile_ctx)
-                store.save_result("user_skill_profiler", skill_profile_response)
+                logger.info(f"💾 user_skill_profiler.json 저장 시작: task_uuid={task_uuid}")
+                logger.info(f"   ResultStore base_path: {store.base_path}")
+                logger.info(f"   ResultStore results_dir: {store.results_dir}")
+                saved_path = store.save_result("user_skill_profiler", skill_profile_response)
+                logger.info(f"   ✅ user_skill_profiler.json 저장 완료: {saved_path}")
                 skill_profile_result = skill_profile_response.model_dump()
             else:
                 skill_profile_result = {
@@ -797,19 +805,48 @@ class DeepAgentOrchestrator:
                 from shared.graph_db import AnalysisStatus
                 from shared.storage import ResultStore
 
-                # ResultStore에서 user_aggregator 결과 로드
+                # ResultStore에서 결과 로드
                 store = ResultStore(task_uuid, base_path)
                 
-                # user_aggregator 결과 로드 (없으면 빈 딕셔너리 사용)
+                # skill_profile_result 로드
+                skill_profile_result = {}
                 try:
-                    user_agg_result = store.load_result("user_aggregator", UserAggregatorResponse)
-                    if user_agg_result:
-                        result_data = user_agg_result.model_dump()
-                    else:
-                        result_data = {}
+                    skill_profile_response = store.load_result("user_skill_profiler", UserSkillProfilerResponse)
+                    if skill_profile_response:
+                        skill_profile_result = skill_profile_response.model_dump()
                 except Exception as load_err:
-                    logger.warning(f"⚠️ user_aggregator 결과 로드 실패: {load_err}")
-                    result_data = {}  # 빈 결과로 저장
+                    logger.warning(f"⚠️ user_skill_profiler 결과 로드 실패: {load_err}")
+                
+                # reporter 리포트 내용 로드
+                report_content = ""
+                try:
+                    reporter_response = store.load_result("reporter", ReporterResponse)
+                    if reporter_response and reporter_response.report_path:
+                        report_path_str = reporter_response.report_path
+                        # 리포트 파일명 추출 (경로에서 파일명만 추출)
+                        if report_path_str.startswith("s3://"):
+                            # S3 경로: s3://bucket/path/to/report_xxx.md -> report_xxx.md
+                            report_filename = report_path_str.split("/")[-1]
+                        else:
+                            # 로컬 경로: /path/to/report_xxx.md -> report_xxx.md
+                            report_filename = Path(report_path_str).name
+                        
+                        # ResultStore를 통해 리포트 읽기 (S3/로컬 자동 처리)
+                        try:
+                            report_content = store.load_report(report_filename)
+                            logger.info(f"✅ 리포트 내용 로드 완료: {report_filename}")
+                        except FileNotFoundError:
+                            logger.warning(f"⚠️ 리포트 파일을 찾을 수 없습니다: {report_filename}")
+                        except Exception as load_err:
+                            logger.warning(f"⚠️ 리포트 로드 실패: {load_err}")
+                except Exception as load_err:
+                    logger.warning(f"⚠️ reporter 결과 로드 실패: {load_err}")
+                
+                # result_data 구성: skill_profile_result와 content를 JSON 형식으로 저장
+                result_data = {
+                    "skill_profile_result": skill_profile_result,
+                    "content": report_content
+                }
 
                 # 에러 여부 확인
                 has_error = state.get("error_message") is not None

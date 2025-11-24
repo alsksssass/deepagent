@@ -569,43 +569,70 @@ class RepoSynthesizerAgent:
                 
                 try:
                     store = ResultStore(task_uuid, Path(base_path))
+                    logger.info(f"📂 RepoSynthesizer 데이터 로드 시작: task_uuid={task_uuid}")
+                    logger.info(f"   base_path: {base_path}")
+                    logger.info(f"   ResultStore results_dir: {store.results_dir}")
                     
                     # total_skill.json 로드 (일반 JSON 파일)
                     try:
                         import json
+                        logger.info(f"   📥 total_skill.json 로드 시도: {base_path}/total_skill.json")
                         total_skill_content = store.load_debug_file("total_skill.json")
                         total_skill_data = json.loads(total_skill_content)
                         if isinstance(total_skill_data, list):
                             all_skills += total_skill_data
+                            logger.info(f"   ✅ total_skill.json 로드 성공: {len(total_skill_data)}개 스킬")
                         else:
                             logger.debug(f"total_skill.json이 리스트 형식이 아님: {type(total_skill_data)}")
                     except FileNotFoundError:
-                        logger.debug(f"total_skill.json 파일 없음: {task_uuid}")
+                        logger.warning(f"   ⚠️ total_skill.json 파일 없음: task_uuid={task_uuid}, base_path={base_path}")
                     except Exception as e:
-                        logger.debug(f"total_skill.json 로드 실패: {e}")
+                        logger.warning(f"   ⚠️ total_skill.json 로드 실패: {e}, base_path={base_path}")
                     
                     
                     # 1. UserAggregator 결과에서 품질 점수 수집
-                    user_agg_response = store.load_result("user_aggregator", UserAggregatorResponse)
-                    user_agg = user_agg_response.model_dump() if user_agg_response else None
-                    if user_agg and user_agg.get("aggregate_stats"):
-                        quality_stats = user_agg["aggregate_stats"].get("quality_stats", {})
-                        avg_score = quality_stats.get("average_score")
-                        if avg_score is not None:
-                            all_quality_scores.append(avg_score)
+                    try:
+                        logger.info(f"   📥 user_aggregator.json 로드 시도: {store.results_dir}/user_aggregator.json")
+                        user_agg_response = store.load_result("user_aggregator", UserAggregatorResponse)
+                        user_agg = user_agg_response.model_dump() if user_agg_response else None
+                        if user_agg and user_agg.get("aggregate_stats"):
+                            quality_stats = user_agg["aggregate_stats"].get("quality_stats", {})
+                            avg_score = quality_stats.get("average_score")
+                            if avg_score is not None:
+                                all_quality_scores.append(avg_score)
+                                logger.info(f"   ✅ user_aggregator.json 로드 성공: 품질 점수={avg_score}")
+                        else:
+                            logger.warning(f"   ⚠️ user_aggregator 결과에 aggregate_stats 없음")
+                    except Exception as e:
+                        logger.warning(f"   ⚠️ user_aggregator.json 로드 실패: {e}")
                     
                     # 2. UserSkillProfiler 결과에서 스킬 데이터 수집
-                    skill_profile_response = store.load_result("user_skill_profiler", UserSkillProfilerResponse)
-                    skill_profile = skill_profile_response.model_dump() if skill_profile_response else None
+                    try:
+                        logger.info(f"   📥 user_skill_profiler.json 로드 시도: {store.results_dir}/user_skill_profiler.json")
+                        skill_profile_response = store.load_result("user_skill_profiler", UserSkillProfilerResponse)
+                        skill_profile = skill_profile_response.model_dump() if skill_profile_response else None
+                        if skill_profile:
+                            logger.info(f"   ✅ user_skill_profiler.json 로드 성공")
+                        else:
+                            logger.warning(f"   ⚠️ user_skill_profiler 결과가 None")
+                    except Exception as e:
+                        logger.warning(f"   ⚠️ user_skill_profiler.json 로드 실패: {e}")
+                        skill_profile = None
                     
                     if skill_profile and skill_profile.get("skill_profile"):
                         # top_skills에서 스킬 정보 추출
                         top_skills = skill_profile["skill_profile"].get("top_skills", [])
+                        logger.info(f"   📊 top_skills 수집: {len(top_skills)}개")
                         for skill in top_skills:
+                            # all_skills에 추가 (레벨 계산용)
+                            # top_skills는 이미 base_score를 포함한 스킬 객체
+                            all_skills.append(skill)
+                            
                             # 기술 스택 추가 (중복 제거)
                             skill_category = skill.get("category", "")
                             if skill_category:
                                 all_tech_stack.add(skill_category)
+                        logger.info(f"   ✅ top_skills를 all_skills에 추가 완료: {len(top_skills)}개")
                 
                 except Exception as e:
                     logger.warning(f"⚠️ 레포지토리 {task_uuid} 데이터 수집 실패: {e}")
