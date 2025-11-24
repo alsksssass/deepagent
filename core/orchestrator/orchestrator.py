@@ -58,6 +58,8 @@ class DeepAgentOrchestrator:
         config_path: Path | None = None,
         user_id: uuid.UUID | None = None,
         db_writer: Any | None = None,
+        task_ids : list | None = None,
+        main_task_id : str | None = None
     ):
         self.sonnet_llm = sonnet_llm
         self.haiku_llm = haiku_llm
@@ -73,6 +75,9 @@ class DeepAgentOrchestrator:
         self.user_id = user_id
         self.db_writer = db_writer
 
+        # task_id 및 main_task_id 설정
+        self.task_ids = task_ids
+        self.main_task_id = main_task_id
         # Orchestrator 설정 로드
         self.config = OrchestratorConfig(config_path)
 
@@ -120,6 +125,7 @@ class DeepAgentOrchestrator:
         target_user: str | None = None,
         main_task_uuid: str | None = None,
         main_base_path: str | Path | None = None,
+        task_id : str | None = None,
     ) -> AgentState:
         """
         전체 분석 파이프라인 실행
@@ -141,7 +147,7 @@ class DeepAgentOrchestrator:
 
         # 초기 상태
         initial_state: AgentState = {
-            "task_uuid": str(uuid.uuid4()),
+            "task_uuid": str(task_id),
             "main_task_uuid": main_task_uuid,  # 멀티 분석 모드
             "git_url": git_url,
             "target_user": target_user,
@@ -191,18 +197,12 @@ class DeepAgentOrchestrator:
                         )
                         logger.info(f"📊 DB FAILED 업데이트 완료: {initial_state['task_uuid']}")
                     else:
-                        # 레코드가 없으면 생성 (setup_node 실패 시)
-                        await self.db_writer.save_repository_analysis(
-                            user_id=self.user_id,
-                            repository_url=git_url,
-                            result={},
-                            task_uuid=task_uuid_obj,
-                            status=AnalysisStatus.FAILED,
-                            error_message=str(e)
-                        )
-                        logger.info(f"📊 DB FAILED 레코드 생성 완료: {initial_state['task_uuid']}")
+                        # 레코드가 없으면 외부 백엔드에서 생성해야 함
+                        logger.error(f"❌ DB 레코드 없음: {initial_state['task_uuid']}. 외부 백엔드에서 먼저 생성해야 합니다.")
+                        raise Exception(f"DB 레코드 없음: task_uuid {initial_state['task_uuid']}. 외부 백엔드에서 먼저 생성해야 합니다.")
                 except Exception as db_err:
-                    logger.warning(f"⚠️ DB FAILED 업데이트 실패: {db_err}")
+                    logger.error(f"❌ DB FAILED 업데이트 실패: {db_err}")
+                    raise
 
             # 에러 정보를 포함한 상태 반환
             initial_state["error_message"] = str(e)
@@ -223,13 +223,6 @@ class DeepAgentOrchestrator:
         # 모든 분석은 멀티 분석 모드로 통일
         main_task_uuid = state.get("main_task_uuid")
         main_base_path = state.get("main_base_path")
-        
-        # main_task_uuid가 없으면 생성 (하위 호환성)
-        if not main_task_uuid:
-            import uuid
-            main_task_uuid = str(uuid.uuid4())
-            state["main_task_uuid"] = main_task_uuid
-            logger.warning(f"⚠️ main_task_uuid가 없어 자동 생성: {main_task_uuid}")
         
         # shared/storage의 create_storage_backend를 사용하여 경로 생성
         from shared.storage import create_storage_backend
@@ -293,26 +286,18 @@ class DeepAgentOrchestrator:
                 task_uuid_obj = uuid.UUID(task_uuid)
                 
                 # main_task_uuid 추출 (멀티 분석 시)
-                main_task_uuid_obj = state.get("main_task_uuid")
+                main_task_uuid_obj =state.get("main_task_uuid")
 
-                # 기존 레코드 확인 (중복 방지)
+                # 기존 레코드 확인 (외부 백엔드에서 생성해야 함)
                 existing = await self.db_writer.get_repository_analysis(task_uuid_obj)
                 if existing:
-                    logger.info(f"📊 기존 DB 레코드 재사용: {task_uuid} (상태: {existing.status.value})")
+                    logger.info(f"📊 기존 DB 레코드 확인: {task_uuid} (상태: {existing.status.value})")
                 else:
-                    # 새 레코드 생성
-                    await self.db_writer.save_repository_analysis(
-                        user_id=self.user_id,
-                        repository_url=git_url,
-                        result={},  # 빈 결과
-                        task_uuid=task_uuid_obj,
-                        main_task_uuid=main_task_uuid_obj,  # 멀티 분석 시 종합 분석과 연결
-                        status=AnalysisStatus.PROCESSING,
-                        error_message=None
-                    )
-                    logger.info(f"📊 DB 레코드 생성 완료: {task_uuid} (PROCESSING, main_task: {main_task_uuid_obj})")
+                    logger.error(f"❌ DB 레코드 없음: {task_uuid}. 외부 백엔드에서 먼저 생성해야 합니다.")
+                    raise Exception(f"DB 레코드 없음: task_uuid {task_uuid}. 외부 백엔드에서 먼저 생성해야 합니다.")
             except Exception as e:
-                logger.warning(f"⚠️ DB 레코드 생성 실패: {e}")
+                logger.error(f"❌ DB 레코드 확인 실패: {e}")
+                raise
 
         return {
             "base_path": str(base_path),
@@ -814,7 +799,17 @@ class DeepAgentOrchestrator:
 
                 # ResultStore에서 user_aggregator 결과 로드
                 store = ResultStore(task_uuid, base_path)
-                user_agg_result = store.load_result("user_aggregator", UserAggregatorResponse)
+                
+                # user_aggregator 결과 로드 (없으면 빈 딕셔너리 사용)
+                try:
+                    user_agg_result = store.load_result("user_aggregator", UserAggregatorResponse)
+                    if user_agg_result:
+                        result_data = user_agg_result.model_dump()
+                    else:
+                        result_data = {}
+                except Exception as load_err:
+                    logger.warning(f"⚠️ user_aggregator 결과 로드 실패: {load_err}")
+                    result_data = {}  # 빈 결과로 저장
 
                 # 에러 여부 확인
                 has_error = state.get("error_message") is not None
@@ -824,12 +819,15 @@ class DeepAgentOrchestrator:
                 task_uuid_obj = uuid.UUID(task_uuid)
                 
                 # main_task_uuid 추출 (멀티 분석 시)
-                main_task_uuid_obj = state.get("main_task_uuid")
+                main_task_uuid_obj = None
+                main_task_uuid_str = state.get("main_task_uuid")
+                if main_task_uuid_str:
+                    main_task_uuid_obj = uuid.UUID(main_task_uuid_str)
 
                 # DB 업데이트
                 await self.db_writer.update_repository_result(
                     task_uuid=task_uuid_obj,
-                    result=user_agg_result,
+                    result=result_data,  # dict 타입으로 전달
                     main_task_uuid=main_task_uuid_obj,  # 멀티 분석 시 종합 분석과 연결
                     status=status,
                     error_message=error_message

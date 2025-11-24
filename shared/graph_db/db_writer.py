@@ -336,6 +336,49 @@ class AnalysisDBWriter:
                     logger.warning(f"⚠️  task_uuid {task_uuid} 찾을 수 없음")
                     return False
 
+    async def update_final_analysis(
+        self,
+        main_task_uuid: UUID,
+        result: dict,
+        status: AnalysisStatus = AnalysisStatus.COMPLETED,
+        error_message: Optional[str] = None
+    ) -> bool:
+        """
+        종합 분석 결과 및 상태 업데이트
+
+        Args:
+            main_task_uuid: 메인 작업 UUID (종합 분석 식별자)
+            result: RepoSynthesizerResponse.model_dump() 결과
+            status: 새로운 상태 (기본값: COMPLETED)
+            error_message: 에러 메시지 (실패 시)
+
+        Returns:
+            업데이트 성공 여부
+        """
+        async with self._get_session() as session:
+            async with session.begin():
+                stmt = (
+                    select(Analysis)
+                    .where(Analysis.main_task_uuid == main_task_uuid)
+                )
+                query_result = await session.execute(stmt)
+                analysis = query_result.scalar_one_or_none()
+
+                if analysis:
+                    analysis.result = result
+                    analysis.status = status
+                    analysis.error_message = error_message
+                    await session.commit()
+                    tech_count = len(result.get('tech_stack', []))
+                    logger.info(
+                        f"📊 종합 분석 결과 업데이트: main_task={main_task_uuid}, "
+                        f"techs={tech_count}, status={status}"
+                    )
+                    return True
+                else:
+                    logger.warning(f"⚠️  main_task_uuid {main_task_uuid} 찾을 수 없음")
+                    return False
+
     async def get_repository_analysis(
         self,
         task_uuid: UUID
