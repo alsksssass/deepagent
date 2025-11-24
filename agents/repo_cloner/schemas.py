@@ -30,10 +30,16 @@ class RepoClonerContext(BaseContext):
 
     @field_validator("base_path")
     def validate_base_path(cls, v):
-        """기본 경로 존재 여부 검증"""
-        path = Path(v)
-        if not path.exists():
-            raise ValueError(f"base_path가 존재하지 않습니다: {v}")
+        """기본 경로 검증 (로컬 환경만)"""
+        import os
+        storage_backend = os.getenv("STORAGE_BACKEND", "local")
+        
+        # S3 환경에서는 경로가 존재하지 않을 수 있으므로 검증 스킵
+        if storage_backend == "local":
+            path = Path(v)
+            if not path.exists():
+                raise ValueError(f"base_path가 존재하지 않습니다: {v}")
+        
         return v
 
 

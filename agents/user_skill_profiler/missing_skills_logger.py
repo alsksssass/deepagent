@@ -22,7 +22,7 @@ class MissingSkillsLogger:
     def __init__(self, result_store_path: str):
         """
         Args:
-            result_store_path: ResultStore 경로 (예: data/analyze/{task_uuid}/results)
+            result_store_path: ResultStore 경로 (예: data/analyze_multi/{main_task_uuid}/repos/{task_uuid}/results)
         """
         self.result_store_path = Path(result_store_path)
         self.logs_dir = self.result_store_path.parent / "missing_skills"

@@ -113,8 +113,7 @@ async def analyze_multiple_repos(
         종합 결과 딕셔너리
     """
     logger.info("=" * 60)
-    is_single = len(git_urls) == 1
-    logger.info(f"🚀 {'Single' if is_single else 'Multi'}-Repository Analysis")
+    logger.info("🚀 Multi-Repository Analysis")
     logger.info("=" * 60)
     logger.info(f"   레포지토리 수: {len(git_urls)}개")
     logger.info(f"   Target User: {target_user if target_user else '전체 유저'}")
@@ -300,7 +299,7 @@ async def main_async(args):
 
     # 결과 출력
     logger.info("=" * 60)
-    logger.info(f"📊 {'Single' if len(git_urls) == 1 else 'Multi'}-Repository 분석 완료")
+    logger.info("📊 Multi-Repository 분석 완료")
     logger.info("=" * 60)
 
     if final_result.get("error_message"):

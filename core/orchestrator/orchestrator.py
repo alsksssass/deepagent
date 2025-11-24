@@ -829,7 +829,7 @@ class DeepAgentOrchestrator:
                 # DB 업데이트
                 await self.db_writer.update_repository_result(
                     task_uuid=task_uuid_obj,
-                    result={"content" :report_content},
+                    result=user_agg_result,
                     main_task_uuid=main_task_uuid_obj,  # 멀티 분석 시 종합 분석과 연결
                     status=status,
                     error_message=error_message

@@ -30,7 +30,7 @@ class S3StorageBackend(StorageBackend):
     AWS S3 기반 스토리지 백엔드
 
     구조:
-        s3://bucket-name/analyze/{task_uuid}/
+        s3://bucket-name/analyze_multi/{main_task_uuid}/repos/{task_uuid}/
         ├── results/
         │   ├── repo_cloner.json
         │   ├── static_analyzer.json
@@ -47,7 +47,7 @@ class S3StorageBackend(StorageBackend):
 
         Args:
             task_uuid: 작업 고유 UUID
-            base_path: S3 기본 경로 (예: "analyze/{task_uuid}")
+            base_path: S3 기본 경로 (예: "analyze_multi/{main_task_uuid}/repos/{task_uuid}")
 
         Raises:
             ImportError: boto3가 설치되지 않은 경우

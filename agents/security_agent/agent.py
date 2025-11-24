@@ -112,7 +112,10 @@ class SecurityAgent:
             # LLM 호출 로깅을 위해 logger 가져오기
             from shared.utils.agent_debug_logger import AgentDebugLogger
             from pathlib import Path
-            base_path = Path(f"./data/analyze/{context.task_uuid}")
+            
+            # main_task_uuid는 context에서 가져오기 (fallback: task_uuid)
+            main_task_uuid = context.main_task_uuid or context.task_uuid
+            base_path = Path(f"./data/analyze_multi/{main_task_uuid}/repos/{context.task_uuid}")
             debug_logger = AgentDebugLogger.get_logger(context.task_uuid, base_path, "security_agent")
 
             with TokenTracker.track("security_agent"), debug_logger.track_llm_call() as llm_tracker:

@@ -28,7 +28,7 @@ class StorageBackend(ABC):
 
         Args:
             task_uuid: 작업 고유 UUID
-            base_path: 기본 경로 (local: "./data/analyze/{uuid}", S3: "s3://bucket/analyze/{uuid}")
+            base_path: 기본 경로 (local: "./data/analyze_multi/{main_task_uuid}/repos/{task_uuid}", S3: "analyze_multi/{main_task_uuid}/repos/{task_uuid}")
         """
         self.task_uuid = task_uuid
         self.base_path = str(base_path)

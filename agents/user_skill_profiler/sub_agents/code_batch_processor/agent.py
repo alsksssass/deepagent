@@ -221,7 +221,10 @@ class CodeBatchProcessorAgent:
 
         # LLM 호출 로깅을 위해 logger 가져오기
         from pathlib import Path
-        base_path = Path(f"./data/analyze/{context.task_uuid}")
+        import uuid
+        # 디버그 로깅용 경로 (실제 저장 경로와는 다를 수 있음)
+        main_task_uuid = context.main_task_uuid or context.task_uuid
+        base_path = Path(f"./data/analyze_multi/{main_task_uuid}/repos/{context.task_uuid}")
         parent_debug_logger = AgentDebugLogger.get_logger(
             context.task_uuid, 
             base_path, 

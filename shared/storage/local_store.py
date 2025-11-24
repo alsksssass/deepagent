@@ -22,7 +22,7 @@ class LocalStorageBackend(StorageBackend):
     로컬 파일시스템 기반 스토리지 백엔드
 
     구조:
-        data/analyze/{task_uuid}/
+        data/analyze_multi/{main_task_uuid}/repos/{task_uuid}/
         ├── results/
         │   ├── repo_cloner.json
         │   ├── static_analyzer.json
@@ -39,7 +39,7 @@ class LocalStorageBackend(StorageBackend):
 
         Args:
             task_uuid: 작업 고유 UUID
-            base_path: 기본 경로 (예: "./data/analyze/{task_uuid}")
+            base_path: 기본 경로 (예: "./data/analyze_multi/{main_task_uuid}/repos/{task_uuid}")
         """
         super().__init__(task_uuid, base_path)
         self.base_path_obj = Path(base_path)

@@ -147,7 +147,7 @@ class RepoClonerAgent:
                     )
                     
                     # Git clone 명령 (타임아웃 설정 포함)
-                    clone_cmd = f"timeout 600 git clone --depth 1 {clone_url} {repo_path}"
+                    clone_cmd = f"timeout 600 git clone {clone_url} {repo_path}"
                     cmd = f"{git_config_cmd} && {clone_cmd}"
                     
                     logger.info(f"🔄 클론 시도 {attempt}/{max_retries}: {clone_url}")

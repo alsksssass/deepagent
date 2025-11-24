@@ -16,6 +16,10 @@ class BaseContext(BaseModel):
     모든 서브에이전트는 이 클래스를 상속하여 입력 스키마를 정의합니다.
     """
     task_uuid: str = Field(..., description="작업 고유 ID (UUID)")
+    main_task_uuid: Optional[str] = Field(
+        None,
+        description="메인 작업 UUID (멀티 레포지토리 분석 시 모든 서브 작업을 묶는 상위 UUID)"
+    )
     repo_path: Optional[str] = Field(None, description="Git 레포지토리 경로")
     target_user: Optional[str] = Field(None, description="분석 대상 유저 이메일 또는 이름")
     result_store_path: Optional[str] = Field(

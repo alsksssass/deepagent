@@ -104,7 +104,13 @@ class UserSkillProfilerAgent:
         logger.info(f"🎯 UserSkillProfiler: {user} 스킬 프로파일 생성 시작")
 
         # ResultStore 초기화 (배치 결과 저장용)
-        base_path = Path(context.result_store_path).parent if context.result_store_path else Path(f"./data/analyze/{task_uuid}")
+        if context.result_store_path:
+            base_path = Path(context.result_store_path).parent
+        else:
+            # result_store_path가 없으면 main_task_uuid 사용
+            main_task_uuid = context.main_task_uuid or task_uuid
+            logger.warning(f"⚠️ result_store_path가 없어 기본 경로 생성: analyze_multi/{main_task_uuid}/repos/{task_uuid}")
+            base_path = Path(f"./data/analyze_multi/{main_task_uuid}/repos/{task_uuid}")
         result_store = ResultStore(task_uuid, base_path)
         
         # 중간 단계 로깅을 위해 logger 가져오기
