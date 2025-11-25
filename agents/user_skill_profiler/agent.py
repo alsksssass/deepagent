@@ -105,7 +105,27 @@ class UserSkillProfilerAgent:
 
         # ResultStore 초기화 (배치 결과 저장용)
         if context.result_store_path:
-            base_path = Path(context.result_store_path).parent
+            # S3 경로인 경우 처리
+            if context.result_store_path.startswith("s3://"):
+                # s3://bucket/analyze_multi/.../results -> analyze_multi/.../repos/{task_uuid}
+                # bucket 이름과 results 제거
+                path_parts = context.result_store_path.replace("s3://", "").split("/")
+                # bucket 이름 제거 (첫 번째 요소)
+                if len(path_parts) > 1:
+                    path_parts = path_parts[1:]  # bucket 제거
+                    # results 제거 (마지막 요소)
+                    if path_parts and path_parts[-1] == "results":
+                        path_parts = path_parts[:-1]
+                    base_path = "/".join(path_parts)
+                    logger.debug(f"🔧 S3 경로에서 base_path 추출: {context.result_store_path} -> {base_path}")
+                else:
+                    # 예외 처리: 경로 파싱 실패
+                    main_task_uuid = context.main_task_uuid or task_uuid
+                    logger.warning(f"⚠️ S3 경로 파싱 실패, 기본 경로 사용: {context.result_store_path}")
+                    base_path = f"analyze_multi/{main_task_uuid}/repos/{task_uuid}"
+            else:
+                # 로컬 경로
+                base_path = Path(context.result_store_path).parent
         else:
             # result_store_path가 없으면 main_task_uuid 사용
             main_task_uuid = context.main_task_uuid or task_uuid
@@ -182,8 +202,12 @@ class UserSkillProfilerAgent:
             import json
             # S3/로컬 호환성을 위해 backend의 save_debug_file 사용
             total_skill_content = json.dumps(detected_skills, indent=2, ensure_ascii=False)
+            logger.info(f"💾 total_skill.json 저장 시작: task_uuid={task_uuid}")
+            logger.info(f"   ResultStore base_path: {result_store.base_path}")
+            logger.info(f"   ResultStore results_dir: {result_store.results_dir}")
+            logger.info(f"   저장할 스킬 수: {len(detected_skills)}개")
             total_skill_path = result_store.backend.save_debug_file("total_skill.json", total_skill_content)
-            logger.info(f"전체 스킬 정보 json 저장: {total_skill_path}")
+            logger.info(f"   ✅ total_skill.json 저장 완료: {total_skill_path}")
             
             # 중간 단계 로깅
             debug_logger.log_intermediate("skill_matching", {

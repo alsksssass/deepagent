@@ -61,15 +61,29 @@ class PromptLoader:
         # planner는 core/planner/prompts.yaml에 있음
         if agent_name == "planner":
             prompt_path = base_path / "core" / "planner" / "prompts.yaml"
+        elif agent_name == "code_batch_processor":
+            # code_batch_processor는 sub_agents 경로에 있음
+            prompt_path = base_path / "agents" / "user_skill_profiler" / "sub_agents" / "code_batch_processor" / "prompts.yaml"
+        elif "/" in agent_name:
+            # "user_skill_profiler/sub_agents/code_batch_processor" 형식
+            parts = agent_name.split("/")
+            if len(parts) == 3 and parts[1] == "sub_agents":
+                prompt_path = base_path / "agents" / parts[0] / parts[1] / parts[2] / "prompts.yaml"
+            else:
+                prompt_path = base_path / "agents" / agent_name / "prompts.yaml"
         else:
             # agents/{agent_name}/prompts.yaml 경로
             prompt_path = base_path / "agents" / agent_name / "prompts.yaml"
 
         if not prompt_path.exists():
-            expected_location = (
-                f"core/planner/prompts.yaml" if agent_name == "planner"
-                else f"agents/{agent_name}/prompts.yaml"
-            )
+            if agent_name == "planner":
+                expected_location = "core/planner/prompts.yaml"
+            elif agent_name == "code_batch_processor":
+                expected_location = "agents/user_skill_profiler/sub_agents/code_batch_processor/prompts.yaml"
+            elif "/" in agent_name:
+                expected_location = f"agents/{agent_name}/prompts.yaml"
+            else:
+                expected_location = f"agents/{agent_name}/prompts.yaml"
             raise FileNotFoundError(
                 f"Prompt file not found: {prompt_path}\n"
                 f"Expected location: {expected_location}"

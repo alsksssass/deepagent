@@ -49,9 +49,54 @@ fi
 
 echo ""
 
-# Step 2: Job Definition 등록
+# Step 2: 기존 Job Definition 삭제
 echo "============================================================"
-echo "📝 Step 2/2: Job Definition 등록"
+echo "🧹 Step 2/3: 기존 Job Definition 삭제"
+echo "============================================================"
+echo ""
+
+JOB_DEF_NAME="deep-agents-job"
+
+# ACTIVE 상태인 Job Definition ARN 목록 조회
+echo "🔍 ACTIVE 상태의 Job Definition 조회 중..."
+ARNS=$(aws batch describe-job-definitions \
+    --job-definition-name "$JOB_DEF_NAME" \
+    --status ACTIVE \
+    --region $AWS_REGION \
+    --query 'jobDefinitions[*].jobDefinitionArn' \
+    --output text 2>/dev/null || echo "")
+
+if [ -z "$ARNS" ] || [ "$ARNS" == "None" ]; then
+    echo "✅ 삭제할 ACTIVE Job Definition이 없습니다."
+else
+    # 공백/탭을 줄바꿈으로 변환하여 배열로 저장
+    IFS=$'\t\n' read -ra ARN_LIST <<< "$ARNS"
+    
+    COUNT=${#ARN_LIST[@]}
+    echo "📋 총 $COUNT 개의 Job Definition을 삭제(Deregister)합니다."
+    echo ""
+    
+    for arn in "${ARN_LIST[@]}"; do
+        echo "🗑️  Deregistering: $arn"
+        aws batch deregister-job-definition \
+            --job-definition "$arn" \
+            --region $AWS_REGION > /dev/null
+        
+        if [ $? -eq 0 ]; then
+            echo "   ✅ 완료"
+        else
+            echo "   ⚠️  실패 (계속 진행)"
+        fi
+    done
+    
+    echo "✅ 기존 Job Definition 삭제 완료"
+fi
+
+echo ""
+
+# Step 3: Job Definition 등록
+echo "============================================================"
+echo "📝 Step 3/3: Job Definition 등록"
 echo "============================================================"
 echo ""
 

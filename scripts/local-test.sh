@@ -104,6 +104,47 @@ if [ -z "$GIT_URLS" ]; then
     echo "⚠️  GIT_URLS가 설정되지 않아 테스트용 URL을 사용합니다: $GIT_URLS"
 fi
 
+# TASK_IDS와 MAIN_TASK_ID가 없으면 자동 생성 및 DB 레코드 생성
+if [ -z "$TASK_IDS" ] || [ -z "$MAIN_TASK_ID" ]; then
+    echo ""
+    echo "📋 TASK_IDS 또는 MAIN_TASK_ID가 없어 자동 생성 및 DB 레코드 생성 중..."
+    echo ""
+    
+    # Python 실행 경로 결정 (가상환경 우선)
+    PYTHON_CMD="python3"
+    if [ -f "$PROJECT_DIR/.venv/bin/python3" ]; then
+        PYTHON_CMD="$PROJECT_DIR/.venv/bin/python3"
+    elif [ -f "$PROJECT_DIR/venv/bin/python3" ]; then
+        PYTHON_CMD="$PROJECT_DIR/venv/bin/python3"
+    elif command -v poetry &> /dev/null; then
+        PYTHON_CMD="poetry run python3"
+    fi
+    
+    # create_test_tasks.py 실행
+    TASK_OUTPUT=$($PYTHON_CMD "$SCRIPT_DIR/create_test_tasks.py" \
+        --user-id "$USER_ID" \
+        --git-urls "$GIT_URLS" \
+        --export 2>&1)
+    
+    if [ $? -ne 0 ]; then
+        echo "❌ Task 생성 실패:"
+        echo "$TASK_OUTPUT"
+        exit 1
+    fi
+    
+    # 환경변수 추출
+    MAIN_TASK_ID=$(echo "$TASK_OUTPUT" | grep "export MAIN_TASK_ID=" | sed "s/export MAIN_TASK_ID='\(.*\)'/\1/")
+    TASK_IDS=$(echo "$TASK_OUTPUT" | grep "export TASK_IDS=" | sed "s/export TASK_IDS='\(.*\)'/\1/")
+    
+    export MAIN_TASK_ID
+    export TASK_IDS
+    
+    echo "$TASK_OUTPUT"
+    echo ""
+    echo "✅ Task 생성 완료"
+    echo ""
+fi
+
 # 기본값 설정
 export AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION:-ap-northeast-2}"
 export AWS_BEDROCK_REGION="${AWS_BEDROCK_REGION:-us-east-1}"
@@ -150,6 +191,8 @@ echo ""
 echo "📋 테스트 설정:"
 echo "   USER_ID: $USER_ID"
 echo "   GIT_URLS: $GIT_URLS"
+echo "   TASK_IDS: $TASK_IDS"
+echo "   MAIN_TASK_ID: $MAIN_TASK_ID"
 echo "   TARGET_USER: ${TARGET_USER:-전체 유저}"
 echo "   AWS_REGION: $AWS_DEFAULT_REGION"
 echo "   POSTGRES_HOST: $POSTGRES_HOST"
@@ -228,6 +271,8 @@ echo ""
 ENV_ARGS=(
     -e USER_ID="$USER_ID"
     -e GIT_URLS="$GIT_URLS"
+    -e TASK_IDS="$TASK_IDS"
+    -e MAIN_TASK_ID="$MAIN_TASK_ID"
     -e TARGET_USER="$TARGET_USER"
     -e AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID"
     -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY"

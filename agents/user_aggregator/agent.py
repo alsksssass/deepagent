@@ -191,20 +191,48 @@ class UserAggregatorAgent:
             return []
 
         try:
-            base_path = Path(context.result_store_path).parent
+            # S3 경로인 경우 처리
+            if context.result_store_path.startswith("s3://"):
+                # s3://bucket/analyze_multi/.../results -> analyze_multi/.../repos/{task_uuid}
+                path_parts = context.result_store_path.replace("s3://", "").split("/")
+                # bucket 이름 제거 (첫 번째 요소)
+                if len(path_parts) > 1:
+                    path_parts = path_parts[1:]  # bucket 제거
+                    # results 제거 (마지막 요소)
+                    if path_parts and path_parts[-1] == "results":
+                        path_parts = path_parts[:-1]
+                    base_path = "/".join(path_parts)
+                    logger.debug(f"🔧 UserAggregator: S3 경로에서 base_path 추출: {context.result_store_path} -> {base_path}")
+                else:
+                    # 예외 처리: 경로 파싱 실패
+                    logger.warning(f"⚠️ UserAggregator: S3 경로 파싱 실패: {context.result_store_path}")
+                    base_path = Path(context.result_store_path).parent
+            else:
+                # 로컬 경로
+                base_path = Path(context.result_store_path).parent
             store = ResultStore(context.task_uuid, base_path)
+            
+            logger.info(f"🔍 UserAggregator 디버깅: task_uuid={context.task_uuid}, base_path={base_path}")
+            logger.info(f"   ResultStore results_dir: {store.results_dir}")
 
             # 배치 결과 스트리밍 로드 (S3/로컬 모두 지원)
             batched_agents = store.list_batched_agents()
+            logger.info(f"   📋 배치 에이전트 목록: {batched_agents}")
+            
             if "commit_evaluator" not in batched_agents:
                 logger.warning(f"⚠️ UserAggregator: commit_evaluator 배치 결과 없음")
+                logger.warning(f"   사용 가능한 배치 에이전트: {batched_agents}")
+                logger.warning(f"   commit_evaluator 배치 디렉토리 확인: {store.get_batch_dir('commit_evaluator')}")
                 return []
 
             # ResultStore의 load_batched_results를 사용하여 배치 결과 로드 (S3/로컬 모두 지원)
             logger.info(f"📂 UserAggregator: commit_evaluator 배치 결과 스트리밍 로드 시작")
+            logger.info(f"   배치 디렉토리: {store.get_batch_dir('commit_evaluator')}")
             all_evaluations = store.load_batched_results("commit_evaluator")
 
             logger.info(f"✅ UserAggregator: 총 {len(all_evaluations)}개 평가 결과 스트리밍 로드 완료")
+            if len(all_evaluations) == 0:
+                logger.warning(f"⚠️ UserAggregator: 로드된 평가 결과가 0개입니다. 배치 파일이 비어있을 수 있습니다.")
             return all_evaluations
 
         except Exception as e:

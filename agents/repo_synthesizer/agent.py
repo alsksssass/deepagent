@@ -26,6 +26,7 @@ from .schemas import (
 from agents.static_analyzer.schemas import StaticAnalyzerResponse
 from agents.user_aggregator.schemas import UserAggregatorResponse
 from agents.user_skill_profiler.schemas import UserSkillProfilerResponse
+from agents.reporter.schemas import ReporterResponse
 
 logger = logging.getLogger(__name__)
 
@@ -98,6 +99,7 @@ class RepoSynthesizerAgent:
                 failed=failed,
                 target_user=context.target_user,
                 user_analysis_result=user_analysis_result,
+                context=context,  # 디버깅용 context 전달
             )
 
             # 5. 종합 리포트 생성
@@ -229,6 +231,13 @@ class RepoSynthesizerAgent:
                     if task_uuid and base_path:
                         store = ResultStore(task_uuid, Path(base_path))
                         
+                        # Reporter 결과 로드 (메타데이터)
+                        reporter_response = None
+                        try:
+                            reporter_response = store.load_result("reporter", ReporterResponse)
+                        except Exception:
+                            pass
+                        
                         # UserAggregator 결과 로드 (품질 점수 등)
                         user_agg_response = store.load_result("user_aggregator", UserAggregatorResponse)
                         user_agg = user_agg_response.model_dump() if user_agg_response else None
@@ -236,6 +245,17 @@ class RepoSynthesizerAgent:
                         if user_agg and user_agg.get("aggregate_stats"):
                             quality_stats = user_agg["aggregate_stats"].get("quality_stats", {})
                             quality_score = quality_stats.get("mean_score")
+                        
+                        # Reporter 메타데이터 추가
+                        reporter_meta = None
+                        if reporter_response:
+                            reporter_dict = reporter_response.model_dump()
+                            reporter_meta = {
+                                "total_commits": reporter_dict.get("total_commits", 0),
+                                "total_files": reporter_dict.get("total_files", 0),
+                                "report_path": reporter_dict.get("report_path", ""),
+                                "status": reporter_dict.get("status", ""),
+                            }
 
                         summaries.append({
                             "git_url": result.get("git_url", ""),
@@ -246,6 +266,7 @@ class RepoSynthesizerAgent:
                             "total_files": result.get("total_files", 0),
                             "final_report_path": result.get("final_report_path"),
                             "quality_score": quality_score,
+                            "reporter_meta": reporter_meta,  # Reporter 메타데이터 추가
                         })
                     else:
                         summaries.append({
@@ -287,6 +308,7 @@ class RepoSynthesizerAgent:
         failed: int,
         target_user: str | None,
         user_analysis_result: Optional[UserAnalysisResult],
+        context: Optional[Any] = None,  # RepoSynthesizerContext 전달용
     ) -> Optional[LLMAnalysisResult]:
         """
         LLM을 이용한 종합 분석 및 개선 방향 제시
@@ -337,41 +359,141 @@ class RepoSynthesizerAgent:
             ]
             
             logger.info("🤖 LLM 종합 분석 시작...")
-            response = await self.llm.ainvoke(messages)
-            TokenTracker.record_usage(
-                "repo_synthesizer",
-                response,
-                model_id=PromptLoader.get_model("repo_synthesizer")
-            )
             
-            # JSON 파싱
-            content = response.content
-            try:
-                if "```json" in content:
-                    json_str = content.split("```json")[1].split("```")[0].strip()
-                elif "```" in content:
-                    json_str = content.split("```")[1].split("```")[0].strip()
-                else:
-                    json_str = content.strip()
-                
-                analysis_data = json.loads(json_str)
-                
-                # 누락된 필드 보완 (category 필드가 없는 경우)
-                if "improvement_recommendations" in analysis_data:
-                    for rec in analysis_data["improvement_recommendations"]:
-                        if "category" not in rec or not rec.get("category"):
-                            # title에서 카테고리를 추론하거나 기본값 사용
-                            rec["category"] = "일반"
-                
-                # Pydantic 모델로 변환
+            # 디버깅: LLM 응답 저장을 위한 경로 준비
+            debug_store = None
+            if context:
+                from pathlib import Path
+                from shared.storage import ResultStore
                 try:
-                    llm_result = LLMAnalysisResult(**analysis_data)
-                    logger.info("✅ LLM 종합 분석 완료")
-                    return llm_result
-                except Exception as validation_error:
+                    debug_store = ResultStore(context.main_task_uuid, Path(context.main_base_path))
+                except Exception as e:
+                    logger.debug(f"디버깅 저장소 초기화 실패: {e}")
+            
+            # LLM 호출 및 재시도 로직
+            max_retries = 2
+            analysis_data = None
+            last_error = None
+            llm_response_content = None
+            
+            for attempt in range(max_retries + 1):
+                try:
+                    response = await self.llm.ainvoke(messages)
+                    TokenTracker.record_usage(
+                        "repo_synthesizer",
+                        response,
+                        model_id=PromptLoader.get_model("repo_synthesizer")
+                    )
+                    
+                    # 응답 검증
+                    content = response.content if hasattr(response, 'content') else str(response)
+                    llm_response_content = content  # 디버깅용 저장
+                    
+                    if not content or not content.strip():
+                        if attempt < max_retries:
+                            logger.warning(f"⚠️ LLM 응답이 비어있음 (시도 {attempt + 1}/{max_retries + 1}), 재시도...")
+                            import asyncio
+                            await asyncio.sleep(1)
+                            continue
+                        else:
+                            logger.error("❌ LLM 응답이 비어있음 (최종 실패)")
+                            # 디버깅: 빈 응답 저장
+                            if debug_store:
+                                try:
+                                    debug_store.backend.save_debug_file("repo_synthesizer_llm_response_empty.txt", "")
+                                except:
+                                    pass
+                            return None
+                    
+                    # JSON 추출 및 파싱 (섹션별 파싱 지원)
+                    analysis_data = self._parse_llm_response(content)
+                    if not analysis_data:
+                        if attempt < max_retries:
+                            logger.warning(f"⚠️ LLM 응답 파싱 실패 (시도 {attempt + 1}/{max_retries + 1}), 재시도...")
+                            logger.info(f"   LLM 응답 내용 (처음 500자): {content[:500]}")
+                            import asyncio
+                            await asyncio.sleep(1)
+                            continue
+                        else:
+                            logger.error("❌ LLM 응답 파싱 실패 (최종 실패)")
+                            logger.error(f"   LLM 응답 내용 (처음 1000자): {content[:1000]}")
+                            # 디버깅: JSON 추출 실패 응답 저장
+                            if debug_store:
+                                try:
+                                    debug_store.backend.save_debug_file("repo_synthesizer_llm_response_no_json.txt", content)
+                                except:
+                                    pass
+                            return None
+                    
+                    # 디버깅: 성공한 JSON 저장
+                    if debug_store:
+                        try:
+                            debug_store.backend.save_debug_file("repo_synthesizer_llm_response_raw.txt", content)
+                            debug_store.backend.save_debug_file("repo_synthesizer_llm_response_parsed.json", json.dumps(analysis_data, indent=2, ensure_ascii=False))
+                        except:
+                            pass
+                    
+                    break  # 성공 시 루프 종료
+                    
+                except json.JSONDecodeError as e:
+                    last_error = e
+                    if attempt < max_retries:
+                        logger.warning(f"⚠️ LLM 응답 JSON 파싱 실패 (시도 {attempt + 1}/{max_retries + 1}): {e}")
+                        import asyncio
+                        await asyncio.sleep(1)
+                    else:
+                        logger.warning(f"⚠️ LLM 응답 JSON 파싱 최종 실패: {e}")
+                        logger.error(f"   응답 내용 (처음 1000자): {content[:1000] if 'content' in locals() else 'N/A'}")
+                        return None
+                except Exception as e:
+                    last_error = e
+                    if attempt < max_retries:
+                        logger.warning(f"⚠️ LLM 호출 실패 (시도 {attempt + 1}/{max_retries + 1}): {e}")
+                        import asyncio
+                        await asyncio.sleep(1)
+                    else:
+                        logger.error(f"❌ LLM 호출 최종 실패: {e}")
+                        return None
+            
+            # analysis_data가 None이면 실패
+            if analysis_data is None:
+                logger.warning("⚠️ LLM 분석: analysis_data가 None입니다")
+                return None
+            
+            # 누락된 필드 보완 (category 필드가 없는 경우)
+            if "improvement_recommendations" in analysis_data:
+                for rec in analysis_data["improvement_recommendations"]:
+                    if "category" not in rec or not rec.get("category"):
+                        # title에서 카테고리를 추론하거나 기본값 사용
+                        rec["category"] = "일반"
+            
+            # Pydantic 모델로 변환
+            try:
+                llm_result = LLMAnalysisResult(**analysis_data)
+                logger.info("✅ LLM 종합 분석 완료")
+                return llm_result
+            except Exception as validation_error:
                     # Pydantic 검증 실패 시 더 자세한 로깅
-                    logger.warning(f"⚠️ LLM 응답 검증 실패: {validation_error}")
-                    logger.debug(f"응답 데이터: {json.dumps(analysis_data, indent=2, ensure_ascii=False)[:1000]}")
+                    from pydantic import ValidationError
+                    if isinstance(validation_error, ValidationError):
+                        error_count = len(validation_error.errors())
+                        logger.warning(f"⚠️ LLM 응답 검증 실패: {error_count} validation errors for LLMAnalysisResult")
+                        for err in validation_error.errors():
+                            logger.warning(f"  - Field: {'.'.join(str(loc) for loc in err['loc'])}, Type: {err['type']}, Msg: {err['msg']}")
+                    else:
+                        logger.warning(f"⚠️ LLM 응답 검증 실패: {validation_error}")
+                    
+                    # 디버깅: 검증 실패한 데이터 저장
+                    if debug_store:
+                        try:
+                            debug_store.backend.save_debug_file("repo_synthesizer_llm_response_validation_failed.json", json.dumps(analysis_data, indent=2, ensure_ascii=False))
+                            if llm_response_content:
+                                debug_store.backend.save_debug_file("repo_synthesizer_llm_response_raw_validation_failed.txt", llm_response_content)
+                        except:
+                            pass
+                    
+                    logger.info(f"   검증 실패한 데이터 키: {list(analysis_data.keys()) if analysis_data else 'None'}")
+                    logger.info(f"   응답 데이터 (처음 2000자): {json.dumps(analysis_data, indent=2, ensure_ascii=False)[:2000]}")
                     # 기본값으로 재시도
                     try:
                         # 필수 필드가 없는 경우 기본값으로 채우기
@@ -381,7 +503,37 @@ class RepoSynthesizerAgent:
                             analysis_data["strengths"] = []
                         if "improvement_recommendations" not in analysis_data:
                             analysis_data["improvement_recommendations"] = []
-                        
+
+                        # role_suitability 필수 5개 역할 확인
+                        if "role_suitability" not in analysis_data:
+                            analysis_data["role_suitability"] = {}
+                        required_roles = ["Backend", "Frontend", "DevOps", "Data Science", "Fullstack"]
+                        for role in required_roles:
+                            if role not in analysis_data["role_suitability"]:
+                                analysis_data["role_suitability"][role] = f"{role} (평가 불가): 데이터 부족"
+
+                        # hiring_decision 필수 필드 확인
+                        if "hiring_decision" not in analysis_data:
+                            analysis_data["hiring_decision"] = {}
+                        hiring = analysis_data["hiring_decision"]
+
+                        if "immediate_readiness" not in hiring:
+                            hiring["immediate_readiness"] = "평가 불가"
+                        if "onboarding_period" not in hiring:
+                            hiring["onboarding_period"] = "미정"
+                        if "hiring_recommendation" not in hiring:
+                            hiring["hiring_recommendation"] = "신중 검토"
+                        if "hiring_decision_reason" not in hiring:
+                            hiring["hiring_decision_reason"] = "분석 데이터가 충분하지 않아 정확한 평가가 어렵습니다."
+                        if "salary_recommendation" not in hiring:
+                            hiring["salary_recommendation"] = "데이터 부족으로 평가 불가"
+                        if "estimated_salary_range" not in hiring:
+                            hiring["estimated_salary_range"] = "평가 불가"
+                        if "technical_risks" not in hiring:
+                            hiring["technical_risks"] = []
+                        if "expected_contributions" not in hiring:
+                            hiring["expected_contributions"] = []
+
                         llm_result = LLMAnalysisResult(**analysis_data)
                         logger.info("✅ LLM 종합 분석 완료 (기본값 보완)")
                         return llm_result
@@ -389,17 +541,166 @@ class RepoSynthesizerAgent:
                         logger.warning(f"⚠️ LLM 응답 복구 실패: {e2}")
                         return None
                 
-            except json.JSONDecodeError as e:
-                logger.warning(f"⚠️ LLM 응답 JSON 파싱 실패: {e}")
-                logger.debug(f"응답 내용: {content[:500]}")
-                return None
-            except Exception as e:
-                logger.warning(f"⚠️ LLM 응답 파싱 실패: {e}")
-                logger.debug(f"응답 내용: {content[:500]}")
-                return None
                 
         except Exception as e:
             logger.error(f"❌ LLM 분석 실패: {e}", exc_info=True)
+            return None
+
+    def _extract_json_from_response(self, content: str) -> Optional[str]:
+        """
+        LLM 응답에서 JSON 문자열 추출 (JSONExtractor 사용)
+        
+        Args:
+            content: LLM 응답 내용
+            
+        Returns:
+            추출된 JSON 문자열 또는 None
+        """
+        from shared.utils.json_extractor import JSONExtractor
+        return JSONExtractor.extract(content)
+    
+    def _parse_llm_response(self, content: str) -> Optional[Dict[str, Any]]:
+        """
+        LLM 응답을 파싱하여 LLMAnalysisResult 형식의 딕셔너리로 변환
+        
+        LLM이 마크다운 형식으로 섹션별로 나누어 반환하는 경우를 처리:
+        - ### 1️⃣ overall_assessment: 코드 블록 안의 문자열
+        - ### 2️⃣ strengths: JSON 배열
+        - ### 3️⃣ improvement_recommendations: JSON 배열
+        - ### 4️⃣ role_suitability: JSON 객체
+        - ### 5️⃣ hiring_decision: JSON 객체
+        - ### 6️⃣ 언어별 정보: JSON 객체
+        
+        Args:
+            content: LLM 응답 내용
+            
+        Returns:
+            파싱된 딕셔너리 또는 None
+        """
+        import re
+        import json
+        
+        result = {}
+        
+        try:
+            # 1. overall_assessment 추출 (코드 블록 안의 문자열)
+            # 패턴: ### 1️⃣ overall_assessment 다음에 ```로 시작하는 코드 블록
+            overall_match = re.search(r"###\s*1[️⃣1]\s*overall_assessment\s*\n```\s*\n(.*?)\n```", content, re.DOTALL)
+            if overall_match:
+                result["overall_assessment"] = overall_match.group(1).strip()
+            else:
+                # 대체 패턴: ``` 없이 직접 텍스트
+                overall_match = re.search(r"###\s*1[️⃣1]\s*overall_assessment\s*\n(.*?)(?=###|\Z)", content, re.DOTALL)
+                if overall_match:
+                    result["overall_assessment"] = overall_match.group(1).strip()
+            
+            # 2. strengths 추출 (JSON 배열)
+            # 패턴: ### 2️⃣ strengths 다음에 ```json으로 시작하는 코드 블록
+            strengths_match = re.search(r"###\s*2[️⃣2]\s*strengths\s*\n```json\s*\n(\[.*?\])\s*\n```", content, re.DOTALL)
+            if strengths_match:
+                try:
+                    strengths_json = json.loads(strengths_match.group(1))
+                    # strengths는 List[str]이므로 각 항목을 문자열로 변환
+                    result["strengths"] = [
+                        f"✅ {item.get('title', '')}: {item.get('description', '')}" 
+                        if isinstance(item, dict) else str(item)
+                        for item in strengths_json
+                    ]
+                except json.JSONDecodeError:
+                    logger.warning("⚠️ strengths JSON 파싱 실패")
+            
+            # 3. improvement_recommendations 추출 (JSON 배열)
+            improvements_match = re.search(r"###\s*3[️⃣3]\s*improvement_recommendations\s*\n```json\s*\n(\[.*?\])\s*\n```", content, re.DOTALL)
+            if improvements_match:
+                try:
+                    result["improvement_recommendations"] = json.loads(improvements_match.group(1))
+                except json.JSONDecodeError:
+                    logger.warning("⚠️ improvement_recommendations JSON 파싱 실패")
+            
+            # 4. role_suitability 추출 (JSON 객체)
+            # 중괄호 매칭으로 완전한 JSON 객체 추출
+            role_section = re.search(r"###\s*4[️⃣4]\s*role_suitability\s*\n```json\s*\n(\{.*)", content, re.DOTALL)
+            if role_section:
+                brace_start = content.find("{", role_section.start())
+                if brace_start != -1:
+                    brace_count = 0
+                    for i in range(brace_start, len(content)):
+                        if content[i] == "{":
+                            brace_count += 1
+                        elif content[i] == "}":
+                            brace_count -= 1
+                            if brace_count == 0:
+                                json_str = content[brace_start:i+1]
+                                try:
+                                    result["role_suitability"] = json.loads(json_str)
+                                except json.JSONDecodeError:
+                                    logger.warning("⚠️ role_suitability JSON 파싱 실패")
+                                break
+            
+            # 5. hiring_decision 추출 (JSON 객체)
+            # 중괄호 매칭으로 완전한 JSON 객체 추출
+            hiring_section = re.search(r"###\s*5[️⃣5]\s*hiring_decision\s*\n```json\s*\n(\{.*)", content, re.DOTALL)
+            if hiring_section:
+                brace_start = content.find("{", hiring_section.start())
+                if brace_start != -1:
+                    brace_count = 0
+                    for i in range(brace_start, len(content)):
+                        if content[i] == "{":
+                            brace_count += 1
+                        elif content[i] == "}":
+                            brace_count -= 1
+                            if brace_count == 0:
+                                json_str = content[brace_start:i+1]
+                                try:
+                                    result["hiring_decision"] = json.loads(json_str)
+                                except json.JSONDecodeError:
+                                    logger.warning("⚠️ hiring_decision JSON 파싱 실패")
+                                break
+            
+            # 6. 언어별 정보 추출 (JSON 객체)
+            lang_section = re.search(r"###\s*6[️⃣6]\s*언어별\s*상세\s*정보\s*\n```json\s*\n(\{.*)", content, re.DOTALL)
+            if lang_section:
+                brace_start = content.find("{", lang_section.start())
+                if brace_start != -1:
+                    brace_count = 0
+                    for i in range(brace_start, len(content)):
+                        if content[i] == "{":
+                            brace_count += 1
+                        elif content[i] == "}":
+                            brace_count -= 1
+                            if brace_count == 0:
+                                json_str = content[brace_start:i+1]
+                                try:
+                                    lang_data = json.loads(json_str)
+                                    # 동적 필드로 추가
+                                    for lang, info in lang_data.items():
+                                        result[lang] = info
+                                except json.JSONDecodeError:
+                                    logger.warning("⚠️ 언어별 정보 JSON 파싱 실패")
+                                break
+            
+            # 전체 JSON 객체가 있는 경우 (섹션별 파싱 실패 시 대체)
+            if not result:
+                json_str = self._extract_json_from_response(content)
+                if json_str:
+                    try:
+                        result = json.loads(json_str)
+                    except json.JSONDecodeError:
+                        pass
+            
+            # 필수 필드가 모두 있는지 확인
+            if "overall_assessment" in result and "role_suitability" in result and "hiring_decision" in result:
+                logger.debug("✅ LLM 응답 섹션별 파싱 성공")
+                return result
+            else:
+                logger.warning(f"⚠️ LLM 응답 파싱: 필수 필드 누락. 파싱된 키: {list(result.keys())}")
+                return result if result else None
+                
+        except json.JSONDecodeError as e:
+            logger.warning(f"⚠️ LLM 응답 JSON 파싱 오류: {e}")
+            return None
+        except Exception as e:
+            logger.warning(f"⚠️ LLM 응답 파싱 중 오류: {e}", exc_info=True)
             return None
 
     async def _collect_repo_json_data(self, repo_summaries: List[Dict[str, Any]]) -> str:
@@ -430,6 +731,21 @@ class RepoSynthesizerAgent:
                     "git_url": git_url,
                     "task_uuid": task_uuid,
                 }
+                
+                # Reporter 결과 (메타데이터)
+                try:
+                    reporter_response = store.load_result("reporter", ReporterResponse)
+                    if reporter_response:
+                        reporter_dict = reporter_response.model_dump()
+                        # 리포트 메타데이터 포함
+                        repo_data["reporter"] = {
+                            "total_commits": reporter_dict.get("total_commits", 0),
+                            "total_files": reporter_dict.get("total_files", 0),
+                            "report_path": reporter_dict.get("report_path", ""),
+                            "status": reporter_dict.get("status", ""),
+                        }
+                except Exception as e:
+                    logger.debug(f"Reporter 로드 실패: {e}")
                 
                 # StaticAnalyzer 결과 (핵심 정보만)
                 try:
@@ -569,43 +885,70 @@ class RepoSynthesizerAgent:
                 
                 try:
                     store = ResultStore(task_uuid, Path(base_path))
+                    logger.info(f"📂 RepoSynthesizer 데이터 로드 시작: task_uuid={task_uuid}")
+                    logger.info(f"   base_path: {base_path}")
+                    logger.info(f"   ResultStore results_dir: {store.results_dir}")
                     
                     # total_skill.json 로드 (일반 JSON 파일)
                     try:
                         import json
+                        logger.info(f"   📥 total_skill.json 로드 시도: {base_path}/total_skill.json")
                         total_skill_content = store.load_debug_file("total_skill.json")
                         total_skill_data = json.loads(total_skill_content)
                         if isinstance(total_skill_data, list):
                             all_skills += total_skill_data
+                            logger.info(f"   ✅ total_skill.json 로드 성공: {len(total_skill_data)}개 스킬")
                         else:
                             logger.debug(f"total_skill.json이 리스트 형식이 아님: {type(total_skill_data)}")
                     except FileNotFoundError:
-                        logger.debug(f"total_skill.json 파일 없음: {task_uuid}")
+                        logger.warning(f"   ⚠️ total_skill.json 파일 없음: task_uuid={task_uuid}, base_path={base_path}")
                     except Exception as e:
-                        logger.debug(f"total_skill.json 로드 실패: {e}")
+                        logger.warning(f"   ⚠️ total_skill.json 로드 실패: {e}, base_path={base_path}")
                     
                     
                     # 1. UserAggregator 결과에서 품질 점수 수집
-                    user_agg_response = store.load_result("user_aggregator", UserAggregatorResponse)
-                    user_agg = user_agg_response.model_dump() if user_agg_response else None
-                    if user_agg and user_agg.get("aggregate_stats"):
-                        quality_stats = user_agg["aggregate_stats"].get("quality_stats", {})
-                        avg_score = quality_stats.get("average_score")
-                        if avg_score is not None:
-                            all_quality_scores.append(avg_score)
+                    try:
+                        logger.info(f"   📥 user_aggregator.json 로드 시도: {store.results_dir}/user_aggregator.json")
+                        user_agg_response = store.load_result("user_aggregator", UserAggregatorResponse)
+                        user_agg = user_agg_response.model_dump() if user_agg_response else None
+                        if user_agg and user_agg.get("aggregate_stats"):
+                            quality_stats = user_agg["aggregate_stats"].get("quality_stats", {})
+                            avg_score = quality_stats.get("average_score")
+                            if avg_score is not None:
+                                all_quality_scores.append(avg_score)
+                                logger.info(f"   ✅ user_aggregator.json 로드 성공: 품질 점수={avg_score}")
+                        else:
+                            logger.warning(f"   ⚠️ user_aggregator 결과에 aggregate_stats 없음")
+                    except Exception as e:
+                        logger.warning(f"   ⚠️ user_aggregator.json 로드 실패: {e}")
                     
                     # 2. UserSkillProfiler 결과에서 스킬 데이터 수집
-                    skill_profile_response = store.load_result("user_skill_profiler", UserSkillProfilerResponse)
-                    skill_profile = skill_profile_response.model_dump() if skill_profile_response else None
+                    try:
+                        logger.info(f"   📥 user_skill_profiler.json 로드 시도: {store.results_dir}/user_skill_profiler.json")
+                        skill_profile_response = store.load_result("user_skill_profiler", UserSkillProfilerResponse)
+                        skill_profile = skill_profile_response.model_dump() if skill_profile_response else None
+                        if skill_profile:
+                            logger.info(f"   ✅ user_skill_profiler.json 로드 성공")
+                        else:
+                            logger.warning(f"   ⚠️ user_skill_profiler 결과가 None")
+                    except Exception as e:
+                        logger.warning(f"   ⚠️ user_skill_profiler.json 로드 실패: {e}")
+                        skill_profile = None
                     
                     if skill_profile and skill_profile.get("skill_profile"):
                         # top_skills에서 스킬 정보 추출
                         top_skills = skill_profile["skill_profile"].get("top_skills", [])
+                        logger.info(f"   📊 top_skills 수집: {len(top_skills)}개")
                         for skill in top_skills:
+                            # all_skills에 추가 (레벨 계산용)
+                            # top_skills는 이미 base_score를 포함한 스킬 객체
+                            all_skills.append(skill)
+                            
                             # 기술 스택 추가 (중복 제거)
                             skill_category = skill.get("category", "")
                             if skill_category:
                                 all_tech_stack.add(skill_category)
+                        logger.info(f"   ✅ top_skills를 all_skills에 추가 완료: {len(top_skills)}개")
                 
                 except Exception as e:
                     logger.warning(f"⚠️ 레포지토리 {task_uuid} 데이터 수집 실패: {e}")
@@ -764,6 +1107,99 @@ class RepoSynthesizerAgent:
                 report += "### 역할 적합성 평가\n\n"
                 for role, assessment in llm_analysis.role_suitability.items():
                     report += f"- **{role}**: {assessment}\n"
+                report += "\n"
+            
+            # hiring_decision 섹션 추가 (프롬프트에서 가장 중요하다고 강조)
+            if llm_analysis.hiring_decision:
+                report += "### 💼 채용 의견 및 투입 가능성 평가\n\n"
+                hiring = llm_analysis.hiring_decision
+                
+                report += f"**즉시 투입 가능성**: {hiring.immediate_readiness}\n"
+                report += f"**예상 온보딩 기간**: {hiring.onboarding_period}\n"
+                report += f"**채용 추천 의견**: {hiring.hiring_recommendation}\n\n"
+                
+                report += f"**채용 의견 근거**:\n{hiring.hiring_decision_reason}\n\n"
+                
+                if hiring.technical_risks:
+                    report += "**예상 기술적 리스크**:\n"
+                    for risk in hiring.technical_risks:
+                        report += f"- {risk}\n"
+                    report += "\n"
+                
+                if hiring.expected_contributions:
+                    report += "**기대 기여**:\n"
+                    for contribution in hiring.expected_contributions:
+                        report += f"- {contribution}\n"
+                    report += "\n"
+                
+                report += f"**급여 레벨 추천**: {hiring.salary_recommendation}\n"
+                report += f"**예상 적정 연봉**: {hiring.estimated_salary_range}\n\n"
+            
+            # 언어별 상세 정보 추가 (동적 필드)
+            language_fields = {}
+            if llm_analysis:
+                # LLMAnalysisResult의 동적 필드에서 언어별 정보 추출
+                for field_name in llm_analysis.model_fields_set:
+                    if field_name not in [
+                        'overall_assessment', 'strengths', 'improvement_recommendations',
+                        'role_suitability', 'hiring_decision'
+                    ]:
+                        field_value = getattr(llm_analysis, field_name, None)
+                        if isinstance(field_value, dict) and all(
+                            k in field_value for k in ['stack', 'level', 'exp', 'usage_frequency']
+                        ):
+                            language_fields[field_name] = field_value
+            
+            # UserAnalysisResult에서도 언어별 정보 확인
+            if user_analysis_result:
+                for field_name in dir(user_analysis_result):
+                    if not field_name.startswith('_') and field_name not in [
+                        'python', 'clean_code', 'role', 'markdown', 'level', 'tech_stack',
+                        'model_config', 'model_fields', 'model_computed_fields',
+                        'model_dump', 'model_dump_json', 'model_validate', 'model_validate_json',
+                        'model_copy', 'model_post_init', 'model_json_schema',
+                        'model_parametrized_name', 'model_rebuild', 'model_fields_set'
+                    ]:
+                        field_value = getattr(user_analysis_result, field_name, None)
+                        if isinstance(field_value, LanguageInfo):
+                            language_fields[field_name] = {
+                                'stack': field_value.stack,
+                                'level': field_value.level,
+                                'exp': field_value.exp,
+                                'usage_frequency': field_value.usage_frequency
+                            }
+                # python 필드도 확인
+                if user_analysis_result.python and user_analysis_result.python.level > 0:
+                    language_fields['python'] = {
+                        'stack': user_analysis_result.python.stack,
+                        'level': user_analysis_result.python.level,
+                        'exp': user_analysis_result.python.exp,
+                        'usage_frequency': user_analysis_result.python.usage_frequency
+                    }
+            
+            # 언어별 상세 정보 표시
+            if language_fields:
+                report += "### 📊 언어별 상세 정보\n\n"
+                report += "| 언어 | 숙련도 | 경험치 | 사용 빈도 | 기술 스택 |\n"
+                report += "|------|--------|--------|-----------|----------|\n"
+                for lang, info in language_fields.items():
+                    level_stars = "⭐" * min(5, (info.get('level', 0) // 20))
+                    stack_str = ", ".join(info.get('stack', [])[:3])  # 최대 3개만 표시
+                    if len(info.get('stack', [])) > 3:
+                        stack_str += f" 외 {len(info.get('stack', [])) - 3}개"
+                    report += f"| {lang.capitalize()} | {level_stars} ({info.get('level', 0)}/100) | {info.get('exp', 0):,} | {info.get('usage_frequency', 0)}% | {stack_str} |\n"
+                report += "\n"
+            
+            # 시각화 요소 추가 (프롬프트에서 요구)
+            if user_analysis_result and user_analysis_result.role:
+                report += "### 📈 분야별 역량 차트\n\n"
+                # 역할별 보유율을 차트로 표시
+                for role, percentage in sorted(user_analysis_result.role.items(), key=lambda x: x[1], reverse=True):
+                    if percentage > 0:
+                        bar_length = int(percentage / 5)  # 5%당 1칸
+                        filled = "█" * bar_length
+                        empty = "░" * (20 - bar_length)
+                        report += f"{role:<15} {filled}{empty} {percentage:.1f}%\n"
                 report += "\n"
 
         # LLM 분석이 없는 경우 안내 메시지

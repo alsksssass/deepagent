@@ -21,12 +21,13 @@ Level 1 워커 에이전트 - 코드 배치 병렬 처리
 
 import logging
 import time
+import json
 from typing import List, Dict, Any, Optional
 from pathlib import Path
 
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import SystemMessage, HumanMessage
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from agents.user_skill_profiler.schemas import (
     HybridConfig,
@@ -38,6 +39,7 @@ from .schemas import CodeBatchContext, CodeBatchResponse, CodeSample
 from shared.utils.prompt_loader import PromptLoader
 from shared.utils.agent_logging import log_subagent_execution
 from shared.utils.agent_debug_logger import AgentDebugLogger
+from shared.utils.llm_response_validator import LLMResponseValidator, RetryConfig
 
 logger = logging.getLogger(__name__)
 
@@ -74,21 +76,46 @@ class CodeBatchProcessorAgent:
         self.llm: BaseChatModel = PromptLoader.get_llm("user_skill_profiler")
 
         # 프롬프트 로드 (스키마 자동 주입)
-        prompts = PromptLoader.load_with_schema(
+        # system_prompt는 부모 에이전트에서 가져오고, user_template는 자체 prompts.yaml에서 가져옴
+        parent_prompts = PromptLoader.load_with_schema(
             agent_name="user_skill_profiler",
             response_schema_class=SkillAnalysisOutput,
         )
-        self.system_prompt = prompts.get("system_prompt", "")
+        self.system_prompt = parent_prompts.get("system_prompt", "")
+
+        # code_batch_processor 전용 prompts.yaml 로드
+        try:
+            self.prompts = PromptLoader.load("code_batch_processor")
+            self.user_template = self.prompts.get("user_template", "")
+            if not self.user_template:
+                logger.warning("⚠️ code_batch_processor prompts.yaml에 user_template가 없습니다. 기본 메서드 사용")
+                self.user_template = None
+        except FileNotFoundError:
+            logger.warning("⚠️ code_batch_processor prompts.yaml을 찾을 수 없습니다. 기본 메서드 사용")
+            self.user_template = None
 
         if not self.system_prompt:
             raise ValueError(
                 "system_prompt를 찾을 수 없습니다. "
-                "prompts.yaml에 system_prompt 키가 존재하는지 확인하세요."
+                "user_skill_profiler prompts.yaml에 system_prompt 키가 존재하는지 확인하세요."
             )
 
         # Structured Output LLM 생성
         # 이 LLM은 Pydantic 모델을 직접 반환하므로 파싱 오류가 거의 없음 (95%+ 성공률)
         self.structured_llm = self.llm.with_structured_output(SkillAnalysisOutput)
+
+        # LLM 응답 검증 및 재시도 관리자 생성
+        self.validator = LLMResponseValidator(
+            response_model=SkillAnalysisOutput,
+            retry_config=RetryConfig(
+                max_retries=2,
+                retry_delay=0.5,
+                default_on_final_failure=lambda: SkillAnalysisOutput(
+                    matched_skills=[],
+                    missing_skills=[]
+                )
+            )
+        )
 
         logger.info(
             f"✅ CodeBatchProcessorAgent 초기화 완료 (task_uuid={task_uuid})"
@@ -104,7 +131,7 @@ class CodeBatchProcessorAgent:
         relevance_threshold: float,
     ) -> str:
         """
-        system_prompt 기반으로 사용자 프롬프트 동적 생성
+        YAML 템플릿 기반으로 사용자 프롬프트 동적 생성
 
         Args:
             code: 분석할 코드 스니펫
@@ -131,8 +158,21 @@ class CodeBatchProcessorAgent:
         else:
             candidate_skills_text = "(임베딩 검색 결과 없음)"
 
-        # 사용자 프롬프트 생성
-        user_prompt = f"""다음 코드를 분석하여 관련 스킬을 매칭하세요:
+        # YAML 템플릿 사용 (있으면)
+        if self.user_template:
+            return PromptLoader.format(
+                self.user_template,
+                code=code,
+                file_path=file_path,
+                line_start=line_start,
+                line_end=line_end,
+                candidate_skills=candidate_skills_text,
+                relevance_threshold=relevance_threshold
+            )
+        
+        # 폴백: 기존 하드코딩 방식 (하위 호환성)
+        logger.debug("⚠️ YAML 템플릿 없음, 기본 프롬프트 사용")
+        return f"""다음 코드를 분석하여 관련 스킬을 매칭하세요:
 
 **코드:**
 ```python
@@ -146,6 +186,11 @@ class CodeBatchProcessorAgent:
 {candidate_skills_text}
 
 **관련성 임계값:** {relevance_threshold}
+
+**⚠️ 중요: 응답 형식**
+- `matched_skills`와 `missing_skills`는 반드시 객체 배열(리스트)이어야 합니다.
+- JSON 문자열이 아닌 실제 배열을 반환해야 합니다.
+- 예: `matched_skills: [...]` (올바름) ❌ `matched_skills: "[...]"` (잘못됨)
 
 **스킬 매칭:**
 - relevance_score >= {relevance_threshold}인 스킬만 matched_skills에 포함하세요.
@@ -173,7 +218,59 @@ class CodeBatchProcessorAgent:
 
 **중요:** 대부분의 경우 missing_skills는 빈 배열 []이어야 합니다."""
 
-        return user_prompt
+    def _normalize_llm_response(self, raw_result: Any) -> SkillAnalysisOutput:
+        """
+        LLM 응답을 정규화하여 SkillAnalysisOutput으로 변환
+        
+        LLM이 문자열로 반환한 경우 JSON 파싱 후 재구성합니다.
+        
+        Args:
+            raw_result: structured_llm.ainvoke()의 원시 결과
+            
+        Returns:
+            정규화된 SkillAnalysisOutput 객체
+            
+        Raises:
+            ValidationError: 정규화 후에도 검증 실패 시
+        """
+        # 이미 SkillAnalysisOutput 인스턴스인 경우 그대로 반환
+        if isinstance(raw_result, SkillAnalysisOutput):
+            return raw_result
+        
+        # 딕셔너리인 경우 직접 변환 시도
+        if isinstance(raw_result, dict):
+            # matched_skills나 missing_skills가 문자열인지 확인
+            normalized = raw_result.copy()
+            
+            # matched_skills 정규화
+            if "matched_skills" in normalized:
+                matched_skills = normalized["matched_skills"]
+                if isinstance(matched_skills, str):
+                    try:
+                        normalized["matched_skills"] = json.loads(matched_skills)
+                        logger.debug("✅ matched_skills JSON 문자열 파싱 성공")
+                    except json.JSONDecodeError as e:
+                        logger.warning(f"⚠️ matched_skills JSON 파싱 실패: {e}")
+                        normalized["matched_skills"] = []
+            
+            # missing_skills 정규화
+            if "missing_skills" in normalized:
+                missing_skills = normalized["missing_skills"]
+                if isinstance(missing_skills, str):
+                    try:
+                        normalized["missing_skills"] = json.loads(missing_skills)
+                        logger.debug("✅ missing_skills JSON 문자열 파싱 성공")
+                    except json.JSONDecodeError as e:
+                        logger.warning(f"⚠️ missing_skills JSON 파싱 실패: {e}")
+                        normalized["missing_skills"] = []
+            
+            return SkillAnalysisOutput(**normalized)
+        
+        # 그 외의 경우 ValidationError 발생
+        raise ValidationError(
+            f"예상치 못한 응답 형식: {type(raw_result)}",
+            model=SkillAnalysisOutput
+        )
 
     @log_subagent_execution(parent_agent_name="user_skill_profiler", subagent_name="code_batch_processor")
     async def run(self, context: CodeBatchContext) -> CodeBatchResponse:
@@ -533,7 +630,13 @@ class CodeBatchProcessorAgent:
                     SystemMessage(content=self.system_prompt),
                     HumanMessage(content=user_prompt),
                 ]
-                analysis_result: SkillAnalysisOutput = await self.structured_llm.ainvoke(messages)
+                
+                # LLM 호출 및 응답 정규화 (LLMResponseValidator 사용)
+                analysis_result = await self.validator.validate_with_retry(
+                    llm_call=lambda: self.structured_llm.ainvoke(messages),
+                    normalize_fn=self._normalize_llm_response,
+                    context=f"코드 {code_idx}"
+                )
                 
                 # 응답 로깅 (Structured Output이므로 이미 검증된 Pydantic 객체)
                 llm_tracker.log_response_stages(
@@ -634,7 +737,13 @@ class CodeBatchProcessorAgent:
                 SystemMessage(content=self.system_prompt),
                 HumanMessage(content=user_prompt),
             ]
-            analysis_result: SkillAnalysisOutput = await self.structured_llm.ainvoke(messages)
+            
+            # LLM 호출 및 응답 정규화 (LLMResponseValidator 사용)
+            analysis_result = await self.validator.validate_with_retry(
+                llm_call=lambda: self.structured_llm.ainvoke(messages),
+                normalize_fn=self._normalize_llm_response,
+                context="코드 처리"
+            )
 
             # 3. relevance_threshold 필터링 및 SkillMatchItem → SkillMatch 변환
             # base_score와 developer_type을 ChromaDB 메타데이터에서 로드

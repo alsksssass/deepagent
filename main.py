@@ -30,6 +30,10 @@ logging.basicConfig(
     ],
 )
 
+# langchain_aws의 불필요한 INFO 로그 제거
+logging.getLogger("langchain_aws.chat_models.bedrock_converse").setLevel(logging.WARNING)
+logging.getLogger("langchain_aws").setLevel(logging.WARNING)
+
 logger = logging.getLogger(__name__)
 
 
@@ -99,6 +103,8 @@ async def analyze_multiple_repos(
     git_urls: list[str],
     target_user: str | None,
     data_dir: Path,
+    task_ids: list[str] | None = None,
+    main_task_id: str | None = None,
 ) -> dict:
     """
     여러 레포지토리 분석 + 종합 (옵션 1: 최상위 레벨 반복)
@@ -119,12 +125,16 @@ async def analyze_multiple_repos(
     logger.info(f"   Target User: {target_user if target_user else '전체 유저'}")
     logger.info("")
 
-    # 메인 task UUID 생성 (종합 결과용)
+    # 메인 task UUID (외부에서 주입받음)
     import uuid
     from shared.storage import create_storage_backend
     from shared.config import settings
     
-    main_task_uuid = str(uuid.uuid4())
+    if main_task_id:
+        main_task_uuid = main_task_id
+    else:
+        # 일반 모드에서는 자동 생성 (하위 호환성)
+        main_task_uuid = str(uuid.uuid4())
     
     # shared/storage를 통해 메인 경로 생성
     if settings.STORAGE_BACKEND.value == "local":
@@ -148,9 +158,10 @@ async def analyze_multiple_repos(
                 git_url, 
                 target_user,
                 main_task_uuid=main_task_uuid,
-                main_base_path=main_base_path
+                main_base_path=main_base_path,
+                task_id=task_ids[i] if task_ids and i < len(task_ids) else None
             ) 
-            for git_url in git_urls
+            for i, git_url in enumerate(git_urls)
         ],
         return_exceptions=True
     )
@@ -204,30 +215,27 @@ async def analyze_multiple_repos(
         store = ResultStore(main_task_uuid, main_base_path)
         store.save_result("repo_synthesizer", synthesis_response)
 
-        # 종합 분석 결과 DB 저장
+        # 종합 분석 결과 DB 업데이트
         if orchestrator.db_writer and orchestrator.user_id:
             try:
                 from shared.graph_db import AnalysisStatus
                 import uuid as uuid_module
 
-                # 대표 레포지토리 URL (첫 번째 성공한 레포)
-                representative_url = (
-                    successful_results[0].get("git_url") 
-                    if successful_results and successful_results[0].get("git_url")
-                    else git_urls[0]
-                )
-
-                await orchestrator.db_writer.save_final_analysis(
-                    user_id=orchestrator.user_id,
-                    repository_url=representative_url,
+                main_task_uuid_obj = uuid_module.UUID(main_task_uuid)
+                update_success = await orchestrator.db_writer.update_final_analysis(
+                    main_task_uuid=main_task_uuid_obj,
                     result=synthesis_response.model_dump(),  # RepoSynthesizerResponse
-                    main_task_uuid=uuid_module.UUID(main_task_uuid),
                     status=AnalysisStatus.COMPLETED,
                     error_message=None
                 )
-                logger.info(f"📊 종합 분석 결과 DB 저장 완료: {main_task_uuid}")
+                if update_success:
+                    logger.info(f"📊 종합 분석 결과 DB 업데이트 완료: {main_task_uuid}")
+                else:
+                    logger.error(f"❌ 종합 분석 결과 DB 업데이트 실패: main_task_uuid {main_task_uuid}를 찾을 수 없습니다. 외부 백엔드에서 먼저 생성해야 합니다.")
+                    raise Exception(f"DB 레코드 없음: main_task_uuid {main_task_uuid}")
             except Exception as e:
-                logger.warning(f"⚠️ 종합 분석 결과 DB 저장 실패: {e}")
+                logger.error(f"❌ 종합 분석 결과 DB 업데이트 실패: {e}")
+                raise
 
         return {
             "main_task_uuid": main_task_uuid,
@@ -340,6 +348,8 @@ async def main_batch_mode():
     # 필수 환경 변수 검증
     user_id_str = os.getenv("USER_ID")
     git_urls_str = os.getenv("GIT_URLS")
+    task_ids = os.getenv("TASK_IDS")
+    main_task_id = os.getenv("MAIN_TASK_ID")
 
     if not user_id_str:
         logger.error("❌ USER_ID 환경 변수가 설정되지 않았습니다")
@@ -347,6 +357,14 @@ async def main_batch_mode():
 
     if not git_urls_str:
         logger.error("❌ GIT_URLS 환경 변수가 설정되지 않았습니다")
+        sys.exit(1)
+
+    if not task_ids:
+        logger.error("❌ task_ids 환경 변수가 설정되지 않았습니다")
+        sys.exit(1)
+
+    if not main_task_id:
+        logger.error("❌ main_task_id 환경 변수가 설정되지 않았습니다")
         sys.exit(1)
 
     # UUID 변환
@@ -358,7 +376,8 @@ async def main_batch_mode():
 
     # Git URLs 파싱 (쉼표로 구분)
     git_urls = [url.strip() for url in git_urls_str.split(",") if url.strip()]
-
+    task_ids = [id.strip() for id in task_ids.split(",") if id.strip()]
+    
     if not git_urls:
         logger.error("❌ GIT_URLS가 비어있습니다")
         sys.exit(1)
@@ -368,11 +387,14 @@ async def main_batch_mode():
     is_multi_repo = len(git_urls) > 1
 
     logger.info(f"📋 Batch 설정:")
+    logger.info(f"   main_task id : {main_task_id}")
     logger.info(f"   USER_ID: {user_id}")
     logger.info(f"   모드: {'다중 레포지토리' if is_multi_repo else '단일 레포지토리'}")
     logger.info(f"   레포지토리 수: {len(git_urls)}개")
-    for i, url in enumerate(git_urls, 1):
-        logger.info(f"   [{i}] {url}")
+    for i, url in enumerate(git_urls):
+        logger.info(f"   [{i+1}] {url}")
+        if i < len(task_ids):
+            logger.info(f"   task_id = {task_ids[i]}")
     logger.info(f"   TARGET_USER: {target_user if target_user else '전체 유저'}")
     logger.info("")
 
@@ -413,6 +435,8 @@ async def main_batch_mode():
         neo4j_password=neo4j_password,
         user_id=user_id,
         db_writer=db_writer,
+        task_ids=task_ids,
+        main_task_id=main_task_id,
     )
 
     # 단일/다중 레포지토리 분석 실행 (모두 analyze_multiple_repos로 통합)
@@ -423,6 +447,8 @@ async def main_batch_mode():
             git_urls=git_urls,
             target_user=target_user,
             data_dir=data_dir,
+            task_ids=task_ids,
+            main_task_id=main_task_id,
         )
 
         # 결과 출력

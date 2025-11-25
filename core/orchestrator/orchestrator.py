@@ -28,11 +28,11 @@ from agents.static_analyzer import StaticAnalyzerAgent, StaticAnalyzerContext
 from agents.commit_analyzer import CommitAnalyzerAgent, CommitAnalyzerContext
 from agents.commit_evaluator import CommitEvaluatorAgent, CommitEvaluatorContext
 from agents.user_aggregator import UserAggregatorAgent, UserAggregatorContext, UserAggregatorResponse
-from agents.reporter import ReporterAgent, ReporterContext
+from agents.reporter import ReporterAgent, ReporterContext, ReporterResponse
 
 # Agents (Phase 5 마이그레이션 완료)
 from agents.code_rag_builder import CodeRAGBuilderAgent, CodeRAGBuilderContext
-from agents.user_skill_profiler import UserSkillProfilerAgent, UserSkillProfilerContext
+from agents.user_skill_profiler import UserSkillProfilerAgent, UserSkillProfilerContext, UserSkillProfilerResponse
 
 # Tools (for CommitEvaluator)
 from shared.tools.neo4j_tools import get_user_commits
@@ -58,6 +58,8 @@ class DeepAgentOrchestrator:
         config_path: Path | None = None,
         user_id: uuid.UUID | None = None,
         db_writer: Any | None = None,
+        task_ids : list | None = None,
+        main_task_id : str | None = None
     ):
         self.sonnet_llm = sonnet_llm
         self.haiku_llm = haiku_llm
@@ -73,6 +75,9 @@ class DeepAgentOrchestrator:
         self.user_id = user_id
         self.db_writer = db_writer
 
+        # task_id 및 main_task_id 설정
+        self.task_ids = task_ids
+        self.main_task_id = main_task_id
         # Orchestrator 설정 로드
         self.config = OrchestratorConfig(config_path)
 
@@ -120,6 +125,7 @@ class DeepAgentOrchestrator:
         target_user: str | None = None,
         main_task_uuid: str | None = None,
         main_base_path: str | Path | None = None,
+        task_id : str | None = None,
     ) -> AgentState:
         """
         전체 분석 파이프라인 실행
@@ -141,7 +147,7 @@ class DeepAgentOrchestrator:
 
         # 초기 상태
         initial_state: AgentState = {
-            "task_uuid": str(uuid.uuid4()),
+            "task_uuid": str(task_id),
             "main_task_uuid": main_task_uuid,  # 멀티 분석 모드
             "git_url": git_url,
             "target_user": target_user,
@@ -191,18 +197,12 @@ class DeepAgentOrchestrator:
                         )
                         logger.info(f"📊 DB FAILED 업데이트 완료: {initial_state['task_uuid']}")
                     else:
-                        # 레코드가 없으면 생성 (setup_node 실패 시)
-                        await self.db_writer.save_repository_analysis(
-                            user_id=self.user_id,
-                            repository_url=git_url,
-                            result={},
-                            task_uuid=task_uuid_obj,
-                            status=AnalysisStatus.FAILED,
-                            error_message=str(e)
-                        )
-                        logger.info(f"📊 DB FAILED 레코드 생성 완료: {initial_state['task_uuid']}")
+                        # 레코드가 없으면 외부 백엔드에서 생성해야 함
+                        logger.error(f"❌ DB 레코드 없음: {initial_state['task_uuid']}. 외부 백엔드에서 먼저 생성해야 합니다.")
+                        raise Exception(f"DB 레코드 없음: task_uuid {initial_state['task_uuid']}. 외부 백엔드에서 먼저 생성해야 합니다.")
                 except Exception as db_err:
-                    logger.warning(f"⚠️ DB FAILED 업데이트 실패: {db_err}")
+                    logger.error(f"❌ DB FAILED 업데이트 실패: {db_err}")
+                    raise
 
             # 에러 정보를 포함한 상태 반환
             initial_state["error_message"] = str(e)
@@ -223,13 +223,6 @@ class DeepAgentOrchestrator:
         # 모든 분석은 멀티 분석 모드로 통일
         main_task_uuid = state.get("main_task_uuid")
         main_base_path = state.get("main_base_path")
-        
-        # main_task_uuid가 없으면 생성 (하위 호환성)
-        if not main_task_uuid:
-            import uuid
-            main_task_uuid = str(uuid.uuid4())
-            state["main_task_uuid"] = main_task_uuid
-            logger.warning(f"⚠️ main_task_uuid가 없어 자동 생성: {main_task_uuid}")
         
         # shared/storage의 create_storage_backend를 사용하여 경로 생성
         from shared.storage import create_storage_backend
@@ -293,26 +286,18 @@ class DeepAgentOrchestrator:
                 task_uuid_obj = uuid.UUID(task_uuid)
                 
                 # main_task_uuid 추출 (멀티 분석 시)
-                main_task_uuid_obj = state.get("main_task_uuid")
+                main_task_uuid_obj =state.get("main_task_uuid")
 
-                # 기존 레코드 확인 (중복 방지)
+                # 기존 레코드 확인 (외부 백엔드에서 생성해야 함)
                 existing = await self.db_writer.get_repository_analysis(task_uuid_obj)
                 if existing:
-                    logger.info(f"📊 기존 DB 레코드 재사용: {task_uuid} (상태: {existing.status.value})")
+                    logger.info(f"📊 기존 DB 레코드 확인: {task_uuid} (상태: {existing.status.value})")
                 else:
-                    # 새 레코드 생성
-                    await self.db_writer.save_repository_analysis(
-                        user_id=self.user_id,
-                        repository_url=git_url,
-                        result={},  # 빈 결과
-                        task_uuid=task_uuid_obj,
-                        main_task_uuid=main_task_uuid_obj,  # 멀티 분석 시 종합 분석과 연결
-                        status=AnalysisStatus.PROCESSING,
-                        error_message=None
-                    )
-                    logger.info(f"📊 DB 레코드 생성 완료: {task_uuid} (PROCESSING, main_task: {main_task_uuid_obj})")
+                    logger.error(f"❌ DB 레코드 없음: {task_uuid}. 외부 백엔드에서 먼저 생성해야 합니다.")
+                    raise Exception(f"DB 레코드 없음: task_uuid {task_uuid}. 외부 백엔드에서 먼저 생성해야 합니다.")
             except Exception as e:
-                logger.warning(f"⚠️ DB 레코드 생성 실패: {e}")
+                logger.error(f"❌ DB 레코드 확인 실패: {e}")
+                raise
 
         return {
             "base_path": str(base_path),
@@ -607,7 +592,11 @@ class DeepAgentOrchestrator:
                     result_store_path=str(store.results_dir),
                 )
                 user_agg_response = await user_aggregator.run(user_agg_ctx)
-                store.save_result("user_aggregator", user_agg_response)
+                logger.info(f"💾 user_aggregator.json 저장 시작: task_uuid={task_uuid}")
+                logger.info(f"   ResultStore base_path: {store.base_path}")
+                logger.info(f"   ResultStore results_dir: {store.results_dir}")
+                saved_path = store.save_result("user_aggregator", user_agg_response)
+                logger.info(f"   ✅ user_aggregator.json 저장 완료: {saved_path}")
                 user_agg_result = user_agg_response.model_dump()
             else:
                 user_agg_result = {
@@ -643,7 +632,11 @@ class DeepAgentOrchestrator:
                     result_store_path=str(store.results_dir),
                 )
                 skill_profile_response = await user_skill_profiler.run(skill_profile_ctx)
-                store.save_result("user_skill_profiler", skill_profile_response)
+                logger.info(f"💾 user_skill_profiler.json 저장 시작: task_uuid={task_uuid}")
+                logger.info(f"   ResultStore base_path: {store.base_path}")
+                logger.info(f"   ResultStore results_dir: {store.results_dir}")
+                saved_path = store.save_result("user_skill_profiler", skill_profile_response)
+                logger.info(f"   ✅ user_skill_profiler.json 저장 완료: {saved_path}")
                 skill_profile_result = skill_profile_response.model_dump()
             else:
                 skill_profile_result = {
@@ -812,9 +805,56 @@ class DeepAgentOrchestrator:
                 from shared.graph_db import AnalysisStatus
                 from shared.storage import ResultStore
 
-                # ResultStore에서 user_aggregator 결과 로드
+                # ResultStore에서 결과 로드
                 store = ResultStore(task_uuid, base_path)
-                user_agg_result = store.load_result("user_aggregator", UserAggregatorResponse)
+                
+                # skill_profile_result 로드
+                skill_profile_result = {}
+                try:
+                    skill_profile_response = store.load_result("user_skill_profiler", UserSkillProfilerResponse)
+                    if skill_profile_response:
+                        skill_profile_result = skill_profile_response.model_dump()
+                except Exception as load_err:
+                    logger.warning(f"⚠️ user_skill_profiler 결과 로드 실패: {load_err}")
+                
+                # reporter 리포트 내용 로드
+                report_content = ""
+                try:
+                    reporter_response = store.load_result("reporter", ReporterResponse)
+                    if reporter_response and reporter_response.report_path:
+                        report_path_str = reporter_response.report_path
+                        # 리포트 파일명 추출 (경로에서 파일명만 추출)
+                        if report_path_str.startswith("s3://"):
+                            # S3 경로: s3://bucket/path/to/report_xxx.md -> report_xxx.md
+                            report_filename = report_path_str.split("/")[-1]
+                        else:
+                            # 로컬 경로: /path/to/report_xxx.md -> report_xxx.md
+                            report_filename = Path(report_path_str).name
+                        
+                        # ResultStore를 통해 리포트 읽기 (S3/로컬 자동 처리)
+                        try:
+                            report_content = store.load_report(report_filename)
+                            logger.info(f"✅ 리포트 내용 로드 완료: {report_filename}")
+                        except FileNotFoundError:
+                            logger.warning(f"⚠️ 리포트 파일을 찾을 수 없습니다: {report_filename}")
+                        except Exception as load_err:
+                            logger.warning(f"⚠️ 리포트 로드 실패: {load_err}")
+                except Exception as load_err:
+                    logger.warning(f"⚠️ reporter 결과 로드 실패: {load_err}")
+                
+                # result_data 구성: skill_profile_result, result, 그리고 모든 에이전트 결과
+                from shared.utils.repo_result_loader import load_all_agent_results
+                
+                # 모든 에이전트 결과 로드 (높은 우선순위만: reporter, user_aggregator, static_analyzer)
+                agent_results = load_all_agent_results(store, include_all=False)
+                
+                result_data = {
+                    "skill_profile_result": skill_profile_result,  # 기존 유지
+                    "result": report_content,  # content → result로 변경
+                    "reporter_result": agent_results.get("reporter_result"),
+                    "user_aggregator_result": agent_results.get("user_aggregator_result"),
+                    "static_analyzer_result": agent_results.get("static_analyzer_result"),
+                }
 
                 # 에러 여부 확인
                 has_error = state.get("error_message") is not None
@@ -824,12 +864,15 @@ class DeepAgentOrchestrator:
                 task_uuid_obj = uuid.UUID(task_uuid)
                 
                 # main_task_uuid 추출 (멀티 분석 시)
-                main_task_uuid_obj = state.get("main_task_uuid")
+                main_task_uuid_obj = None
+                main_task_uuid_str = state.get("main_task_uuid")
+                if main_task_uuid_str:
+                    main_task_uuid_obj = uuid.UUID(main_task_uuid_str)
 
                 # DB 업데이트
                 await self.db_writer.update_repository_result(
                     task_uuid=task_uuid_obj,
-                    result=user_agg_result,
+                    result=result_data,  # dict 타입으로 전달
                     main_task_uuid=main_task_uuid_obj,  # 멀티 분석 시 종합 분석과 연결
                     status=status,
                     error_message=error_message

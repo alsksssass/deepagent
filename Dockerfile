@@ -63,6 +63,27 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 # PATH 설정 (기본값 유지)
 ENV PATH=/usr/local/bin:$PATH
 
+# ChromaDB 임베딩 모델 사전 다운로드 (79.3MB, 매 실행마다 다운로드 방지)
+# appuser 홈 디렉토리를 미리 생성하고 권한 설정
+RUN groupadd -r appuser && \
+    useradd -r -g appuser -m -d /home/appuser -s /bin/bash appuser && \
+    mkdir -p /home/appuser/.cache/chroma/onnx_models && \
+    chown -R appuser:appuser /home/appuser
+
+# appuser로 전환하여 모델 다운로드 (올바른 경로에 다운로드)
+USER appuser
+RUN python3 -c "\
+import chromadb; \
+from chromadb.utils import embedding_functions; \
+print('🔄 ChromaDB 임베딩 모델 다운로드 시작...'); \
+ef = embedding_functions.DefaultEmbeddingFunction(); \
+test_embedding = ef(['test']); \
+print('✅ ChromaDB 임베딩 모델 다운로드 완료'); \
+print(f'📊 테스트 임베딩 차원: {len(test_embedding[0])}');"
+
+# root로 다시 전환하여 나머지 설정 진행
+USER root
+
 # 애플리케이션 코드 복사
 COPY . .
 
@@ -75,11 +96,8 @@ ENV LOG_LEVEL=INFO
 # AWS Batch 환경 변수 (런타임에 오버라이드됨)
 # USER_ID, GIT_URLS, TARGET_USER는 AWS Batch Job Definition에서 설정
 
-# 데이터 디렉토리 생성 및 권한 설정
-# 보안을 위해 non-root 유저 생성 및 사용 (홈 디렉토리 생성 포함)
-RUN groupadd -r appuser && \
-    useradd -r -g appuser -m -d /home/appuser -s /bin/bash appuser && \
-    mkdir -p /app/data /app/logs && \
+# 데이터 디렉토리 생성 및 권한 설정 (appuser는 이미 생성됨)
+RUN mkdir -p /app/data /app/logs && \
     chown -R appuser:appuser /app /home/appuser
 
 # 도구 설치 확인 (디버깅용)
