@@ -288,35 +288,126 @@ class StaticAnalyzerAgent:
 
     async def _run_pyright(self, repo_path: Path) -> TypeCheckResult:
         """
-        Pyright 타입 체크
+        Pyright 타입 체크 (개선된 에러 처리)
 
         Returns:
             TypeCheckResult (Pydantic 모델)
         """
-        try:
-            # Pyright JSON 출력
-            cmd = f"pyright {repo_path} --outputjson"
-            process = await asyncio.create_subprocess_shell(
-                cmd,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-            )
-            stdout, stderr = await process.communicate()
+        # 1. Pyright 설치 확인
+        pyright_path = shutil.which("pyright")
+        if not pyright_path:
+            error_msg = "Pyright가 설치되어 있지 않거나 PATH에 없습니다. 'npm install -g pyright' 또는 'pip install pyright'로 설치하세요."
+            logger.debug(f"❌ {error_msg}")
+            return TypeCheckResult(error=error_msg)
+        
+        logger.debug(f"🔍 Pyright 경로: {pyright_path}")
 
-            # Pyright는 에러가 있어도 JSON 출력
-            result = json.loads(stdout.decode())
-
+        # 2. Python 파일 존재 확인
+        python_files = list(repo_path.rglob("*.py"))
+        if not python_files:
+            logger.debug(f"⚠️  Python 파일이 없습니다: {repo_path}")
             return TypeCheckResult(
-                total_errors=result.get("summary", {}).get("errorCount", 0),
-                total_warnings=result.get("summary", {}).get("warningCount", 0),
-                total_info=result.get("summary", {}).get("informationCount", 0),
-                files_analyzed=result.get("summary", {}).get("filesAnalyzed", 0),
-                time_ms=result.get("summary", {}).get("timeInSec", 0) * 1000,
+                error=f"Python 파일 없음: {repo_path}",
+                total_errors=0,
+                total_warnings=0,
+                total_info=0,
+                files_analyzed=0,
+                time_ms=0,
             )
+        
+        logger.debug(f"📁 Python 파일 수: {len(python_files)}개")
 
-        except Exception as e:
-            logger.warning(f"⚠️  Pyright 분석 실패: {e}")
-            return TypeCheckResult(error=str(e))
+        # 3. 재시도 로직 (최대 1회)
+        max_retries = 1
+        last_error = None
+        
+        for attempt in range(max_retries + 1):
+            try:
+                if attempt > 0:
+                    logger.debug(f"🔄 Pyright 재시도 {attempt}/{max_retries}")
+                    await asyncio.sleep(1)  # 재시도 전 대기
+
+                # Pyright JSON 출력
+                cmd = f"pyright {repo_path} --outputjson"
+                process = await asyncio.create_subprocess_shell(
+                    cmd,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE,
+                )
+                
+                # 타임아웃 설정 (30초)
+                try:
+                    stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=30)
+                except asyncio.TimeoutError:
+                    process.kill()
+                    stdout, stderr = await process.communicate()
+                    error_msg = "Pyright 실행 시간 초과 (30초)."
+                    logger.debug(f"⚠️  {error_msg}")
+                    if attempt == max_retries:
+                        return TypeCheckResult(error=error_msg)
+                    continue
+
+                # stderr 확인 (경고는 무시, 에러만 처리)
+                stderr_text = stderr.decode(errors='ignore').strip()
+                if stderr_text and "error" in stderr_text.lower():
+                    logger.debug(f"⚠️  Pyright stderr: {stderr_text[:200]}")
+
+                # stdout이 비어있는지 확인
+                stdout_text = stdout.decode(errors='ignore')
+                if not stdout_text or not stdout_text.strip():
+                    if attempt < max_retries:
+                        logger.debug(f"⚠️  Pyright 출력이 비어있음, 재시도...")
+                        continue
+                    else:
+                        logger.debug(f"⚠️  Pyright 출력이 비어있음 (최종 실패)")
+                        return TypeCheckResult(
+                            error="Pyright 출력이 비어있음",
+                            total_errors=0,
+                            total_warnings=0,
+                            total_info=0,
+                            files_analyzed=0,
+                            time_ms=0,
+                        )
+
+                # JSON 파싱
+                try:
+                    result = json.loads(stdout_text)
+                except json.JSONDecodeError as e:
+                    if attempt < max_retries:
+                        logger.debug(f"⚠️  Pyright JSON 파싱 실패, 재시도...: {e}")
+                        continue
+                    else:
+                        logger.debug(f"⚠️  Pyright JSON 파싱 최종 실패: {e}")
+                        logger.debug(f"   출력 내용: {stdout_text[:500]}")
+                        return TypeCheckResult(
+                            error=f"JSON 파싱 실패: {e}",
+                            total_errors=0,
+                            total_warnings=0,
+                            total_info=0,
+                            files_analyzed=0,
+                            time_ms=0,
+                        )
+
+                # 결과 추출
+                summary = result.get("summary", {})
+                return TypeCheckResult(
+                    total_errors=summary.get("errorCount", 0),
+                    total_warnings=summary.get("warningCount", 0),
+                    total_info=summary.get("informationCount", 0),
+                    files_analyzed=summary.get("filesAnalyzed", 0),
+                    time_ms=int(summary.get("timeInSec", 0) * 1000),
+                )
+
+            except Exception as e:
+                last_error = str(e)
+                if attempt < max_retries:
+                    logger.debug(f"⚠️  Pyright 분석 실패 (시도 {attempt + 1}/{max_retries + 1}): {e}")
+                else:
+                    logger.debug(f"⚠️  Pyright 분석 최종 실패: {last_error}")
+                    return TypeCheckResult(error=last_error)
+        
+        # 모든 재시도 실패 시
+        return TypeCheckResult(error=last_error or "알 수 없는 오류")
 
     async def _run_cloc(self, repo_path: Path) -> LocStatsResult:
         """
