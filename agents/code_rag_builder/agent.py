@@ -195,17 +195,30 @@ class CodeRAGBuilderAgent:
             if parser_type == "tree-sitter":
                 language = get_language_from_extension(file_path.suffix)
                 if language:
-                    tree_sitter_chunks = extract_functions_and_classes(
-                        content, language, max_chunk_lines=200
-                    )
-                    if tree_sitter_chunks:
-                        chunks.extend(tree_sitter_chunks)
-                        logger.debug(f"✅ {file_path.name}: Tree-sitter 기반 {len(tree_sitter_chunks)}개 청크 생성 ({language})")
-                    else:
-                        # Tree-sitter 파싱 실패 시 폴백
-                        logger.warning(f"⚠️  {file_path.name} Tree-sitter 파싱 실패, 빈 줄 기준으로 폴백")
+                    # 파서 초기화 확인
+                    from shared.utils.tree_sitter_utils import get_parser
+                    parser = get_parser(language)
+                    if not parser:
+                        logger.debug(f"⚠️  {file_path.name}: {language} 파서를 사용할 수 없음, 빈 줄 기준으로 폴백")
                         parser_type = "blank-line"
+                    else:
+                        try:
+                            tree_sitter_chunks = extract_functions_and_classes(
+                                content, language, max_chunk_lines=200
+                            )
+                            if tree_sitter_chunks:
+                                chunks.extend(tree_sitter_chunks)
+                                logger.debug(f"✅ {file_path.name}: Tree-sitter 기반 {len(tree_sitter_chunks)}개 청크 생성 ({language})")
+                            else:
+                                # Tree-sitter 파싱 실패 시 폴백 (정상적인 폴백이므로 DEBUG 레벨)
+                                logger.debug(f"⚠️  {file_path.name} Tree-sitter 파싱 결과 없음, 빈 줄 기준으로 폴백 ({language})")
+                                parser_type = "blank-line"
+                        except Exception as e:
+                            # 예외 발생 시 폴백
+                            logger.debug(f"⚠️  {file_path.name} Tree-sitter 파싱 중 오류 발생: {e}, 빈 줄 기준으로 폴백")
+                            parser_type = "blank-line"
                 else:
+                    logger.debug(f"⚠️  {file_path.name}: 확장자 {file_path.suffix}에 대한 언어 매핑 없음, 빈 줄 기준으로 폴백")
                     parser_type = "blank-line"
             
             # 빈 줄 기준 분할 (폴백)
