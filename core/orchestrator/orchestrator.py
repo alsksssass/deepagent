@@ -842,10 +842,18 @@ class DeepAgentOrchestrator:
                 except Exception as load_err:
                     logger.warning(f"⚠️ reporter 결과 로드 실패: {load_err}")
                 
-                # result_data 구성: skill_profile_result와 content를 JSON 형식으로 저장
+                # result_data 구성: skill_profile_result, result, 그리고 모든 에이전트 결과
+                from shared.utils.repo_result_loader import load_all_agent_results
+                
+                # 모든 에이전트 결과 로드 (높은 우선순위만: reporter, user_aggregator, static_analyzer)
+                agent_results = load_all_agent_results(store, include_all=False)
+                
                 result_data = {
-                    "skill_profile_result": skill_profile_result,
-                    "content": report_content
+                    "skill_profile_result": skill_profile_result,  # 기존 유지
+                    "result": report_content,  # content → result로 변경
+                    "reporter_result": agent_results.get("reporter_result"),
+                    "user_aggregator_result": agent_results.get("user_aggregator_result"),
+                    "static_analyzer_result": agent_results.get("static_analyzer_result"),
                 }
 
                 # 에러 여부 확인
