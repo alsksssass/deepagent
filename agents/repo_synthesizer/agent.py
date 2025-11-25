@@ -370,7 +370,14 @@ class RepoSynthesizerAgent:
                     return llm_result
                 except Exception as validation_error:
                     # Pydantic 검증 실패 시 더 자세한 로깅
-                    logger.warning(f"⚠️ LLM 응답 검증 실패: {validation_error}")
+                    from pydantic import ValidationError
+                    if isinstance(validation_error, ValidationError):
+                        error_count = len(validation_error.errors())
+                        logger.warning(f"⚠️ LLM 응답 검증 실패: {error_count} validation errors for LLMAnalysisResult")
+                        for err in validation_error.errors():
+                            logger.warning(f"  - Field: {'.'.join(str(loc) for loc in err['loc'])}, Type: {err['type']}, Msg: {err['msg']}")
+                    else:
+                        logger.warning(f"⚠️ LLM 응답 검증 실패: {validation_error}")
                     logger.debug(f"응답 데이터: {json.dumps(analysis_data, indent=2, ensure_ascii=False)[:1000]}")
                     # 기본값으로 재시도
                     try:
@@ -381,7 +388,37 @@ class RepoSynthesizerAgent:
                             analysis_data["strengths"] = []
                         if "improvement_recommendations" not in analysis_data:
                             analysis_data["improvement_recommendations"] = []
-                        
+
+                        # role_suitability 필수 5개 역할 확인
+                        if "role_suitability" not in analysis_data:
+                            analysis_data["role_suitability"] = {}
+                        required_roles = ["Backend", "Frontend", "DevOps", "Data Science", "Fullstack"]
+                        for role in required_roles:
+                            if role not in analysis_data["role_suitability"]:
+                                analysis_data["role_suitability"][role] = f"{role} (평가 불가): 데이터 부족"
+
+                        # hiring_decision 필수 필드 확인
+                        if "hiring_decision" not in analysis_data:
+                            analysis_data["hiring_decision"] = {}
+                        hiring = analysis_data["hiring_decision"]
+
+                        if "immediate_readiness" not in hiring:
+                            hiring["immediate_readiness"] = "평가 불가"
+                        if "onboarding_period" not in hiring:
+                            hiring["onboarding_period"] = "미정"
+                        if "hiring_recommendation" not in hiring:
+                            hiring["hiring_recommendation"] = "신중 검토"
+                        if "hiring_decision_reason" not in hiring:
+                            hiring["hiring_decision_reason"] = "분석 데이터가 충분하지 않아 정확한 평가가 어렵습니다."
+                        if "salary_recommendation" not in hiring:
+                            hiring["salary_recommendation"] = "데이터 부족으로 평가 불가"
+                        if "estimated_salary_range" not in hiring:
+                            hiring["estimated_salary_range"] = "평가 불가"
+                        if "technical_risks" not in hiring:
+                            hiring["technical_risks"] = []
+                        if "expected_contributions" not in hiring:
+                            hiring["expected_contributions"] = []
+
                         llm_result = LLMAnalysisResult(**analysis_data)
                         logger.info("✅ LLM 종합 분석 완료 (기본값 보완)")
                         return llm_result
