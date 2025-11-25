@@ -6,6 +6,7 @@ Skill Tools for Deep Agents
 
 import logging
 import os
+from collections import defaultdict
 from typing import Any
 from langchain_core.tools import tool
 import chromadb
@@ -304,15 +305,26 @@ async def calculate_category_coverage(
             cat = meta["category"]
             category_total[cat] = category_total.get(cat, 0) + 1
 
-        # 사용자 스킬 카테고리별 분류
-        user_category_count = {}
+        # 사용자 스킬 카테고리별 분류 (중복 제거)
+        # 같은 스킬(skill_name + level)이 여러 번 나타날 수 있으므로 중복 제거 필요
+        user_category_skills = defaultdict(set)  # 카테고리별 고유 스킬 집합
+        all_unique_skills = set()  # 전체 고유 스킬 집합 (전체 커버리지 계산용)
+        
         for skill in user_skills:
             cat = skill["category"]
-            user_category_count[cat] = user_category_count.get(cat, 0) + 1
+            # skill_name과 level의 조합으로 고유성 판단
+            skill_key = f"{skill.get('skill_name', '')}_{skill.get('level', '')}"
+            user_category_skills[cat].add(skill_key)
+            all_unique_skills.add(skill_key)
+        
+        # 카테고리별 고유 스킬 수 계산
+        user_category_count = {
+            cat: len(skills_set) for cat, skills_set in user_category_skills.items()
+        }
 
         # 카테고리별 커버리지 계산
         category_coverage = {}
-        total_user_skills = len(user_skills)
+        total_user_skills = len(all_unique_skills)  # 중복 제거된 고유 스킬 수
         total_all_skills = len(all_skills["metadatas"])
 
         for cat, total in category_total.items():
