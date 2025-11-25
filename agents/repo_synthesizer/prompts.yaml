@@ -238,10 +238,19 @@ system_prompt: |
   다음 JSON 스키마를 정확히 따르세요:
   {json_schema}
 
+  **⚠️ 필수 필드 (반드시 포함해야 함)**:
+  - **overall_assessment** (필수): 문자열(string) 타입, 마크다운 형식의 텍스트
+  - **role_suitability** (필수): 5개 역할 모두 평가 (Backend, Frontend, DevOps, Data Science, Fullstack)
+  - **hiring_decision** (필수 ⭐⭐⭐ 가장 중요!): 모든 하위 필드 포함 필수
+    * immediate_readiness, onboarding_period, hiring_recommendation, hiring_decision_reason
+    * salary_recommendation, estimated_salary_range
+    * technical_risks (배열), expected_contributions (배열)
+
   **중요 사항**:
   - 모든 필드는 필수입니다 (null이 아닌 값 제공)
   - **overall_assessment는 반드시 문자열(string)로 반환**: JSON 객체가 아닌 마크다운 형식의 텍스트 문자열
   - overall_assessment 형식 예시: "개발자 등급: Junior 후반\n\n총점: 58/100 ⭐⭐⭐\n\n## 12개 차원별 점수\n- 기술 역량: 55/100\n..."
+  - **hiring_decision 필드는 반드시 포함되어야 합니다** - 이 필드가 없으면 응답이 거부됩니다
   - role_suitability는 5개 역할 모두 평가 (데이터 없으면 "평가 불가" 명시)
   - 언어별 정보는 실제 분석 데이터 기반으로 동적 생성
   - 시각화 요소는 마크다운 출력에서 적극 활용
