@@ -56,14 +56,21 @@ class SchemaPromptGenerator:
             # 1. Pydantic JSON Schema 생성
             json_schema = schema_class.model_json_schema()
             
-            # 2. 예제 값 생성
+            # 2. $defs 추출 (중첩 모델 정의)
+            definitions = json_schema.get("$defs", {})
+            # definitions도 확인 (하위 호환성)
+            if not definitions:
+                definitions = json_schema.get("definitions", {})
+            
+            # 3. 예제 값 생성 ($defs 전달)
             example = SchemaPromptGenerator._generate_example_from_schema(
                 json_schema, 
                 max_depth=max_depth,
-                current_depth=0
+                current_depth=0,
+                definitions=definitions
             )
             
-            # 3. 마크다운 포맷팅
+            # 4. 마크다운 포맷팅
             formatted = SchemaPromptGenerator._format_as_markdown_code_block(
                 example,
                 include_description=include_description,
@@ -82,7 +89,8 @@ class SchemaPromptGenerator:
     def _generate_example_from_schema(
         json_schema: Dict[str, Any],
         max_depth: int = 3,
-        current_depth: int = 0
+        current_depth: int = 0,
+        definitions: Optional[Dict[str, Any]] = None
     ) -> Any:
         """
         JSON Schema에서 예제 값 생성 (재귀적)
@@ -91,6 +99,7 @@ class SchemaPromptGenerator:
             json_schema: JSON Schema dict
             max_depth: 최대 중첩 깊이
             current_depth: 현재 깊이
+            definitions: $defs 딕셔너리 ($ref 참조 해결용)
             
         Returns:
             예제 값 (dict, list, 또는 기본 타입)
@@ -100,14 +109,27 @@ class SchemaPromptGenerator:
         
         # $ref 참조 처리
         if "$ref" in json_schema:
-            # 간단한 처리: 참조는 None 반환 (실제로는 스키마 전체를 파싱해야 함)
+            ref_path = json_schema["$ref"]
+            # #/definitions/ModelName 또는 #/$defs/ModelName 형식
+            if ref_path.startswith("#/$defs/") or ref_path.startswith("#/definitions/"):
+                model_name = ref_path.split("/")[-1]
+                if definitions and model_name in definitions:
+                    # 참조된 모델의 스키마로 재귀 호출
+                    return SchemaPromptGenerator._generate_example_from_schema(
+                        definitions[model_name],
+                        max_depth=max_depth,
+                        current_depth=current_depth + 1,
+                        definitions=definitions
+                    )
+            # 참조를 해결할 수 없으면 None 반환
+            logger.debug(f"⚠️ $ref 참조를 해결할 수 없음: {ref_path}")
             return None
         
         # allOf, anyOf, oneOf 처리
         if "allOf" in json_schema:
             # allOf의 첫 번째 스키마 사용
             return SchemaPromptGenerator._generate_example_from_schema(
-                json_schema["allOf"][0], max_depth, current_depth
+                json_schema["allOf"][0], max_depth, current_depth, definitions
             )
         
         # enum 처리
@@ -122,20 +144,26 @@ class SchemaPromptGenerator:
             example = {}
             
             # 모든 필드를 포함 (예제 생성 목적)
+            # required 필드는 반드시 포함
+            required_fields = json_schema.get("required", [])
             for prop_name, prop_schema in properties.items():
                 prop_example = SchemaPromptGenerator._generate_example_from_schema(
-                    prop_schema, max_depth, current_depth + 1
+                    prop_schema, max_depth, current_depth + 1, definitions
                 )
-                # None이 아닌 경우만 포함
-                if prop_example is not None:
-                    example[prop_name] = prop_example
+                # required 필드는 None이어도 포함 (기본값 생성)
+                if prop_name in required_fields or prop_example is not None:
+                    if prop_example is None:
+                        # required 필드인데 예제 생성 실패 시 기본값 생성 시도
+                        prop_example = SchemaPromptGenerator._generate_default_value(prop_schema)
+                    if prop_example is not None:
+                        example[prop_name] = prop_example
             
             return example if example else {}
         
         elif schema_type == "array":
             items_schema = json_schema.get("items", {})
             item_example = SchemaPromptGenerator._generate_example_from_schema(
-                items_schema, max_depth, current_depth + 1
+                items_schema, max_depth, current_depth + 1, definitions
             )
             # 배열은 최대 2개 항목으로 제한
             if item_example is not None:
@@ -164,10 +192,9 @@ class SchemaPromptGenerator:
                 return "2025-01-15"
             elif "time" in description or "시간" in description:
                 return "2025-01-15T10:00:00"
-            elif "기술" in description or "technolog" in description:
-                return ["React", "TypeScript"]  # 기술 스택은 배열로
-            elif "평가" in description or "evaluation" in description:
+            elif "평가" in description or "evaluation" in description or "assessment" in description:
                 return "평가 설명 예시입니다."
+            # 기술 스택은 배열이므로 여기서 처리하지 않음
             
             # format 처리
             format_type = json_schema.get("format")
@@ -222,6 +249,32 @@ class SchemaPromptGenerator:
             return None
         
         # 타입이 없으면 기본값
+        return None
+    
+    @staticmethod
+    def _generate_default_value(json_schema: Dict[str, Any]) -> Any:
+        """
+        필수 필드의 기본값 생성 (예제 생성 실패 시)
+        
+        Args:
+            json_schema: JSON Schema dict
+            
+        Returns:
+            기본값
+        """
+        schema_type = json_schema.get("type")
+        if schema_type == "object":
+            return {}
+        elif schema_type == "array":
+            return []
+        elif schema_type == "string":
+            return "example_string"
+        elif schema_type == "number":
+            return 0.0
+        elif schema_type == "integer":
+            return 0
+        elif schema_type == "boolean":
+            return True
         return None
 
     @staticmethod
