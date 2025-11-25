@@ -177,7 +177,7 @@ class TokenTracker:
         output_tokens = 0
 
         try:
-            # 방법 1: response_metadata에서 추출
+            # 방법 1: response_metadata에서 추출 (AWS Bedrock Converse API)
             if hasattr(response, 'response_metadata'):
                 metadata = response.response_metadata
                 if metadata:
@@ -186,6 +186,13 @@ class TokenTracker:
                     if usage:
                         input_tokens = usage.get('input_tokens', 0)
                         output_tokens = usage.get('output_tokens', 0)
+                        if input_tokens > 0 or output_tokens > 0:
+                            return input_tokens, output_tokens
+                    
+                    # 추가 확인: 다른 형식의 usage 정보
+                    if 'input_tokens' in metadata:
+                        input_tokens = metadata.get('input_tokens', 0)
+                        output_tokens = metadata.get('output_tokens', 0)
                         if input_tokens > 0 or output_tokens > 0:
                             return input_tokens, output_tokens
 
@@ -211,9 +218,10 @@ class TokenTracker:
                 content = response.content or ""
                 # 입력은 추정 불가 (messages 필요), 출력만 추정
                 output_tokens = len(content) // 4
-                logger.warning(
+                # 추정 사용은 정상적인 경우이므로 DEBUG 레벨로 변경
+                logger.debug(
                     f"⚠️ TokenTracker: 정확한 토큰 정보 없음, 출력 토큰 추정 사용 "
-                    f"(출력={output_tokens})"
+                    f"(출력={output_tokens}, content_length={len(content)})"
                 )
                 return 0, output_tokens
 

@@ -234,7 +234,8 @@ class Neo4jBackend(GraphDBBackend):
                     logger.info(f"🔍 Neo4j: commit={commit_hash} - {len(details.get('files', []))}개 파일")
                     return details
                 else:
-                    logger.warning(f"⚠️  Neo4j: commit={commit_hash} - 결과 없음")
+                    # 결과 없음은 정상적인 경우일 수 있으므로 DEBUG 레벨로 변경
+                    logger.debug(f"⚠️  Neo4j: commit={commit_hash} - 결과 없음 (repo_id: {repo_id})")
                     return {}
 
         except Exception as e:
