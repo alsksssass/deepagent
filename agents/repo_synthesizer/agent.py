@@ -585,15 +585,25 @@ class RepoSynthesizerAgent:
         
         try:
             # 1. overall_assessment 추출 (코드 블록 안의 문자열)
-            # 패턴: ### 1️⃣ overall_assessment 다음에 ```로 시작하는 코드 블록
-            overall_match = re.search(r"###\s*1[️⃣1]\s*overall_assessment\s*\n```\s*\n(.*?)\n```", content, re.DOTALL)
+            # 패턴: ### 1️⃣ overall_assessment 다음에 ```로 시작하는 코드 블록 (언어 식별자 허용)
+            overall_match = re.search(r"###\s*1[️⃣1]\s*overall_assessment\s*\n```(?:markdown)?\s*\n(.*?)\n```", content, re.DOTALL | re.IGNORECASE)
             if overall_match:
                 result["overall_assessment"] = overall_match.group(1).strip()
             else:
-                # 대체 패턴: ``` 없이 직접 텍스트
+                # 대체 패턴: ``` 없이 직접 텍스트 또는 ```가 포함된 텍스트
                 overall_match = re.search(r"###\s*1[️⃣1]\s*overall_assessment\s*\n(.*?)(?=###|\Z)", content, re.DOTALL)
                 if overall_match:
-                    result["overall_assessment"] = overall_match.group(1).strip()
+                    text = overall_match.group(1).strip()
+                    # 만약 텍스트가 ```로 감싸져 있다면 제거
+                    if text.startswith("```") and text.endswith("```"):
+                        # 첫 줄(```markdown 등)과 마지막 줄(```) 제거
+                        lines = text.split('\n')
+                        if len(lines) >= 2:
+                            result["overall_assessment"] = '\n'.join(lines[1:-1]).strip()
+                        else:
+                            result["overall_assessment"] = text.strip('`').strip()
+                    else:
+                        result["overall_assessment"] = text
             
             # 2. strengths 추출 (JSON 배열)
             # 패턴: ### 2️⃣ strengths 다음에 ```json으로 시작하는 코드 블록
