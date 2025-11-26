@@ -40,6 +40,7 @@ class RepositoryAnalysis(Base):
     id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     user_id = Column(PGUUID(as_uuid=True), nullable=False, index=True)  # FK 제약조건 제거
     repository_url = Column(String, index=True, nullable=False)
+    repository_name = Column(String, nullable=False)  # 레포지토리 이름 추가
     result = Column(JSON, nullable=True)  # UserAggregatorResponse 형태의 JSON
 
     status = Column(SQLEnum(AnalysisStatus), default=AnalysisStatus.PROCESSING, nullable=False)

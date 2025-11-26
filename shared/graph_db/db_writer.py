@@ -169,6 +169,7 @@ class AnalysisDBWriter:
         self,
         user_id: UUID,
         repository_url: str,
+        repository_name: str,  # 레포지토리 이름 추가
         result: dict,  # UserAggregatorResponse.model_dump()
         task_uuid: UUID,
         main_task_uuid: Optional[UUID] = None,  # 멀티 분석 시 종합 분석과 연결
@@ -181,6 +182,7 @@ class AnalysisDBWriter:
         Args:
             user_id: 사용자 UUID
             repository_url: 레포지토리 URL
+            repository_name: 레포지토리 이름
             result: UserAggregatorResponse.model_dump() 결과
             task_uuid: 작업 UUID (레포별)
             main_task_uuid: 메인 작업 UUID (종합 분석용, 옵셔널)
@@ -195,6 +197,7 @@ class AnalysisDBWriter:
                 repo_analysis = RepositoryAnalysis(
                     user_id=user_id,
                     repository_url=repository_url,
+                    repository_name=repository_name,
                     result=result,
                     task_uuid=task_uuid,
                     main_task_uuid=main_task_uuid,
