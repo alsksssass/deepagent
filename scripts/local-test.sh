@@ -90,12 +90,9 @@ fi
 
 # USER_ID가 없으면 생성
 if [ -z "$USER_ID" ]; then
-    if command -v uuidgen &> /dev/null; then
-        export USER_ID=$(uuidgen)
-    else
-        export USER_ID="00000000-0000-0000-0000-000000000001"
-    fi
-    echo "⚠️  USER_ID가 설정되지 않아 테스트용 UUID를 생성했습니다: $USER_ID"
+    # 테스트용 고정 UUID 사용 (DB에 토큰이 있는 유저)
+    export USER_ID="a700673d-fc1f-4c7b-8266-4237538ca53d"
+    echo "⚠️  USER_ID가 설정되지 않아 테스트용 UUID를 사용합니다: $USER_ID"
 fi
 
 # GIT_URLS가 없으면 테스트용 URL 설정
@@ -270,10 +267,10 @@ echo ""
 # 환경 변수 배열 구성
 ENV_ARGS=(
     -e USER_ID="$USER_ID"
-    -e GIT_URLS="$GIT_URLS"
+    -e GIT_URLS="https://github.com/MatSalt/MoriAI_test.git"
     -e TASK_IDS="$TASK_IDS"
     -e MAIN_TASK_ID="$MAIN_TASK_ID"
-    -e TARGET_USER="$TARGET_USER"
+    -e TARGET_USER="alsksssass"
     -e AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID"
     -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY"
     -e AWS_DEFAULT_REGION="$AWS_DEFAULT_REGION"
@@ -296,6 +293,7 @@ ENV_ARGS=(
     -e LOG_LEVEL="$LOG_LEVEL"
     -e PYTHONUNBUFFERED=1
     -e TOKENIZERS_PARALLELISM="$TOKENIZERS_PARALLELISM"
+    -e ENCRYPTION_KEY="_DS83qC5xQJhzk24zPO_L7kbjusKtuI6k1hDF90mgUE="
 )
 
 # 네트워크 모드 설정 (호스트 네트워크 사용 시 localhost 서비스 접근 가능)

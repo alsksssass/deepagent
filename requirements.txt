@@ -78,6 +78,7 @@ tokenizers>=0.21.0
 PyYAML>=6.0.0
 requests>=2.32.0
 GitPython>=3.1.45
+cryptography>=44.0.0
 
 # Logging
 coloredlogs>=15.0.0

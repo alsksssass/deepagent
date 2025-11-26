@@ -171,7 +171,7 @@ class S3StorageBackend(StorageBackend):
             return result
 
         except FileNotFoundError:
-            raise FileNotFoundError(f"결과를 찾을 수 없습니다: {agent_name}")
+            raise FileNotFoundError(f"결과를 찾을 수 없습니다: {agent_name} (Path: s3://{self.bucket_name}/{key})")
         except Exception as e:
             logger.error(f"❌ 결과 로드 실패 ({agent_name}): {e}")
             raise

@@ -95,13 +95,17 @@ class RepoClonerAgent:
             access_token = None
             if user_id and db_writer:
                 try:
+                    logger.info(f"🔍 액세스 토큰 조회 시도: user_id={user_id}")
                     user_uuid = UUID(user_id)
                     access_token = await db_writer.get_user_access_token(user_uuid)
                     if access_token:
-                        logger.info(f"🔑 액세스 토큰 조회 성공 (사용자: {user_id})")
+                        masked_token = f"{access_token[:4]}...{access_token[-4:]}" if len(access_token) > 8 else "***"
+                        logger.info(f"🔑 액세스 토큰 조회 성공 (사용자: {user_id}, 토큰: {masked_token})")
                     else:
+                        logger.warning(f"⚠️  액세스 토큰 조회 결과 없음 (None 반환) - 사용자: {user_id}")
                         logger.info(f"ℹ️  액세스 토큰 없음 (사용자: {user_id}), 퍼블릭 레포로 시도")
                 except Exception as e:
+                    logger.error(f"❌ 액세스 토큰 조회 중 예외 발생: {e}")
                     logger.warning(f"⚠️  액세스 토큰 조회 실패: {e}, 원래 URL로 시도")
 
             # URL 변환 및 토큰 추가

@@ -229,6 +229,7 @@ class RepoSynthesizerAgent:
                 # ResultStore에서 추가 정보 로드 시도
                 try:
                     if task_uuid and base_path:
+                        logger.info(f"🔍 ResultStore 초기화 (요약 추출): task_uuid={task_uuid}, base_path={base_path}")
                         store = ResultStore(task_uuid, Path(base_path))
                         
                         # Reporter 결과 로드 (메타데이터)
@@ -278,7 +279,7 @@ class RepoSynthesizerAgent:
                             "total_files": result.get("total_files", 0),
                         })
                 except Exception as e:
-                    logger.warning(f"⚠️ ResultStore 로드 실패: {e}")
+                    logger.warning(f"⚠️ ResultStore 로드 실패: {e} (task_uuid={task_uuid}, base_path={base_path})")
                     summaries.append({
                         "git_url": result.get("git_url", ""),
                         "task_uuid": task_uuid,
@@ -724,6 +725,7 @@ class RepoSynthesizerAgent:
                 continue
             
             try:
+                logger.info(f"🔍 ResultStore 초기화 (JSON 수집): task_uuid={task_uuid}, base_path={base_path}")
                 store = ResultStore(task_uuid, Path(base_path))
                 
                 # 주요 분석 결과 로드
@@ -837,14 +839,17 @@ class RepoSynthesizerAgent:
     def _format_user_analysis_result(self, user_analysis_result: UserAnalysisResult) -> str:
         """유저 분석 결과 포맷팅"""
         formatted = []
-        
+
         formatted.append(f"코드 품질 점수: {user_analysis_result.clean_code:.2f}/10")
-        
+
         if user_analysis_result.role:
-            formatted.append(f"\n역할별 기술스택 보유율:")
+            formatted.append(f"\n🚨 역할별 기술스택 보유율 (정확한 수치 - role_suitability에서 반드시 이 값을 사용):")
             for role, percentage in sorted(user_analysis_result.role.items(), key=lambda x: x[1], reverse=True):
-                formatted.append(f"  - {role}: {percentage}%")
-        
+                formatted.append(f"  - {role}: {percentage:.1f}% ← role_suitability에서 이 정확한 퍼센트를 사용하세요!")
+
+            formatted.append(f"\n⚠️ 중요: role_suitability 작성 시 위의 퍼센트 값을 정확히 복사하여 사용하세요.")
+            formatted.append(f"예시: \"Backend ({user_analysis_result.role.get('Backend', 0.0):.1f}%): [평가 내용]\"")
+
         if hasattr(user_analysis_result, 'python') and user_analysis_result.python:
             python = user_analysis_result.python
             formatted.append(f"\nPython 분석:")
@@ -852,7 +857,7 @@ class RepoSynthesizerAgent:
             formatted.append(f"  - 경험치: {python.exp:,}")
             if python.stack:
                 formatted.append(f"  - 기술 스택: {', '.join(python.stack)}")
-        
+
         return "\n".join(formatted)
 
     async def _generate_user_analysis_result(
