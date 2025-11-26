@@ -427,30 +427,38 @@ class AnalysisDBWriter:
 
     async def get_user_access_token(self, user_id: UUID) -> Optional[str]:
         """
-        사용자의 Git 액세스 토큰 조회
+        사용자의 Git 액세스 토큰 조회 (복호화된 평문 반환)
 
         Args:
             user_id: 사용자 UUID
 
         Returns:
-            access_token 문자열 또는 None (토큰이 없거나 사용자가 없는 경우)
+            복호화된 access_token 문자열 또는 None (토큰이 없거나 사용자가 없는 경우)
         """
         try:
             async with self._get_session() as session:
                 # users 테이블에서 access_token 조회
                 # SQLAlchemy Core를 사용하여 직접 쿼리 (모델이 없을 수 있음)
                 from sqlalchemy import text
-                
+                from ..utils.encryption import TokenEncryption
+
                 stmt = text("SELECT access_token FROM users WHERE id = :user_id")
                 result = await session.execute(stmt, {"user_id": str(user_id)})
                 row = result.fetchone()
-                
+
                 if row and row[0]:
-                    token = row[0]
-                    # 토큰 마스킹하여 로그 출력 (보안)
-                    masked_token = f"{token[:4]}...{token[-4:]}" if len(token) > 8 else "****"
-                    logger.debug(f"✅ 사용자 {user_id}의 액세스 토큰 조회 성공: {masked_token}")
-                    return token
+                    encrypted_token = row[0]
+
+                    # 토큰 복호화
+                    try:
+                        decrypted_token = TokenEncryption.decrypt(encrypted_token)
+                        # 복호화된 토큰 마스킹하여 로그 출력 (보안)
+                        masked_token = f"{decrypted_token[:4]}...{decrypted_token[-4:]}" if len(decrypted_token) > 8 else "****"
+                        logger.debug(f"✅ 사용자 {user_id}의 액세스 토큰 조회 및 복호화 성공: {masked_token}")
+                        return decrypted_token
+                    except Exception as decrypt_error:
+                        logger.error(f"❌ 토큰 복호화 실패 (사용자 {user_id}): {decrypt_error}")
+                        return None
                 else:
                     logger.debug(f"ℹ️  사용자 {user_id}의 액세스 토큰이 없습니다")
                     return None
