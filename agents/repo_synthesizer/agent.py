@@ -229,6 +229,7 @@ class RepoSynthesizerAgent:
                 # ResultStore에서 추가 정보 로드 시도
                 try:
                     if task_uuid and base_path:
+                        logger.info(f"🔍 ResultStore 초기화 (요약 추출): task_uuid={task_uuid}, base_path={base_path}")
                         store = ResultStore(task_uuid, Path(base_path))
                         
                         # Reporter 결과 로드 (메타데이터)
@@ -278,7 +279,7 @@ class RepoSynthesizerAgent:
                             "total_files": result.get("total_files", 0),
                         })
                 except Exception as e:
-                    logger.warning(f"⚠️ ResultStore 로드 실패: {e}")
+                    logger.warning(f"⚠️ ResultStore 로드 실패: {e} (task_uuid={task_uuid}, base_path={base_path})")
                     summaries.append({
                         "git_url": result.get("git_url", ""),
                         "task_uuid": task_uuid,
@@ -724,6 +725,7 @@ class RepoSynthesizerAgent:
                 continue
             
             try:
+                logger.info(f"🔍 ResultStore 초기화 (JSON 수집): task_uuid={task_uuid}, base_path={base_path}")
                 store = ResultStore(task_uuid, Path(base_path))
                 
                 # 주요 분석 결과 로드

@@ -474,6 +474,54 @@ class DeepAgentOrchestrator:
                         user_commits = []
                         logger.warning(f"⚠️ 타겟 유저 {target_user}의 커밋을 찾을 수 없습니다.")
                     logger.info(f"🔍 타겟 유저 {target_user}: {len(user_commits)}개 커밋")
+
+                    # 타겟 유저의 커밋이 없는 경우 처리
+                    if not user_commits:
+                        error_msg = f"해당 레포지토리에 타겟 유저({target_user})의 커밋이 없습니다."
+                        logger.error(f"❌ {error_msg}")
+
+                        # DB FAILED 업데이트
+                        if self.db_writer and self.user_id:
+                            try:
+                                from shared.graph_db import AnalysisStatus
+                                await self.db_writer.update_repository_result(
+                                    task_uuid=uuid.UUID(task_uuid),
+                                    result={},
+                                    status=AnalysisStatus.FAILED,
+                                    error_message=error_msg
+                                )
+                                logger.info(f"📊 DB FAILED 업데이트 완료: {task_uuid}")
+                            except Exception as db_err:
+                                logger.error(f"❌ DB FAILED 업데이트 실패: {db_err}")
+
+                        # 작업 조기 종료
+                        return {
+                            "error_message": error_msg,
+                            "static_analysis": static_result,
+                            "neo4j_ready": True, # 커밋 조회는 성공했으므로
+                            "chromadb_ready": rag_result.get("status") == "success",
+                            "total_commits": 0,
+                            "total_files": static_result.get("loc_stats", {}).get("total_files", 0),
+                            "subagent_results": {
+                                "repo_cloner": {
+                                    "status": "success",
+                                    "path": "results/repo_cloner.json",
+                                },
+                                "static_analyzer": {
+                                    "status": static_response.status,
+                                    "path": "results/static_analyzer.json",
+                                },
+                                "commit_analyzer": {
+                                    "status": commit_response.status,
+                                    "path": "results/commit_analyzer.json",
+                                },
+                                "code_rag_builder": {
+                                    "status": rag_response.status,
+                                    "path": "results/code_rag_builder.json",
+                                },
+                            },
+                            "updated_at": datetime.now().isoformat(),
+                        }
             else:
                 # 전체 유저의 경우: 모든 유저의 최근 커밋 샘플링
                 from shared.tools.neo4j_tools import query_graph
@@ -599,6 +647,7 @@ class DeepAgentOrchestrator:
                 logger.info(f"   ✅ user_aggregator.json 저장 완료: {saved_path}")
                 user_agg_result = user_agg_response.model_dump()
             else:
+                logger.warning(f"⚠️ UserAggregator 실행 건너뜀: commit_evaluator 배치 결과가 없습니다. (batched_agents={batched_agents})")
                 user_agg_result = {
                     "status": "failed",
                     "user": target_user if target_user else None,
@@ -639,6 +688,7 @@ class DeepAgentOrchestrator:
                 logger.info(f"   ✅ user_skill_profiler.json 저장 완료: {saved_path}")
                 skill_profile_result = skill_profile_response.model_dump()
             else:
+                logger.warning(f"⚠️ UserSkillProfiler 실행 건너뜀: RAG가 준비되지 않았습니다. (rag_status={rag_result.get('status')})")
                 skill_profile_result = {
                     "status": "skipped",
                     "user": target_user if target_user else "ALL_USERS",

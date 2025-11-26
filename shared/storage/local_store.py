@@ -73,7 +73,7 @@ class LocalStorageBackend(StorageBackend):
 
         if not file_path.exists():
             raise FileNotFoundError(
-                f"결과 파일을 찾을 수 없습니다: {agent_name} ({file_path})"
+                f"결과 파일을 찾을 수 없습니다: {agent_name} (Path: {file_path})"
             )
 
         try:

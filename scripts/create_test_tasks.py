@@ -75,11 +75,15 @@ async def create_test_tasks(user_id: str, git_urls: list[str], main_task_id: str
         task_ids.append(task_id)
         task_uuid_obj = uuid.UUID(task_id)
         
+        # 레포지토리 이름 추출
+        repo_name = git_url.split("/")[-1].replace(".git", "")
+        
         # RepositoryAnalysis 레코드 생성 (PROCESSING 상태)
         try:
             await db_writer.save_repository_analysis(
                 user_id=user_id_obj,
                 repository_url=git_url,
+                repository_name=repo_name,
                 result={},  # 빈 결과
                 task_uuid=task_uuid_obj,
                 main_task_uuid=main_task_uuid_obj,
