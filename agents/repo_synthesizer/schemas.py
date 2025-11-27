@@ -141,6 +141,15 @@ class HiringDecision(BaseModel):
         description="예상 적정 연봉 (한국 IT 개발자 기준, 예: 3,500만원 - 4,500만원)",
     )
 
+class InterviewQuestion(BaseModel):
+    """기술 면접 질문"""
+
+    category: str = Field(
+        ..., description="질문 카테고리 (예: 기술스택, 아키텍처, 문제해결, 코드품질, 설계패턴 등)"
+    )
+    question: str = Field(..., description="실제 면접에서 물어볼 구체적인 질문")
+    purpose: str = Field(..., description="질문 의도 - 이 질문을 통해 무엇을 확인하려는지")
+
 
 class LLMAnalysisResult(BaseModel):
     """LLM 종합 분석 결과"""
@@ -174,6 +183,10 @@ class LLMAnalysisResult(BaseModel):
         ),
     )
     hiring_decision: HiringDecision = Field(..., description="채용 의견 및 투입 가능성 평가")
+    interview_questions: List[InterviewQuestion] = Field(
+        default_factory=list, 
+        description="기술 면접 질문 - 개발자의 실력을 검증하기 위한 면접 질문 3가지"
+    )
     model_config = ConfigDict(
         extra="allow"
     )  # 동적 필드 허용 (언어별 정보: "python", "javascript" 등), 각 언어별 stack, level, exp, usage_frequency 정보 포함
