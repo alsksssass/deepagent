@@ -5,10 +5,43 @@ Git 커밋 분석 및 Neo4j 적재 에이전트의 입출력 스키마 정의
 """
 
 from pydantic import BaseModel, Field, field_validator
-from typing import Optional
+from typing import Optional, Dict, List
 from pathlib import Path
 from shared.schemas.common import BaseContext, BaseResponse
 from shared.utils.repo_utils import generate_repo_id, is_valid_git_url
+
+
+class AuthorAlias(BaseModel):
+    """저자 ID 별칭 스키마"""
+    name: Optional[str] = Field(None, description="별칭 이름 (None이면 canonical_name 사용)")
+    email: str = Field(..., description="별칭 이메일")
+
+
+class AuthorMappingRule(BaseModel):
+    """저자 매핑 규칙 스키마"""
+    canonical_email: str = Field(..., description="대표 이메일 주소")
+    aliases: List[AuthorAlias] = Field(default_factory=list, description="통합할 별칭 목록")
+
+
+class AuthorMappingRules(BaseModel):
+    """전체 저자 매핑 규칙 컬렉션"""
+    mappings: Dict[str, AuthorMappingRule] = Field(
+        default_factory=dict,
+        description="매핑 규칙 딕셔너리 (key: canonical_name, value: AuthorMappingRule)"
+    )
+
+    def to_dict(self) -> Dict:
+        """AuthorMapper가 사용하는 형식으로 변환"""
+        result = {}
+        for canonical_name, rule in self.mappings.items():
+            result[canonical_name] = {
+                "canonical_email": rule.canonical_email,
+                "aliases": [
+                    {"name": alias.name, "email": alias.email} if alias.name else {"email": alias.email}
+                    for alias in rule.aliases
+                ]
+            }
+        return result
 
 
 class CommitAnalyzerContext(BaseContext):
@@ -26,6 +59,12 @@ class CommitAnalyzerContext(BaseContext):
     neo4j_uri: str = Field(default="bolt://localhost:7687", description="Neo4j URI")
     neo4j_user: str = Field(default="neo4j", description="Neo4j 사용자명")
     neo4j_password: str = Field(default="password", description="Neo4j 비밀번호")
+
+    # Author Mapping 설정
+    author_mapping_rules: Optional[AuthorMappingRules] = Field(
+        None,
+        description="저자 ID 매핑 규칙 (None이면 매핑하지 않음)"
+    )
 
     @field_validator("repo_path")
     def validate_repo_path(cls, v):

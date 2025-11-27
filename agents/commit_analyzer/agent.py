@@ -14,6 +14,7 @@ from pydriller import Repository
 
 from shared.graph_db import GraphDBBackend, Neo4jBackend
 from .schemas import CommitAnalyzerContext, CommitAnalyzerResponse
+from .author_mapper import AuthorMapper
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +42,7 @@ class CommitAnalyzerAgent:
         self.neo4j_user = neo4j_user
         self.neo4j_password = neo4j_password
         self.backend: Optional[GraphDBBackend] = None
+        self.author_mapper: Optional[AuthorMapper] = None
 
     async def run(self, context: CommitAnalyzerContext) -> CommitAnalyzerResponse:
         """
@@ -62,6 +64,19 @@ class CommitAnalyzerAgent:
         try:
             # GraphDBBackend 초기화 (Neo4j)
             self.backend = Neo4jBackend()
+
+            # AuthorMapper 초기화 (매핑 규칙이 있는 경우)
+            if context.author_mapping_rules:
+                mapping_dict = context.author_mapping_rules.to_dict()
+                self.author_mapper = AuthorMapper(mapping_dict)
+                stats = self.author_mapper.get_mapping_stats()
+                logger.info(
+                    f"✅ AuthorMapper enabled: {stats['total_developers']} developers, "
+                    f"{stats['total_aliases']} aliases"
+                )
+            else:
+                self.author_mapper = None
+                logger.info("ℹ️ AuthorMapper disabled: No mapping rules provided")
 
             # Neo4j 초기화 (인덱스, 제약조건) - Repository별로 격리
             await self._init_neo4j(repo_id)
@@ -168,11 +183,25 @@ class CommitAnalyzerAgent:
                         target_lower != author_name_lower):
                         continue
 
+                # 저자 정보 정규화 (AuthorMapper 사용)
+                original_author_name = commit.author.name
+                original_author_email = commit.author.email
+
+                if self.author_mapper:
+                    normalized_name, normalized_email = self.author_mapper.normalize_author(
+                        original_author_name, original_author_email
+                    )
+                else:
+                    normalized_name = original_author_name
+                    normalized_email = original_author_email
+
                 commit_data = {
                     "hash": commit.hash,
                     "message": commit.msg,
-                    "author_name": commit.author.name,
-                    "author_email": commit.author.email,
+                    "author_name": normalized_name,  # 정규화된 이름
+                    "author_email": normalized_email,  # 정규화된 이메일
+                    "original_author_name": original_author_name,  # 원본 이름 (참고용)
+                    "original_author_email": original_author_email,  # 원본 이메일 (참고용)
                     "author_date": commit.author_date.isoformat(),
                     "committer_name": commit.committer.name,
                     "committer_email": commit.committer.email,
@@ -251,6 +280,8 @@ class CommitAnalyzerAgent:
             MERGE (u:{repo_label}:User {{email: commit.author_email, repo_id: $repo_id}})
             ON CREATE SET
                 u.name = commit.author_name
+            ON MATCH SET
+                u.name = commit.author_name  // 정규화된 이름으로 업데이트
 
             // Commit 노드 생성/병합 (복합 키: hash + repo_id, Repository 라벨 포함, 멱등성 보장)
             MERGE (c:{repo_label}:Commit {{hash: commit.hash, repo_id: $repo_id}})
