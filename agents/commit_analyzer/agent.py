@@ -56,8 +56,11 @@ class CommitAnalyzerAgent:
         repo_path = context.repo_path
         target_user = context.target_user
         repo_id = context.repo_id  # Repository Isolation용 ID
+        user_emails = set(context.user_emails) if context.user_emails else set()
 
         logger.info(f"📊 CommitAnalyzer: {repo_path} 분석 시작 (repo_id: {repo_id})")
+        if user_emails:
+            logger.info(f"📧 사용자 식별자 {len(user_emails)}개 사용 (강화된 사용자 판단)")
 
         try:
             # GraphDBBackend 초기화 (Neo4j)
@@ -66,8 +69,8 @@ class CommitAnalyzerAgent:
             # Neo4j 초기화 (인덱스, 제약조건) - Repository별로 격리
             await self._init_neo4j(repo_id)
 
-            # Level 2-1: PyDriller로 커밋 마이닝
-            commits_data = await self._mine_commits(repo_path, target_user)
+            # Level 2-1: PyDriller로 커밋 마이닝 (강화된 사용자 판단)
+            commits_data = await self._mine_commits(repo_path, target_user, user_emails)
 
             # Level 2-2: Neo4j에 배치 적재 (MERGE 사용, Repository Isolation 적용)
             stats = await self._load_to_neo4j(commits_data, repo_id)
@@ -137,35 +140,78 @@ class CommitAnalyzerAgent:
 
         logger.info(f"✅ Neo4j 인덱스 및 제약조건 생성 완료 (repo_id: {repo_id})")
 
+    def _extract_username_from_email(self, email: str) -> str:
+        """
+        이메일 앞부분(username) 추출
+        """
+        prefix = email.split("@")[0] if "@" in email else email
+        return prefix.split("+")[1] if "+" in prefix else prefix
+
+    def _is_target_user(
+        self, commit, target_user: str, user_emails: set[str]
+    ) -> bool:
+        """
+        강화된 사용자 판단 로직
+
+        Args:
+            commit: PyDriller commit 객체
+            target_user: 타겟 사용자 (이메일 또는 이름)
+            user_emails: GitHub API로 조회한 사용자 이메일/식별자 목록 (소문자)
+
+        Returns:
+            target_user의 커밋이면 True
+        """
+        author_email = commit.author.email.lower() if commit.author.email else ""
+        author_name = commit.author.name.lower() if commit.author.name else ""
+        author_name_from_email = self._extract_username_from_email(commit.author.email) if commit.author.email else ""
+
+        target_lower = target_user.lower()
+        lower_target_emails = {email.lower() for email in user_emails}
+        target_names_from_email = {self._extract_username_from_email(email) for email in lower_target_emails}
+
+        # 1. 정확한 이메일/이름 매칭
+        if target_lower == author_email or target_lower == author_name:
+            return True
+
+        # 2. GitHub API로 조회한 이메일 목록에 있는지 확인
+        if author_email in lower_target_emails:
+            return True
+
+        # 3. 유저의 이메일 앞부분(username)과 작성자 이름 비교
+        if author_name in target_names_from_email:
+            return True
+        
+        # 4. 유저의 이메일 앞부분(username)과 작성자 이메일 앞부분 비교
+        if author_name_from_email in target_names_from_email:
+            return True
+        return False
+
     async def _mine_commits(
-        self, repo_path: str, target_user: Optional[str]
+        self, repo_path: str, target_user: Optional[str], user_emails: set[str] = None
     ) -> list[dict[str, Any]]:
         """
-        PyDriller로 커밋 마이닝
+        PyDriller로 커밋 마이닝 (강화된 사용자 판단 로직)
 
         Args:
             repo_path: Git 레포지토리 경로
-            target_user: 특정 유저 이메일 (None이면 전체)
+            target_user: 특정 유저 이메일 또는 이름 (None이면 전체)
+            user_emails: GitHub API로 조회한 사용자 이메일/식별자 목록 (소문자)
 
         Returns:
             list of commit data dictionaries
         """
         commits_data = []
+        if user_emails is None:
+            user_emails = set()
 
         # PyDriller는 동기 API이므로 executor에서 실행
         def _mine():
             repo = Repository(repo_path)
 
             for commit in repo.traverse_commits():
-                # 특정 유저 필터링 (이메일 또는 이름으로 비교, 대소문자 무시)
+                # 특정 유저 필터링 (강화된 로직)
                 if target_user:
-                    target_lower = target_user.lower()
-                    author_email_lower = commit.author.email.lower() if commit.author.email else ""
-                    author_name_lower = commit.author.name.lower() if commit.author.name else ""
-                    
-                    # 이메일 또는 이름 중 하나라도 일치하면 포함
-                    if (target_lower != author_email_lower and 
-                        target_lower != author_name_lower):
+                    if not self._is_target_user(commit, target_user, user_emails):
                         continue
 
                 commit_data = {

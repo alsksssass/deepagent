@@ -191,6 +191,53 @@ class Neo4jBackend(GraphDBBackend):
             logger.error(f"❌ Neo4j 커밋 조회 실패: {e}")
             return []
 
+    async def get_all_commits(
+        self,
+        repo_id: str,
+        limit: int = 100
+    ) -> List[Dict[str, Any]]:
+        """
+        특정 repository의 모든 커밋 조회 (User 필터링 없음)
+        
+        CommitAnalyzer에서 이미 target_user로 필터링해서 저장했으므로,
+        조회 시에는 해당 repo_id의 모든 커밋을 반환
+        
+        Args:
+            repo_id: Repository ID (필수)
+            limit: 최대 조회 개수 (기본값 100)
+            
+        Returns:
+            커밋 리스트
+        """
+        try:
+            if not repo_id:
+                logger.warning("⚠️  repo_id가 없으면 커밋 조회 불가 (복합 키 제약조건)")
+                return []
+
+            query = f"""
+            MATCH (c:Commit {{repo_id: $repo_id}})
+            RETURN c.hash AS hash,
+                   c.message AS message,
+                   c.author_date AS date,
+                   c.lines_added AS lines_added,
+                   c.lines_deleted AS lines_deleted,
+                   c.files_changed AS files_changed
+            ORDER BY c.author_date DESC
+            LIMIT $limit
+            """
+
+            records = await self.execute_query(
+                query,
+                {"repo_id": repo_id, "limit": limit}
+            )
+
+            logger.info(f"🔍 Neo4j: repo_id={repo_id} - {len(records)}개 커밋 조회")
+            return records
+
+        except Exception as e:
+            logger.error(f"❌ Neo4j 전체 커밋 조회 실패: {e}")
+            return []
+
     async def get_commit_details(
         self,
         commit_hash: str,

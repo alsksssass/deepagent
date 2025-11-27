@@ -35,7 +35,7 @@ from agents.code_rag_builder import CodeRAGBuilderAgent, CodeRAGBuilderContext
 from agents.user_skill_profiler import UserSkillProfilerAgent, UserSkillProfilerContext, UserSkillProfilerResponse
 
 # Tools (for CommitEvaluator)
-from shared.tools.neo4j_tools import get_user_commits
+from shared.tools.neo4j_tools import get_all_commits, get_user_commits
 
 logger = logging.getLogger(__name__)
 
@@ -384,6 +384,7 @@ class DeepAgentOrchestrator:
                 repo_path=repo_path,
                 git_url=git_url,  # Repository Isolation용
                 target_user=target_user,
+                user_emails=repo_response.user_emails,  # RepoCloner에서 조회한 사용자 이메일/식별자
                 result_store_path=str(store.results_dir),
             )
             # ChromaDB persist 디렉토리: 환경 변수 우선, 없으면 data_dir/chroma_db
@@ -459,9 +460,10 @@ class DeepAgentOrchestrator:
 
                     repo_id = generate_repo_id(git_url)
 
-                    user_commits = await get_user_commits.ainvoke(
+                    # CommitAnalyzer에서 이미 target_user로 필터링했으므로
+                    # 모든 커밋을 가져옴 (User 필터링 불필요)
+                    user_commits = await get_all_commits.ainvoke(
                         {
-                            "user_email": target_user,
                             "repo_id": repo_id,  # 제약조건이 복합 키이므로 필수
                             "limit": 100,
                             "neo4j_uri": self.neo4j_uri,

@@ -49,6 +49,7 @@ class RepoClonerResponse(BaseResponse):
     """
     repo_path: Optional[str] = Field(None, description="클론된 레포지토리 경로")
     repo_name: Optional[str] = Field(None, description="레포지토리 이름")
+    user_emails: Optional[list[str]] = Field(None, description="GitHub 사용자의 이메일 및 식별자 목록 (소문자)")
 
     class Config:
         extra = "allow"

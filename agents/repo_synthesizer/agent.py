@@ -126,6 +126,7 @@ class RepoSynthesizerAgent:
                             'strengths',
                             'improvement_recommendations',
                             'role_suitability',
+                            'interview_questions',  # 면접 질문은 제외
                             'model_config',
                             'model_fields',
                             'model_computed_fields',
@@ -166,6 +167,8 @@ class RepoSynthesizerAgent:
                                     f"   UserAnalysisResult.{attr_name} "
                                     f"업데이트 완료"
                                 )
+                
+                # interview_questions는 제외 (UserAnalysisResult에 속하지 않음)
                 
                 logger.info(
                     "   UserAnalysisResult.markdown에 "
@@ -1191,7 +1194,14 @@ class RepoSynthesizerAgent:
                         'exp': user_analysis_result.python.exp,
                         'usage_frequency': user_analysis_result.python.usage_frequency
                     }
-            
+            if llm_analysis.interview_questions:
+                report += "### 💼 기술 면접 질문\n\n"
+                report += "*이 개발자의 실력과 이해도를 검증하기 위한 핵심 질문입니다.*\n\n"
+                for i, question in enumerate(llm_analysis.interview_questions, 1):
+                    report += f"#### 질문 {i}: {question.category}\n\n"
+                    report += f"**질문**: {question.question}\n\n"
+                    report += f"**질문 의도**: {question.purpose}\n\n"
+
             # 언어별 상세 정보 표시
             if language_fields:
                 report += "### 📊 언어별 상세 정보\n\n"

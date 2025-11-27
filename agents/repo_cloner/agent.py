@@ -8,6 +8,7 @@ import logging
 import asyncio
 from pathlib import Path
 from uuid import UUID
+import aiohttp
 from .schemas import RepoClonerContext, RepoClonerResponse
 
 logger = logging.getLogger(__name__)
@@ -60,6 +61,62 @@ class RepoClonerAgent:
             return git_url.replace("https://", f"https://{token}@", 1)
         return git_url
 
+    async def _fetch_github_user_emails(self, github_token: str) -> set[str]:
+        """
+        GitHub API를 사용하여 인증된 사용자의 이메일 목록 조회
+
+        Args:
+            github_token: GitHub Personal Access Token
+
+        Returns:
+            사용자의 이메일 주소 set (소문자 변환)
+        """
+        try:
+            headers = {
+                "Authorization": f"Bearer {github_token}",
+                "Accept": "application/vnd.github+json",
+                "X-GitHub-Api-Version": "2022-11-28"
+            }
+            
+            async with aiohttp.ClientSession() as session:
+                # 먼저 사용자 정보 조회 (username 가져오기)
+                async with session.get(
+                    "https://api.github.com/user",
+                    headers=headers
+                ) as user_response:
+                    if user_response.status != 200:
+                        logger.warning(f"⚠️ GitHub API 사용자 조회 실패 (status: {user_response.status})")
+                        return set()
+                    
+                    user_data = await user_response.json()
+                    username = user_data.get("login", "").lower()
+                    
+                # 이메일 목록 조회
+                async with session.get(
+                    "https://api.github.com/user/emails",
+                    headers=headers
+                ) as email_response:
+                    if email_response.status == 200:
+                        emails_data = await email_response.json()
+                        # 모든 이메일을 소문자로 변환하여 set으로 수집
+                        emails = {email["email"].lower() for email in emails_data}
+                        
+                        # username도 추가 (커밋에서 username@users.noreply.github.com 형태로 나올 수 있음)
+                        if username:
+                            emails.add(username)
+                            emails.add(f"{username}@users.noreply.github.com")
+                        
+                        logger.info(f"✅ GitHub API: {len(emails)}개 이메일/식별자 조회 완료")
+                        return emails
+                    else:
+                        error_text = await email_response.text()
+                        logger.warning(f"⚠️ GitHub API 이메일 조회 실패 (status: {email_response.status}): {error_text}")
+                        # username만이라도 반환
+                        return {username, f"{username}@users.noreply.github.com"} if username else set()
+        except Exception as e:
+            logger.warning(f"⚠️ GitHub API 이메일 조회 중 오류: {e}")
+            return set()
+
     async def run(self, context: RepoClonerContext) -> RepoClonerResponse:
         """
         레포지토리 클론 실행 (Pydantic 스키마 사용)
@@ -93,6 +150,8 @@ class RepoClonerAgent:
 
             # 액세스 토큰 조회 (user_id와 db_writer가 있는 경우)
             access_token = None
+            user_emails = set()
+            
             if user_id and db_writer:
                 try:
                     logger.info(f"🔍 액세스 토큰 조회 시도: user_id={user_id}")
@@ -101,6 +160,12 @@ class RepoClonerAgent:
                     if access_token:
                         masked_token = f"{access_token[:4]}...{access_token[-4:]}" if len(access_token) > 8 else "***"
                         logger.info(f"🔑 액세스 토큰 조회 성공 (사용자: {user_id}, 토큰: {masked_token})")
+                        
+                        # GitHub 사용자 이메일 목록 조회 (GitHub URL인 경우만)
+                        if "github.com" in git_url.lower():
+                            user_emails = await self._fetch_github_user_emails(access_token)
+                            if user_emails:
+                                logger.info(f"📧 GitHub 사용자 이메일/식별자 조회 완료: {len(user_emails)}개")
                     else:
                         logger.warning(f"⚠️  액세스 토큰 조회 결과 없음 (None 반환) - 사용자: {user_id}")
                         logger.info(f"ℹ️  액세스 토큰 없음 (사용자: {user_id}), 퍼블릭 레포로 시도")
@@ -169,6 +234,7 @@ class RepoClonerAgent:
                             status="success",
                             repo_path=str(repo_path),
                             repo_name=repo_name,
+                            user_emails=list(user_emails) if user_emails else None,
                             error=None,
                         )
                     else:
