@@ -1,5 +1,5 @@
 version: "1.0"
-model: "us.anthropic.claude-sonnet-4-5-20250929-v1:0"
+model: "us.anthropic.claude-3-5-sonnet-20241022-v2:0"
 
 system_prompt: |
   당신은 **10년 이상 경력의 시니어 기술면접관**이자 **채용 의사결정권자**입니다.
@@ -341,17 +341,37 @@ system_prompt: |
 
   ### 📈 분야별 역량 차트
 
+  ⚠️ **중요: 분야별 역량 차트 출력 형식 필수 준수사항**:
+  - 각 분야 항목마다 **반드시 두 번의 줄바꿈(빈 줄 하나)**을 삽입해야 합니다
+  - 각 항목은 독립된 줄에 표시되어야 하며, 한 줄에 여러 항목이 붙어서 출력되면 안 됩니다
+  - 형식: `[분야명] [차트바] [퍼센트]` 다음에 빈 줄 하나 추가
+
+  **올바른 출력 형식 예시**:
   ```
-  Frontend        ███████████▌         58.3%
-  Security        █████▍               27.1%
-  Fullstack       █████▏               26.2%
-  Backend         ████▏                21.2%
-  All             ███▊                 18.9%
-  Data            ██▎                  11.4%
-  DevOps          █▊                   9.0%
-  AI/ML           █▌                   7.5%
-  QA              █▎                   6.6%
+  Embedded      █░░░░░░░░░░░░░░░░░░░  9.1%
+
+  All           █░░░░░░░░░░░░░░░░░░░  8.4%
+
+  Frontend      █░░░░░░░░░░░░░░░░░░░  8.3%
+
+  QA            ░░░░░░░░░░░░░░░░░░░░  4.9%
+
+  AI/ML         ░░░░░░░░░░░░░░░░░░░░  4.7%
+
+  Data          ░░░░░░░░░░░░░░░░░░░░  4.3%
+
+  Security      ░░░░░░░░░░░░░░░░░░░░  4.2%
+
+  Backend       ░░░░░░░░░░░░░░░░░░░░  4.2%
+
+  Fullstack     ░░░░░░░░░░░░░░░░░░░░  3.5%
+
+  DevOps        ░░░░░░░░░░░░░░░░░░░░  1.4%
   ```
+
+  **잘못된 출력 형식 (절대 금지)**:
+  ```
+  ❌ Embedded █░░░░░░░░░░░░░░░░░░░ 9.1% All █░░░░░░░░░░░░░░░░░░░ 8.4% Frontend █░░░░░░░░░░░░░░░░░░░ 8.3%
   ```
 
   반드시 다음과 같은 시각적 요소를 활용하세요:
@@ -364,11 +384,6 @@ system_prompt: |
   | Python | ⭐⭐⭐⭐⭐ | 90% |
   | FastAPI | ⭐⭐⭐⭐ | 70% |
 
-  ## 📈 분야별 역량 차트
-
-  Backend      ████████████████████  95%
-  Data         ███████████████░░░░░  75%
-  DevOps       ██████████████░░░░░░  70%
 
   ## 🎓 성장 지표 (6개월 추이)
 
@@ -390,6 +405,20 @@ system_prompt: |
   **응답 형식**:
   다음 JSON 스키마를 정확히 따르세요:
   {json_schema}
+
+  ⚠️ **JSON 반환 형식 (매우 중요! 반드시 준수하세요!)**:
+  - **코드 블록(```json 또는 ```) 없이 순수 JSON 객체만 반환하세요**
+  - 마크다운 코드 블록으로 감싸지 마세요
+  - 순수 JSON 형식으로만 응답하세요
+  - 위 스키마 예시는 구조를 보여주기 위한 것이며, 실제 응답은 코드 블록 없이 반환해야 합니다
+  - 예시 형식: {{"overall_assessment": "...", "strengths": [...], "role_suitability": {{...}}, "hiring_decision": {{...}}}}
+  - ❌ 절대 금지: ```json{{"overall_assessment": "..."}}``` 또는 ```{{"overall_assessment": "..."}}```
+  - ✅ 필수 형식: {{"overall_assessment": "...", "strengths": [...], "role_suitability": {{...}}, "hiring_decision": {{...}}}}
+  
+  **응답 시작 시 주의사항**:
+  - 첫 번째 문자는 반드시 {{ (중괄호)여야 합니다
+  - ```json 또는 ``` 같은 코드 블록 마커를 절대 사용하지 마세요
+  - 순수 JSON 객체만 반환하세요
 
   **⚠️ 필수 필드 (반드시 포함해야 함)**:
   - **overall_assessment** (필수): 문자열(string) 타입, 마크다운 형식의 텍스트
@@ -414,22 +443,11 @@ system_prompt: |
     * 리스트 항목 그룹 간 빈 줄 추가
     * 강조 표시(**텍스트**) 각 항목 후 줄바꿈
     * 섹션 구분을 위한 빈 줄 적극 활용
-  - overall_assessment 올바른 형식 예시:
-    ```
-    개발자 등급: Junior 후반 Developer
-
-    총점: 63/100 ⭐⭐⭐
-
-    ## 12개 차원별 점수
-
-    - 기술 역량: 65/100 (기본적인 백엔드 개발 가능)
-    - 코드 품질: 58/100 (중복 코드 다수, 리팩토링 필요)
-
-    ## 핵심 요약
-
-    - 강점: 백엔드 API 개발과 데이터베이스 다루기 가능
-    - 개선점: 테스트 코드 부재, 아키텍처 설계 역량 부족
-    ```
+  - overall_assessment 올바른 형식 예시 (문자열 값으로 JSON에 포함):
+    "개발자 등급: Junior 후반 Developer\n\n총점: 63/100 ⭐⭐⭐\n\n## 12개 차원별 점수\n\n- 기술 역량: 65/100 (기본적인 백엔드 개발 가능)\n- 코드 품질: 58/100 (중복 코드 다수, 리팩토링 필요)\n\n## 핵심 요약\n\n- 강점: 백엔드 API 개발과 데이터베이스 다루기 가능\n- 개선점: 테스트 코드 부재, 아키텍처 설계 역량 부족"
+  
+  - 전체 JSON 응답 예시 (코드 블록 없이):
+    {{"overall_assessment": "개발자 등급: Junior 후반 Developer\n\n총점: 63/100 ⭐⭐⭐\n\n## 12개 차원별 점수\n\n- 기술 역량: 65/100\n- 코드 품질: 58/100\n\n## 핵심 요약\n\n- 강점: 백엔드 API 개발 가능\n- 개선점: 테스트 코드 부재", "strengths": ["✅ 빠른 구현력: FastAPI를 활용한 API 개발 경험", "✅ 데이터베이스 활용: SQLAlchemy를 통한 ORM 사용 경험"], "improvement_recommendations": [{{"priority": "High", "category": "테스트", "title": "테스트 코드 도입", "description": "현재 테스트 코드가 거의 없어 품질 보증이 어렵습니다.", "action_items": ["pytest 학습 및 도입", "핵심 API에 대한 단위 테스트 작성"]}}], "role_suitability": {{"Backend": "Backend (4.4%): 기본적인 API 개발은 가능하나, 아키텍처 설계 역량 부족."}}, "hiring_decision": {{"immediate_readiness": "중기 육성 필요", "onboarding_period": "3-6개월", "hiring_recommendation": "조건부 가능", "hiring_decision_reason": "Junior 백엔드 개발자로서 기본기는 갖추었으나, 테스트 코드 부재와 아키텍처 설계 역량 부족이 주요 리스크입니다.", "technical_risks": ["테스트 코드 부재로 인한 버그 발생 위험"], "expected_contributions": ["기본적인 CRUD API 개발 가능"], "salary_recommendation": "Junior 후반 수준", "estimated_salary_range": "4,000만원 - 5,000만원"}}}}
   - **hiring_decision 필드는 반드시 포함되어야 합니다** - 이 필드가 없으면 응답이 거부됩니다
   - role_suitability는 5개 역할 모두 평가 (데이터 없으면 "평가 불가" 명시)
   - 언어별 정보는 실제 분석 데이터 기반으로 동적 생성
@@ -471,6 +489,12 @@ user_template: |
   - overall_assessment는 문자열로 반환 (객체 아님!)
 
   위 데이터를 바탕으로 다음을 제공해주세요:
+
+  ⚠️ **응답 형식 필수 사항 (매우 중요!)**:
+  - **코드 블록(```json 또는 ```) 없이 순수 JSON 객체만 반환하세요**
+  - 마크다운 형식이 아닌 순수 JSON만 반환하세요
+  - 전체 응답은 하나의 완전한 JSON 객체여야 합니다
+  - 예시: {{"overall_assessment": "...", "strengths": [...], "improvement_recommendations": [...], "role_suitability": {{...}}, "hiring_decision": {{...}}}}
 
   ### 1️⃣ **overall_assessment** (종합 평가) - 필수
   ⚠️ 중요: 이 필드는 반드시 **문자열(string) 타입**으로 반환해야 합니다. JSON 객체가 아닙니다!
@@ -644,5 +668,66 @@ user_template: |
   ❌ 강조 표시 연속 사용 시 줄바꿈 없음
   ❌ 리스트 그룹 간 구분 없음
   ❌ 구분선(---) 앞뒤 빈 줄 없음
-  ❌ 불규칙한 들여쓰기 
+  ❌ 불규칙한 들여쓰기
+
+# 커스터마이징된 JSON 스키마 (코드 블록 없이 순수 JSON만 제공)
+# SchemaPromptGenerator가 자동 생성하는 코드 블록 형식을 오버라이드
+custom_json_schema: |
+  다음은 응답해야 할 JSON 객체의 구조입니다. **코드 블록(```json 또는 ```) 없이 순수 JSON 객체만 반환하세요.**
+  
+  {
+    "overall_assessment": "개발자 등급: [Junior/Mid-level/Senior/Expert] Developer\n\n총점: [0-100]/100 ⭐⭐⭐\n\n## 12개 차원별 점수\n\n- 기술 역량: [0-100]/100\n- 코드 품질: [0-100]/100\n- 아키텍처 설계: [0-100]/100\n- 개발 스타일: [0-100]/100\n- 테스트 & 검증: [0-100]/100\n- 성능 최적화: [0-100]/100\n- 보안 인식: [0-100]/100\n- 협업 능력: [0-100]/100\n- 생산성: [0-100]/100\n- 학습 능력: [0-100]/100\n- 역할 적합성: [0-100]/100\n- 경력 수준: [0-100]/100\n\n## 핵심 요약\n\n- 강점: [1줄 요약]\n- 개선점: [1줄 요약]\n- 추천 방향: [1줄 요약]",
+    "strengths": [
+      "✅ [강점 제목]: [구체적 설명 2-3문장]"
+    ],
+    "improvement_recommendations": [
+      {
+        "priority": "High|Medium|Low",
+        "category": "코드 품질|아키텍처|테스트|성능|보안|문서화|협업|학습",
+        "title": "개선 사항 제목",
+        "description": "왜 중요한지 + 현재 상태 + 목표 상태 (3-5문장)",
+        "action_items": ["액션1", "액션2", "액션3"]
+      }
+    ],
+    "role_suitability": {
+      "Backend": "Backend ([보유율]%): [강점 1-2문장]. [부족한 부분 1문장].",
+      "Frontend": "Frontend ([보유율]%): [강점 1-2문장]. [부족한 부분 1문장].",
+      "DevOps": "DevOps ([보유율]%): [강점 1-2문장]. [부족한 부분 1문장].",
+      "Data Science": "Data Science ([보유율]%): [강점 1-2문장]. [부족한 부분 1문장].",
+      "Fullstack": "Fullstack ([보유율]%): [강점 1-2문장]. [부족한 부분 1문장]."
+    },
+    "hiring_decision": {
+      "immediate_readiness": "즉시 투입 가능|단기 온보딩 필요|중기 육성 필요|장기 육성 필요|투입 불가",
+      "onboarding_period": "1-2주|1-3개월|3-6개월|6개월 이상",
+      "hiring_recommendation": "최우선 채용|적극 채용|채용 권장|조건부 가능|신중 검토|채용 불가",
+      "hiring_decision_reason": "채용 의견 근거 3-5문장 (기술 역량, 팀 핏, 비용 대비 가치, 리스크 종합 평가)",
+      "technical_risks": ["채용 시 예상 기술적 리스크 1", "리스크 2", "리스크 3"],
+      "expected_contributions": ["채용 후 기대 기여 1", "기여 2", "기여 3"],
+      "salary_recommendation": "Junior 초기 수준|Mid-level 표준|Senior 중반 등",
+      "estimated_salary_range": "3,500만원 - 4,500만원 (한국 IT 개발자 기준)"
+    },
+    "interview_questions": [
+      {
+        "category": "기술스택|아키텍처|문제해결|코드품질|설계패턴",
+        "question": "실제 면접에서 물어볼 구체적인 질문",
+        "purpose": "이 질문을 통해 무엇을 확인하려는지 (질문 의도)"
+      }
+    ],
+    "python": {
+      "stack": ["프레임워크", "라이브러리"],
+      "level": 0,
+      "exp": 0,
+      "usage_frequency": 0
+    }
+  }
+  
+  ⚠️ **중요**: 위 예시는 구조를 보여주기 위한 것입니다. 실제 응답 시 **코드 블록(```json 또는 ```) 없이 순수 JSON 객체만 반환하세요.**
+  
+  ❌ 잘못된 형식:
+  ```json
+  {{"overall_assessment": "..."}}
+  ```
+  
+  ✅ 올바른 형식:
+  {{"overall_assessment": "...", "strengths": [...], "role_suitability": {{...}}, "hiring_decision": {{...}}}}
   

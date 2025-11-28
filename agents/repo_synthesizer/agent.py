@@ -1218,13 +1218,13 @@ class RepoSynthesizerAgent:
             # 시각화 요소 추가 (프롬프트에서 요구)
             if user_analysis_result and user_analysis_result.role:
                 report += "### 📈 분야별 역량 차트\n\n"
-                # 역할별 보유율을 차트로 표시
+                # 역할별 보유율을 차트로 표시 (각 항목마다 빈 줄 하나 추가)
                 for role, percentage in sorted(user_analysis_result.role.items(), key=lambda x: x[1], reverse=True):
                     if percentage > 0:
                         bar_length = int(percentage / 5)  # 5%당 1칸
                         filled = "█" * bar_length
                         empty = "░" * (20 - bar_length)
-                        report += f"{role:<15} {filled}{empty} {percentage:.1f}%\n"
+                        report += f"{role:<15} {filled}{empty} {percentage:.1f}%\n\n"
                 report += "\n"
 
         # LLM 분석이 없는 경우 안내 메시지
