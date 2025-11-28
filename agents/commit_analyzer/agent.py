@@ -14,6 +14,7 @@ from pydriller import Repository
 
 from shared.graph_db import GraphDBBackend, Neo4jBackend
 from .schemas import CommitAnalyzerContext, CommitAnalyzerResponse
+from .author_mapper import AuthorMapper
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +42,7 @@ class CommitAnalyzerAgent:
         self.neo4j_user = neo4j_user
         self.neo4j_password = neo4j_password
         self.backend: Optional[GraphDBBackend] = None
+        self.author_mapper: Optional[AuthorMapper] = None
 
     async def run(self, context: CommitAnalyzerContext) -> CommitAnalyzerResponse:
         """
@@ -59,12 +61,41 @@ class CommitAnalyzerAgent:
         user_emails = set(context.user_emails) if context.user_emails else set()
 
         logger.info(f"📊 CommitAnalyzer: {repo_path} 분석 시작 (repo_id: {repo_id})")
+
+        # 디버깅: 입력 파라미터 상세 로그
+        logger.info(f"🔍 Input parameters:")
+        logger.info(f"   - target_user: {target_user}")
+        logger.info(f"   - user_emails ({len(user_emails)}): {sorted(user_emails) if user_emails else 'None'}")
+        logger.info(f"   - author_mapping_rules: {'Enabled' if context.author_mapping_rules else 'Disabled'}")
+
         if user_emails:
             logger.info(f"📧 사용자 식별자 {len(user_emails)}개 사용 (강화된 사용자 판단)")
 
         try:
             # GraphDBBackend 초기화 (Neo4j)
             self.backend = Neo4jBackend()
+
+            # AuthorMapper 초기화 (매핑 규칙이 있는 경우)
+            if context.author_mapping_rules:
+                mapping_dict = context.author_mapping_rules.to_dict()
+                self.author_mapper = AuthorMapper(mapping_dict)
+                stats = self.author_mapper.get_mapping_stats()
+                logger.info(
+                    f"✅ AuthorMapper enabled: {stats['total_developers']} developers, "
+                    f"{stats['total_aliases']} aliases"
+                )
+
+                # 디버깅: 각 매핑 규칙 상세 로그
+                for canonical_name, rule in mapping_dict.items():
+                    logger.debug(f"  📋 Mapping rule: {canonical_name} (canonical_email: {rule['canonical_email']})")
+                    logger.debug(f"     ← {len(rule.get('aliases', []))} aliases")
+                    for alias in rule.get('aliases', []):
+                        alias_name = alias.get('name', 'N/A')
+                        alias_email = alias['email']
+                        logger.debug(f"       - {alias_name} <{alias_email}>")
+            else:
+                self.author_mapper = None
+                logger.info("ℹ️ AuthorMapper disabled: No mapping rules provided")
 
             # Neo4j 초기화 (인덱스, 제약조건) - Repository별로 격리
             await self._init_neo4j(repo_id)
@@ -171,19 +202,41 @@ class CommitAnalyzerAgent:
 
         # 1. 정확한 이메일/이름 매칭
         if target_lower == author_email or target_lower == author_name:
+            logger.debug(
+                f"✅ Match (exact): {commit.author.name} <{commit.author.email}> "
+                f"matches target_user={target_user}"
+            )
             return True
 
         # 2. GitHub API로 조회한 이메일 목록에 있는지 확인
         if author_email in lower_target_emails:
+            logger.debug(
+                f"✅ Match (user_emails): {commit.author.name} <{commit.author.email}> "
+                f"found in user_emails"
+            )
             return True
 
         # 3. 유저의 이메일 앞부분(username)과 작성자 이름 비교
         if author_name in target_names_from_email:
+            logger.debug(
+                f"✅ Match (username): {commit.author.name} <{commit.author.email}> "
+                f"matches target username"
+            )
             return True
-        
+
         # 4. 유저의 이메일 앞부분(username)과 작성자 이메일 앞부분 비교
         if author_name_from_email in target_names_from_email:
+            logger.debug(
+                f"✅ Match (email prefix): {commit.author.name} <{commit.author.email}> "
+                f"matches target email prefix"
+            )
             return True
+
+        # 매칭 실패 로그 (디버깅용)
+        logger.debug(
+            f"❌ No match: {commit.author.name} <{commit.author.email}> "
+            f"vs target_user={target_user}, user_emails={user_emails}"
+        )
         return False
 
     async def _mine_commits(
@@ -207,6 +260,7 @@ class CommitAnalyzerAgent:
         # PyDriller는 동기 API이므로 executor에서 실행
         def _mine():
             repo = Repository(repo_path)
+            author_mapping_log = {}  # 디버깅: 원본 → 정규화 매핑 추적
 
             for commit in repo.traverse_commits():
                 # 특정 유저 필터링 (강화된 로직)
@@ -214,11 +268,37 @@ class CommitAnalyzerAgent:
                     if not self._is_target_user(commit, target_user, user_emails):
                         continue
 
+                # 저자 정보 정규화 (AuthorMapper 사용)
+                original_author_name = commit.author.name
+                original_author_email = commit.author.email
+
+                if self.author_mapper:
+                    normalized_name, normalized_email = self.author_mapper.normalize_author(
+                        original_author_name, original_author_email
+                    )
+
+                    # 디버깅: 매핑이 발생한 경우 로그 기록
+                    if (normalized_name, normalized_email) != (original_author_name, original_author_email):
+                        original_key = (original_author_name, original_author_email)
+                        normalized_key = (normalized_name, normalized_email)
+
+                        if original_key not in author_mapping_log:
+                            author_mapping_log[original_key] = normalized_key
+                            logger.debug(
+                                f"🔄 Author mapped: {original_author_name} <{original_author_email}> "
+                                f"→ {normalized_name} <{normalized_email}>"
+                            )
+                else:
+                    normalized_name = original_author_name
+                    normalized_email = original_author_email
+
                 commit_data = {
                     "hash": commit.hash,
                     "message": commit.msg,
-                    "author_name": commit.author.name,
-                    "author_email": commit.author.email,
+                    "author_name": normalized_name,  # 정규화된 이름
+                    "author_email": normalized_email,  # 정규화된 이메일
+                    "original_author_name": original_author_name,  # 원본 이름 (참고용)
+                    "original_author_email": original_author_email,  # 원본 이메일 (참고용)
                     "author_date": commit.author_date.isoformat(),
                     "committer_name": commit.committer.name,
                     "committer_email": commit.committer.email,
@@ -259,6 +339,39 @@ class CommitAnalyzerAgent:
         loop = asyncio.get_event_loop()
         commits_data = await loop.run_in_executor(None, _mine)
 
+        # 디버깅: 작성자 통계 집계
+        if self.author_mapper:
+            original_authors = set()
+            normalized_authors = set()
+
+            for commit in commits_data:
+                original_authors.add((commit['original_author_name'], commit['original_author_email']))
+                normalized_authors.add((commit['author_name'], commit['author_email']))
+
+            logger.info(
+                f"📊 Author consolidation: {len(original_authors)} original IDs → {len(normalized_authors)} normalized developers"
+            )
+
+            # 정규화된 개발자별 커밋 수 집계
+            normalized_commit_counts = {}
+            for commit in commits_data:
+                key = (commit['author_name'], commit['author_email'])
+                normalized_commit_counts[key] = normalized_commit_counts.get(key, 0) + 1
+
+            logger.info(f"📊 Normalized developers ({len(normalized_commit_counts)}):")
+            for (name, email), count in sorted(normalized_commit_counts.items(), key=lambda x: x[1], reverse=True):
+                logger.info(f"   - {name} <{email}>: {count} commits")
+        else:
+            # AuthorMapper 비활성화 상태에서도 작성자 통계 출력
+            author_commit_counts = {}
+            for commit in commits_data:
+                key = (commit['author_name'], commit['author_email'])
+                author_commit_counts[key] = author_commit_counts.get(key, 0) + 1
+
+            logger.info(f"📊 Authors ({len(author_commit_counts)}):")
+            for (name, email), count in sorted(author_commit_counts.items(), key=lambda x: x[1], reverse=True):
+                logger.info(f"   - {name} <{email}>: {count} commits")
+
         logger.info(f"📊 PyDriller: {len(commits_data)}개 커밋 마이닝 완료")
         return commits_data
 
@@ -297,6 +410,8 @@ class CommitAnalyzerAgent:
             MERGE (u:{repo_label}:User {{email: commit.author_email, repo_id: $repo_id}})
             ON CREATE SET
                 u.name = commit.author_name
+            ON MATCH SET
+                u.name = commit.author_name  // 정규화된 이름으로 업데이트
 
             // Commit 노드 생성/병합 (복합 키: hash + repo_id, Repository 라벨 포함, 멱등성 보장)
             MERGE (c:{repo_label}:Commit {{hash: commit.hash, repo_id: $repo_id}})

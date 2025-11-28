@@ -343,6 +343,7 @@ class DeepAgentOrchestrator:
                 main_task_uuid=main_task_uuid,
                 git_url=git_url,
                 base_path=str(base_path),
+                target_user=target_user,  # Git 로그 이메일 추출용
                 result_store_path=str(store.results_dir),
                 user_id=str(self.user_id) if self.user_id else None,
                 db_writer=self.db_writer,
@@ -378,13 +379,49 @@ class DeepAgentOrchestrator:
                 repo_path=repo_path,
                 result_store_path=str(store.results_dir),
             )
+            # Option 1: target_user=None (모든 커밋 수집) + AuthorMapper로 통합
+            # AuthorMapper 매핑 규칙 생성 (user_emails 기반)
+            author_mapping_rules = None
+            if target_user:
+                from agents.commit_analyzer.schemas import (
+                    AuthorMappingRules,
+                    AuthorMappingRule,
+                    AuthorAlias,
+                )
+
+                # user_emails가 있으면 aliases로 매핑
+                if repo_response.user_emails:
+                    aliases = [
+                        AuthorAlias(email=email) for email in repo_response.user_emails
+                    ]
+
+                    author_mapping_rules = AuthorMappingRules(
+                        mappings={
+                            target_user: AuthorMappingRule(
+                                canonical_email=f"{target_user}@github.com",
+                                aliases=aliases,
+                            )
+                        }
+                    )
+
+                    logger.info(
+                        f"✅ AuthorMapper 규칙 생성: {target_user} ← {len(aliases)} aliases"
+                    )
+                else:
+                    # user_emails가 없는 경우: AuthorMapper 비활성화 경고
+                    logger.warning(
+                        f"⚠️ user_emails가 비어있음: AuthorMapper 비활성화됨. "
+                        f"모든 커밋 작성자를 그대로 사용합니다."
+                    )
+
             commit_ctx = CommitAnalyzerContext(
                 task_uuid=task_uuid,
                 main_task_uuid=main_task_uuid,
                 repo_path=repo_path,
                 git_url=git_url,  # Repository Isolation용
-                target_user=target_user,
+                target_user=None,  # Option 1: 모든 커밋 수집
                 user_emails=repo_response.user_emails,  # RepoCloner에서 조회한 사용자 이메일/식별자
+                author_mapping_rules=author_mapping_rules,  # AuthorMapper 규칙 전달
                 result_store_path=str(store.results_dir),
             )
             # ChromaDB persist 디렉토리: 환경 변수 우선, 없으면 data_dir/chroma_db
