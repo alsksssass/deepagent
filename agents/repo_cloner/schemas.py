@@ -18,6 +18,7 @@ class RepoClonerContext(BaseContext):
     """
     git_url: str = Field(..., description="Git 레포지토리 URL (SSH 또는 HTTPS)")
     base_path: str = Field(..., description="클론할 기본 경로")
+    target_user: Optional[str] = Field(None, description="타겟 사용자 (GitHub username, Git 로그 이메일 추출용)")
     user_id: Optional[str] = Field(None, description="사용자 UUID (액세스 토큰 조회용, 옵셔널)")
     db_writer: Optional[Any] = Field(None, description="AnalysisDBWriter 인스턴스 (토큰 조회용, 옵셔널)")
 

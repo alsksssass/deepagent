@@ -61,6 +61,80 @@ class RepoClonerAgent:
             return git_url.replace("https://", f"https://{token}@", 1)
         return git_url
 
+    async def _extract_user_emails_from_git(
+        self, repo_path: str, target_user: str
+    ) -> set[str]:
+        """
+        Git 로그에서 target_user와 관련된 모든 이메일 추출 (Fallback)
+
+        Args:
+            repo_path: 클론된 Git 레포지토리 경로
+            target_user: 타겟 사용자 (GitHub username 또는 이름)
+
+        Returns:
+            사용자의 이메일 주소 set (소문자 변환)
+        """
+        try:
+            # Git 로그에서 작성자 정보 추출 (author name + email)
+            # 형식: "Name <email@example.com>"
+            cmd = f"cd {repo_path} && git log --all --format='%an|%ae' | sort -u"
+
+            process = await asyncio.create_subprocess_shell(
+                cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout, stderr = await process.communicate()
+
+            if process.returncode != 0:
+                logger.warning(f"⚠️ Git 로그 조회 실패: {stderr.decode()}")
+                return set()
+
+            # 파싱: "Name|email" 형식
+            lines = stdout.decode().strip().split("\n")
+            user_emails = set()
+            target_lower = target_user.lower()
+
+            for line in lines:
+                if "|" not in line:
+                    continue
+
+                name, email = line.split("|", 1)
+                name_lower = name.lower().strip()
+                email_lower = email.lower().strip()
+
+                # target_user와 매칭되는 이메일 수집
+                # 1. 이름이 정확히 일치
+                # 2. 이메일 앞부분이 일치 (user@domain.com → user)
+                # 3. 이름이 이메일 앞부분과 일치
+                # 4. 부분 문자열 매칭 (대소문자 무시, 유사 이름 처리)
+                email_prefix = email_lower.split("@")[0] if "@" in email_lower else ""
+
+                # GitHub noreply 이메일에서 실제 username 추출
+                # 예: 128468293+functionpointerxdd@users.noreply.github.com → functionpointerxdd
+                github_username = None
+                if "users.noreply.github.com" in email_lower and "+" in email_prefix:
+                    github_username = email_prefix.split("+")[1]
+
+                if (
+                    target_lower == name_lower
+                    or target_lower == email_prefix
+                    or name_lower == email_prefix
+                    or (github_username and target_lower == github_username)
+                    or (github_username and github_username in target_lower)
+                    or (github_username and target_lower in github_username)
+                ):
+                    user_emails.add(email_lower)
+                    # GitHub noreply 이메일도 추가
+                    if name_lower == target_lower or (github_username and target_lower == github_username):
+                        user_emails.add(f"{name_lower}@users.noreply.github.com")
+
+            return user_emails
+
+        except Exception as e:
+            logger.warning(f"⚠️ Git 로그 이메일 추출 중 오류: {e}")
+            return set()
+
     async def _fetch_github_user_emails(self, github_token: str) -> set[str]:
         """
         GitHub API를 사용하여 인증된 사용자의 이메일 목록 조회
@@ -129,6 +203,7 @@ class RepoClonerAgent:
         """
         git_url = context.git_url
         base_path = Path(context.base_path)
+        target_user = context.target_user
         user_id = context.user_id
         db_writer = context.db_writer
 
@@ -137,6 +212,8 @@ class RepoClonerAgent:
         repo_path = base_path / "repo" / repo_name
 
         logger.info(f"🌱 RepoCloner: 클론 시작 - {git_url}")
+        if target_user:
+            logger.info(f"🎯 타겟 사용자: {target_user} (Git 로그 이메일 추출 예정)")
 
         try:
             # 디렉토리 생성
@@ -230,6 +307,18 @@ class RepoClonerAgent:
 
                     if process.returncode == 0:
                         logger.info(f"✅ RepoCloner: 클론 완료 - {repo_path}")
+
+                        # Fallback: GitHub API 실패 시 Git 로그에서 target_user 이메일 추출
+                        if not user_emails and target_user:
+                            logger.info(f"🔍 Fallback: Git 로그에서 {target_user} 이메일 추출 시도")
+                            user_emails = await self._extract_user_emails_from_git(
+                                str(repo_path), target_user
+                            )
+                            if user_emails:
+                                logger.info(
+                                    f"✅ Git 로그에서 {len(user_emails)}개 이메일 추출 완료"
+                                )
+
                         return RepoClonerResponse(
                             status="success",
                             repo_path=str(repo_path),
