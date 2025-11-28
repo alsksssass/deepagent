@@ -69,6 +69,45 @@ async def get_user_commits(
 
 
 @tool
+async def get_all_commits(
+    repo_id: str,
+    limit: int = 100,
+) -> list[dict[str, Any]]:
+    """
+    특정 repository의 모든 커밋 가져오기 (User 필터링 없음)
+    
+    CommitAnalyzer에서 이미 target_user로 필터링해서 저장했으므로,
+    조회 시에는 해당 repo_id의 모든 커밋을 반환합니다.
+
+    Args:
+        repo_id: Repository ID (필수)
+        limit: 최대 커밋 수 (기본값 100)
+
+    Returns:
+        커밋 리스트 [{"hash": str, "message": str, "date": str, "lines_added": int, ...}, ...]
+
+    Example:
+        >>> commits = await get_all_commits(
+        ...     repo_id="github_user_repo",
+        ...     limit=50
+        ... )
+        >>> print(len(commits))
+        50
+    """
+    try:
+        backend = get_graph_db_backend()
+        commits = await backend.get_all_commits(
+            repo_id=repo_id,
+            limit=limit
+        )
+        return commits
+
+    except Exception as e:
+        logger.error(f"❌ GraphDB 전체 커밋 조회 실패: {e}")
+        return []
+
+
+@tool
 async def get_commit_details(
     commit_hash: str,
     repo_id: str | None = None,

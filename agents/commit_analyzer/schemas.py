@@ -54,6 +54,7 @@ class CommitAnalyzerContext(BaseContext):
     repo_path: str = Field(..., description="분석할 Git 레포지토리 경로")
     git_url: str = Field(..., description="Git repository URL (Repository Isolation용)")
     target_user: Optional[str] = Field(None, description="분석 대상 유저 이메일 또는 이름 (None이면 전체)")
+    user_emails: Optional[list[str]] = Field(None, description="사용자의 이메일 및 식별자 목록 (소문자, RepoCloner에서 전달)")
 
     # Neo4j 연결 정보 (GraphDBBackend가 사용)
     neo4j_uri: str = Field(default="bolt://localhost:7687", description="Neo4j URI")
